@@ -13,6 +13,14 @@ export default function Home() {
         deterministic checks, and tells you — with evidence — whether to pay it
         or fight it.
       </p>
+      <form action="/api/auth/anonymous" method="post">
+        <button
+          type="submit"
+          className="rounded-md bg-neutral-900 px-6 py-3 text-base font-semibold text-white hover:bg-neutral-700 dark:bg-white dark:text-black"
+        >
+          Check my bill — free
+        </button>
+      </form>
       <p className="rounded-full border border-neutral-300 px-4 py-1.5 text-sm text-neutral-500 dark:border-neutral-700">
         In development — launching soon
       </p>
