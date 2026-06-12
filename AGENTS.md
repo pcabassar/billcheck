@@ -21,8 +21,9 @@ Origin spec + architecture sheet live in the gtm-pedro workspace (`working/`).
 
 ## PHASE gate (pre-BAA boundary)
 
-- `BILLCHECK_PHASE=A` (current): synthetic/own/anonymized data ONLY. Document-bearing LLM calls require the owning account to be flagged test/synthetic — fail closed otherwise.
-- Flip to `PHASE=B` only when ALL THREE are true: Supabase Team + HIPAA add-on active · Vercel HIPAA add-on active · Anthropic BAA signed. Record the flip in this file with the date.
+- `BILLCHECK_PHASE=A`: synthetic/own/anonymized data ONLY. Document-bearing LLM calls require the owning account to be flagged test/synthetic — fail closed otherwise.
+- **PRODUCTION** flips to `PHASE=B` only when ALL THREE are true: Supabase Team + HIPAA add-on active · Vercel HIPAA add-on active · Anthropic BAA signed. Record the flip in this file with the date.
+- **Amendment 2026-06-12 (Pedro):** development + preview run `PHASE=B`. Rationale: both are access-restricted (localhost / Vercel SSO limited to Pedro), all uploads there are Pedro's synthetic test bills, and the per-session test-account flagging was blocking founder testing. The BAA boundary above still governs production, which stays at `PHASE=A`.
 
 ## Vendor policy
 

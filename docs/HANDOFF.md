@@ -10,7 +10,7 @@ Plan of record: `docs/plans/2026-06-12-001-feat-billcheck-v0-plan.md` · Convent
 | GitHub | `pcabassar/billcheck` (private) — CI on push |
 | Supabase project | `billcheck`, ref `etakonvmsfkyjnwksydi`, us-east-1, org "Pedro's Lab" (`hecjpavqlhpszbcanhbi`), $10/mo, migrations 0001–0007 applied, Security Advisor clean |
 | Vercel project | `billcheck`, `prj_hYWF2qxNoDxRgcbZZTCowJNiUbDX`, team `team_qMEIrSgGqUAFRA5JsyYmAL2Y` (pedro-7901s-projects), rootDirectory=`apps/web`, linked at repo root (`.vercel/`) |
-| Preview deploy | https://billcheck-8m9lp598z-pedro-7901s-projects.vercel.app (Ready; Vercel-SSO protected — Pedro can open; built 2026-06-12 after the env repair, so it has the clean ANTHROPIC_API_KEY. Older previews have the corrupted key — don't use them.) |
+| Preview deploy | https://billcheck-6dm9nd4cd-pedro-7901s-projects.vercel.app (Ready; Vercel-SSO protected — Pedro can open; built 2026-06-12 with clean ANTHROPIC_API_KEY **and `BILLCHECK_PHASE=B`** — any session can run LLM calls, no test-account flag needed. Older preview URLs have the corrupted key and/or Phase A — don't use them.) |
 | Production | NOT promoted — awaiting Pedro's explicit "deploy it" (`vercel deploy --prod` from repo root) |
 | Env vars | local: `apps/web/.env.local` (7 keys incl. CRON_SECRET). Vercel: all 7 on production + preview + development targets. **Incident 2026-06-12:** an `echo >>` append onto a file with no trailing newline welded `CRON_SECRET` onto `ANTHROPIC_API_KEY` → `API_401 invalid x-api-key` on every LLM call (caught by the ai_calls ledger in one query). Repaired locally + re-pushed to all Vercel targets + preview redeployed. Lesson: never blind-append to env files. |
 
