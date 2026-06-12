@@ -31,14 +31,12 @@ export default async function BillsPage() {
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-6 px-6 py-12">
       <header className="flex items-baseline justify-between">
         <h1 className="text-2xl font-bold">Your bills</h1>
-        <form action="/api/auth/anonymous" method="post">
-          <button
-            type="submit"
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
-          >
-            Check a new bill
-          </button>
-        </form>
+        <a
+          href="/upload"
+          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+        >
+          Check a new bill
+        </a>
       </header>
 
       {!cases || cases.length === 0 ? (
