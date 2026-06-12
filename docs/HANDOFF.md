@@ -10,9 +10,9 @@ Plan of record: `docs/plans/2026-06-12-001-feat-billcheck-v0-plan.md` · Convent
 | GitHub | `pcabassar/billcheck` (private) — CI on push |
 | Supabase project | `billcheck`, ref `etakonvmsfkyjnwksydi`, us-east-1, org "Pedro's Lab" (`hecjpavqlhpszbcanhbi`), $10/mo, migrations 0001–0007 applied, Security Advisor clean |
 | Vercel project | `billcheck`, `prj_hYWF2qxNoDxRgcbZZTCowJNiUbDX`, team `team_qMEIrSgGqUAFRA5JsyYmAL2Y` (pedro-7901s-projects), rootDirectory=`apps/web`, linked at repo root (`.vercel/`) |
-| Preview deploy | https://billcheck-wbqfgat1c-pedro-7901s-projects.vercel.app (Ready; Vercel-SSO protected — Pedro can open) |
+| Preview deploy | https://billcheck-8m9lp598z-pedro-7901s-projects.vercel.app (Ready; Vercel-SSO protected — Pedro can open; built 2026-06-12 after the env repair, so it has the clean ANTHROPIC_API_KEY. Older previews have the corrupted key — don't use them.) |
 | Production | NOT promoted — awaiting Pedro's explicit "deploy it" (`vercel deploy --prod` from repo root) |
-| Env vars | local: `apps/web/.env.local` (7 keys incl. CRON_SECRET). Vercel: all 7 on production + preview + development targets |
+| Env vars | local: `apps/web/.env.local` (7 keys incl. CRON_SECRET). Vercel: all 7 on production + preview + development targets. **Incident 2026-06-12:** an `echo >>` append onto a file with no trailing newline welded `CRON_SECRET` onto `ANTHROPIC_API_KEY` → `API_401 invalid x-api-key` on every LLM call (caught by the ai_calls ledger in one query). Repaired locally + re-pushed to all Vercel targets + preview redeployed. Lesson: never blind-append to env files. |
 
 ## E2E verification (2026-06-12, local dev against live Supabase + Anthropic)
 
@@ -24,7 +24,7 @@ Full slice PASSED on first run: synthetic bill (`/tmp/synthetic-bill.html` in re
 
 ## Open blockers (Pedro)
 
-1. **Anonymous sign-ins toggle** — still disabled (probe: `anonymous_provider_disabled`). Dashboard → project billcheck → Authentication → Sign In / Up → "Allow anonymous sign-ins" → Save. Gates the real product funnel everywhere (preview + prod).
+1. ~~Anonymous sign-ins toggle~~ — **FIXED 2026-06-12** (toggle needed its separate "Save changes" button; clicked via Pedro's Chrome; probe confirmed enabled). Existing anonymous profiles flagged `is_test_account=true` at that time — any anon user created later is unflagged (correct for Phase A: their LLM calls are blocked by the PHASE gate).
 2. **Production promote** — one command, awaiting explicit go.
 
 ## Known seams / debts (carry into next round)
