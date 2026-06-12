@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  transpilePackages: ["@billcheck/shared", "@billcheck/engine"],
 };
 
 export default nextConfig;

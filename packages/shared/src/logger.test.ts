@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { log, logError } from "./logger.js";
+import { log, logError } from "./logger";
 
 function captureStdout(): { lines: string[]; restore: () => void } {
   const lines: string[] = [];

@@ -1,1 +1,1 @@
-export { runEngine, ENGINE_VERSION, type EngineInput, type EngineResult } from "./run.js";
+export { runEngine, ENGINE_VERSION, type EngineInput, type EngineResult } from "./run";

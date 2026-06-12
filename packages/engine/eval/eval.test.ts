@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { runEngine, type EngineInput } from "../src/run.js";
+import { runEngine, type EngineInput } from "../src/run";
 import type { Finding } from "@billcheck/shared";
 
 /**

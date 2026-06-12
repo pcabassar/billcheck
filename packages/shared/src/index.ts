@@ -1,4 +1,4 @@
-export { log, logError, type LogFields } from "./logger.js";
+export { log, logError, type LogFields } from "./logger";
 export {
   callLlm,
   LlmNotWiredError,
@@ -7,5 +7,5 @@ export {
   type LlmCallInput,
   type LlmCallResult,
   type LlmPurpose,
-} from "./llm/client.js";
-export * from "./types.js";
+} from "./llm/client";
+export * from "./types";
