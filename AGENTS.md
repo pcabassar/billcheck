@@ -30,7 +30,7 @@ Any SDK that captures runtime data (error tracking, analytics, session replay, A
 
 ## Service-role key map
 
-`SUPABASE_SERVICE_ROLE_KEY` may appear ONLY in: the purge job route (U17), the cron reconcile route (U7), and WDK workflow steps (server-side). Never in `apps/web/app/(case)/`, `apps/web/app/(public)/`, or any client bundle — CI greps for this. Use Supabase asymmetric API keys (not legacy) from day one.
+`SUPABASE_SERVICE_ROLE_KEY` may be constructed ONLY via `apps/web/lib/supabase/admin.ts`, and that module may be imported ONLY from server contexts: route handlers under `apps/web/app/api/**`, WDK workflow steps (`apps/web/workflows/**`), and server-side libs (`apps/web/lib/**` used by those). Sanctioned uses: ai_calls ledger writes (lib/llm.ts), storage upload/serving (documents API — bucket has no client policies), case_events appends from server flows, the cron reconcile route (U7), the purge job (U17), and engine-run/verdict persistence in workflow steps. Never in `apps/web/app/(case)/` or `(public)/` client components or any client bundle — CI greps `apps/web/app` for the raw env name. Use Supabase asymmetric API keys (not legacy) from day one.
 
 ## Style
 

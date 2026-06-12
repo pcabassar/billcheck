@@ -260,12 +260,18 @@ export default function UploadPage() {
       {qualityIssue?.response ? <QualityPanel quality={qualityIssue.response.quality} /> : null}
 
       {hasBill && caseId ? (
-        <a
-          href={`/case/${caseId}/confirm`}
+        <button
+          type="button"
+          onClick={async () => {
+            // Kick the durable case workflow (parse → audit → verdict),
+            // then hand off to the confirm screen, which polls status.
+            await fetch(`/api/cases/${caseId}/process`, { method: "POST" }).catch(() => {});
+            window.location.href = `/case/${caseId}/confirm`;
+          }}
           className="rounded-md bg-emerald-700 px-4 py-3 text-center text-sm font-medium text-white"
         >
           Looks good — review what we read
-        </a>
+        </button>
       ) : null}
     </main>
   );
