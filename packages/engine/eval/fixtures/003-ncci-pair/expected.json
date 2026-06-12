@@ -1,0 +1,30 @@
+{
+  "findings": [
+    {
+      "checkId": "C4",
+      "checkVersion": "v1",
+      "refVersions": { "ncci_ptp": "TEST1" },
+      "confidenceTier": "high",
+      "amountImpactCents": 4500,
+      "title": "Unbundled pair: code 80048 should not be billed separately with 80053 (NCCI PTP)",
+      "evidence": [
+        {
+          "documentId": "doc-1",
+          "lineItemId": "L1",
+          "note": "column 1 (comprehensive) code 80053"
+        },
+        {
+          "documentId": "doc-1",
+          "lineItemId": "L2",
+          "note": "column 2 (component) code 80048 billed on the same document and date"
+        }
+      ],
+      "evidenceKey": "C4:80048|80053:2026-05-03:doc-1"
+    }
+  ],
+  "coverage": {
+    "C3": "ran",
+    "C4": "ran",
+    "C5": "ran"
+  }
+}

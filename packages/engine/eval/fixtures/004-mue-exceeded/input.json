@@ -1,0 +1,36 @@
+{
+  "caseId": "fixture-004",
+  "itemized": true,
+  "lineItems": [
+    {
+      "id": "L1",
+      "documentId": "doc-1",
+      "code": "J0696",
+      "codeSystem": "cpt_hcpcs",
+      "descriptionRaw": "CEFTRIAXONE SODIUM INJ 250MG",
+      "descriptionPlain": "Antibiotic injection (ceftriaxone)",
+      "units": 6,
+      "amountCents": 9000,
+      "dateOfService": "2026-05-04",
+      "confidence": 0.96
+    },
+    {
+      "id": "L2",
+      "documentId": "doc-1",
+      "code": "96372",
+      "codeSystem": "cpt_hcpcs",
+      "descriptionRaw": "THER/PROPH/DIAG INJ SC/IM",
+      "descriptionPlain": "Injection administration",
+      "units": 1,
+      "amountCents": 4000,
+      "dateOfService": "2026-05-04",
+      "confidence": 0.96
+    }
+  ],
+  "refs": {
+    "version": "TEST1",
+    "ncciPtp": ["80053|80048", "97140|97110"],
+    "mue": { "J0696": 4, "36415": 1, "80053": 1 },
+    "medicareRatesCents": { "80053": 1451, "36415": 300, "J0696": 1200 }
+  }
+}

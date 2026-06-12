@@ -1,0 +1,30 @@
+{
+  "findings": [
+    {
+      "checkId": "C3",
+      "checkVersion": "v1",
+      "refVersions": {},
+      "confidenceTier": "high",
+      "amountImpactCents": 1500,
+      "title": "Duplicate charge: code 36415 billed 2x on the same date",
+      "evidence": [
+        {
+          "documentId": "doc-1",
+          "lineItemId": "L1",
+          "note": "occurrence 1 of 2 for code 36415 on the same document and date"
+        },
+        {
+          "documentId": "doc-1",
+          "lineItemId": "L2",
+          "note": "occurrence 2 of 2 for code 36415 on the same document and date"
+        }
+      ],
+      "evidenceKey": "C3:36415:2026-05-01:doc-1"
+    }
+  ],
+  "coverage": {
+    "C3": "ran",
+    "C4": "ran",
+    "C5": "ran"
+  }
+}

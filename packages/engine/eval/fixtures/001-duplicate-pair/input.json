@@ -1,0 +1,48 @@
+{
+  "caseId": "fixture-001",
+  "itemized": true,
+  "lineItems": [
+    {
+      "id": "L1",
+      "documentId": "doc-1",
+      "code": "36415",
+      "codeSystem": "cpt_hcpcs",
+      "descriptionRaw": "VENIPUNCTURE",
+      "descriptionPlain": "Blood draw",
+      "units": 1,
+      "amountCents": 1500,
+      "dateOfService": "2026-05-01",
+      "confidence": 0.98
+    },
+    {
+      "id": "L2",
+      "documentId": "doc-1",
+      "code": "36415",
+      "codeSystem": "cpt_hcpcs",
+      "descriptionRaw": "VENIPUNCTURE",
+      "descriptionPlain": "Blood draw",
+      "units": 1,
+      "amountCents": 1500,
+      "dateOfService": "2026-05-01",
+      "confidence": 0.98
+    },
+    {
+      "id": "L3",
+      "documentId": "doc-1",
+      "code": "99213",
+      "codeSystem": "cpt_hcpcs",
+      "descriptionRaw": "OFFICE VISIT EST LEVEL 3",
+      "descriptionPlain": "Office visit",
+      "units": 1,
+      "amountCents": 12500,
+      "dateOfService": "2026-05-01",
+      "confidence": 0.99
+    }
+  ],
+  "refs": {
+    "version": "TEST1",
+    "ncciPtp": ["80053|80048", "97140|97110"],
+    "mue": { "J0696": 4, "36415": 1, "80053": 1 },
+    "medicareRatesCents": { "80053": 1451, "36415": 300, "J0696": 1200 }
+  }
+}

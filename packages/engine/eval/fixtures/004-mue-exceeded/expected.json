@@ -1,0 +1,25 @@
+{
+  "findings": [
+    {
+      "checkId": "C5",
+      "checkVersion": "v1",
+      "refVersions": { "mue": "TEST1" },
+      "confidenceTier": "high",
+      "amountImpactCents": 3000,
+      "title": "Units exceed MUE limit: code J0696 billed 6 units (limit 4)",
+      "evidence": [
+        {
+          "documentId": "doc-1",
+          "lineItemId": "L1",
+          "note": "units 6 exceed the MUE max of 4 for code J0696"
+        }
+      ],
+      "evidenceKey": "C5:J0696:2026-05-04:doc-1:L1"
+    }
+  ],
+  "coverage": {
+    "C3": "ran",
+    "C4": "ran",
+    "C5": "ran"
+  }
+}
