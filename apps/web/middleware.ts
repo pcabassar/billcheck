@@ -12,7 +12,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // /api/cron/* is secret-gated inside the route (pg_net has no session);
 // /.well-known/workflow + /_workflow cover WDK runtime callbacks.
-const PUBLIC_PATHS = ["/", "/api/auth", "/api/health", "/api/cron", "/.well-known/workflow", "/_workflow"];
+const PUBLIC_PATHS = ["/", "/dev", "/api/auth", "/api/health", "/api/cron", "/.well-known/workflow", "/_workflow"];
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
