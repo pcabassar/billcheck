@@ -12,3 +12,12 @@ export type {
   ReferenceDataJson,
   ReferenceVersions,
 } from "./types";
+export {
+  routeVerdict,
+  ROUTER_VERSION,
+  type RouterFinding,
+  type RouterFlags,
+  type RouterInput,
+  type RouterResult,
+  type VerdictTrack,
+} from "./verdict/router";

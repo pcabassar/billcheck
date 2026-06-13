@@ -18,10 +18,13 @@
  */
 import { FatalError } from "workflow";
 import {
+  routeVerdict,
   runEngine,
   referenceDataFromJson,
+  ROUTER_VERSION,
   type EngineInput,
   type ReferenceDataJson,
+  type RouterFlags,
 } from "@billcheck/engine";
 import { log } from "@billcheck/shared";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -37,8 +40,6 @@ const TERMINAL_STATES = new Set([
 const PARSEABLE_KINDS = ["bill", "corrected_statement", "receipt", "gfe"];
 /** Kinds whose LINE ITEMS feed the engine and define "itemized" — receipts/GFEs contribute totals only (U11). */
 const BILL_KINDS = ["bill", "corrected_statement"];
-
-const ROUTER_VERSION = "demo-0.1";
 
 async function assertCaseActive(caseId: string): Promise<string> {
   const admin = createSupabaseAdminClient();
@@ -317,6 +318,7 @@ async function auditStep(caseId: string): Promise<{ findings: number }> {
         medicare_rates: refsJson.versions.medicareRates,
         fap_policies: refsJson.versions.fapPolicies,
       },
+      coverage: result.coverage,
       status: "running",
     })
     .select("id")
@@ -385,46 +387,92 @@ async function verdictStep(caseId: string): Promise<void> {
 
   const { data: caseRow, error: caseErr } = await admin
     .from("cases")
-    .select("id, state, current_run_id")
+    .select("id, state, current_run_id, coverage_profile")
     .eq("id", caseId)
     .maybeSingle();
   if (caseErr) throw new Error(`case_lookup_failed:${caseErr.code ?? "unknown"}`);
   if (!caseRow?.current_run_id) throw new Error("no_current_run");
 
-  const [findingsRes, docsRes] = await Promise.all([
-    admin.from("findings").select("id, amount_impact_cents").eq("run_id", caseRow.current_run_id),
+  const [findingsRes, docsRes, runRes] = await Promise.all([
+    admin
+      .from("findings")
+      .select("id, check_id, confidence_tier, amount_impact_cents")
+      .eq("run_id", caseRow.current_run_id),
     admin
       .from("documents")
       .select("extracted")
       .eq("case_id", caseId)
       .eq("parse_status", "parsed")
       .in("kind", BILL_KINDS),
+    admin.from("engine_runs").select("coverage").eq("id", caseRow.current_run_id).maybeSingle(),
   ]);
   if (findingsRes.error) throw new Error(`findings_lookup_failed:${findingsRes.error.code ?? "unknown"}`);
   if (docsRes.error) throw new Error(`documents_lookup_failed:${docsRes.error.code ?? "unknown"}`);
+  if (runRes.error) throw new Error(`run_lookup_failed:${runRes.error.code ?? "unknown"}`);
 
   const itemized = (docsRes.data ?? []).some(
     (d) => (d.extracted as { itemized?: boolean } | null)?.itemized === true,
   );
-  const findingCount = findingsRes.data?.length ?? 0;
+  const profile = (caseRow.coverage_profile ?? {}) as { flags?: RouterFlags };
 
-  // Demo router (full D10 v0.2 cascade lands in U12). Honesty gates hold:
-  // a partial battery NEVER yields PAY; code-less bills route to GET_ITEMIZED.
-  const primary = !itemized ? "GET_ITEMIZED" : findingCount > 0 ? "CONTEST" : "CLEAN_PARTIAL_BATTERY";
+  // D10 v0.2 cascade (U12) — typed findings + triage flags + coverage in,
+  // primary + deadline-ordered tracks out. No LLM anywhere near a verdict.
+  const result = routeVerdict({
+    itemized,
+    flags: profile.flags ?? {},
+    findings: (findingsRes.data ?? []).map((f) => ({
+      checkId: f.check_id as string,
+      confidenceTier: f.confidence_tier as "high" | "medium" | "review",
+      amountImpactCents: f.amount_impact_cents === null ? null : Number(f.amount_impact_cents),
+    })),
+    coverage: (runRes.data?.coverage ?? []) as import("@billcheck/shared").CoverageEntry[],
+  });
 
   const { error: verdictErr } = await admin.from("verdicts").insert({
     case_id: caseId,
     run_id: caseRow.current_run_id,
-    primary_verdict: primary,
-    stacked: [],
-    coverage_map: { note: "see engine_runs.check_versions; full coverage rendering in U12" },
+    primary_verdict: result.primary,
+    stacked: result.stacked,
+    coverage_map: { rationale: result.rationale, unlocks: result.unlocks },
     router_version: ROUTER_VERSION,
   });
   if (verdictErr) throw new Error(`verdict_insert_failed:${verdictErr.code ?? "unknown"}`);
 
+  // Deadline scaffolding (review G2): null-dated rows the user completes —
+  // the date inputs live on the verdict/plan screens; pg_cron backstops.
+  const wantedDeadlines: Array<{ type: string }> = [];
+  if (result.primary === "APPEAL" || result.stacked.some((t) => t.kind === "APPEAL")) {
+    wantedDeadlines.push({ type: "appeal_window" });
+  }
+  if (result.primary === "VALIDATE" || result.stacked.some((t) => t.kind === "VALIDATE")) {
+    wantedDeadlines.push({ type: "validation_window" });
+  }
+  if ((findingsRes.data ?? []).some((f) => f.check_id === "C8")) {
+    wantedDeadlines.push({ type: "ppdr_file_by" });
+  }
+  for (const d of wantedDeadlines) {
+    const { data: existing, error: exErr } = await admin
+      .from("deadlines")
+      .select("id")
+      .eq("case_id", caseId)
+      .eq("type", d.type)
+      .limit(1);
+    if (exErr) throw new Error(`deadline_lookup_failed:${exErr.code ?? "unknown"}`);
+    if ((existing ?? []).length === 0) {
+      const { error: insErr } = await admin
+        .from("deadlines")
+        .insert({ case_id: caseId, type: d.type, due_at: null, source: "user_reported" });
+      if (insErr) throw new Error(`deadline_insert_failed:${insErr.code ?? "unknown"}`);
+    }
+  }
+
   const { data: moved, error: moveErr } = await admin
     .from("cases")
-    .update({ state: "VERDICT", primary_verdict: primary })
+    .update({
+      state: "VERDICT",
+      primary_verdict: result.primary,
+      stacked_tracks: result.stacked.map((t) => t.kind),
+    })
     .eq("id", caseId)
     .eq("state", "AUDITED")
     .select("id");
@@ -434,7 +482,7 @@ async function verdictStep(caseId: string): Promise<void> {
     if (now !== "VERDICT") throw new Error("verdict_advance_no_rows");
   }
 
-  log("workflow.verdict_step.done", { caseId, status: primary });
+  log("workflow.verdict_step.done", { caseId, status: result.primary });
 }
 
 /** Upload → parse → TRIAGED, then STOP for the user's confirm review. */

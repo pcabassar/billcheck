@@ -53,3 +53,8 @@ insert into public.ref_medicare_rates (version, code, national_rate_cents) value
 on conflict do nothing;
 insert into public.ref_versions (table_name, version) values ('ref_medicare_rates', 'MINI2')
 on conflict do nothing;
+
+-- ----------------------------------------------------------------- U12 router
+-- The coverage map (ran / skipped_no_data / not_yet_available per check) is
+-- the S10 rendering source of truth; persisted per run for reproducibility.
+alter table public.engine_runs add column if not exists coverage jsonb not null default '[]';
