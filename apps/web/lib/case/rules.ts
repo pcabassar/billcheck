@@ -12,6 +12,15 @@ export function isEditableState(state: string): boolean {
   return (EDITABLE_STATES as readonly string[]).includes(state);
 }
 
+/**
+ * Full edit-lock check (review F71): edits freeze the moment the audit claim
+ * is taken (cases.audit_locked_at), not just when the state flips to AUDITED
+ * — the engine reads line items before that flip. Mirrors the DB trigger.
+ */
+export function isCaseEditable(state: string, auditLockedAt: string | null): boolean {
+  return isEditableState(state) && auditLockedAt === null;
+}
+
 /** Per-field confidence below this is visually flagged on S3 confirm. */
 export const LOW_CONFIDENCE_THRESHOLD = 0.7;
 

@@ -1,11 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { log, logError } from "@billcheck/shared";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import {
-  ATTESTATION_STATUSES,
-  isEditableState,
-  type AttestationStatus,
-} from "@/lib/case/rules";
+import { ATTESTATION_STATUSES, type AttestationStatus } from "@/lib/case/rules";
 
 /**
  * POST /api/attestations — per-line attestation from the S3b decode screen.
@@ -13,11 +9,15 @@ import {
  *
  * Upserts on the unique line_item_id (changing your mind overwrites). Runs
  * under the USER's JWT — RLS owner-only is the ownership check. Attestations
- * close at AUDITED like parse edits: the engine consumes them at audit time,
- * and "didn't happen" lines feed the letter's records-request paragraph.
+ * stay open through VERDICT (the decode screen runs alongside the audit);
+ * "didn't happen" lines feed the letter's records-request paragraph.
  */
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Open through VERDICT: the decode screen runs alongside the audit, and only
+// the letter consumes attestations (at generation time).
+const ATTESTABLE_STATES = ["CAPTURED", "TRIAGED", "AUDITED", "VERDICT"];
 
 export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
@@ -73,7 +73,11 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
   if (!caseRow) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  if (!isEditableState(caseRow.state)) {
+  // Attestations stay open through VERDICT (review-round flow change): the
+  // user attests on the decode screen WHILE the audit runs, and nothing in
+  // the V0 engine consumes attestations — the letter does, at generation
+  // time. Only post-send and terminal states lock them.
+  if (!ATTESTABLE_STATES.includes(caseRow.state)) {
     return NextResponse.json(
       { error: "case_locked", state: caseRow.state },
       { status: 409 },

@@ -80,12 +80,21 @@ describe("C4 NCCI PTP", () => {
     expect(result![0].amountImpactCents).toBeNull();
   });
 
-  it("uses the only known amount when one line lacks an amount", () => {
+  it("reports a null amount when the component line prints no charge (never substitutes the comprehensive's)", () => {
     const lines = [
       li({ code: "80053", amountCents: 9000 }),
-      li({ code: "80048", amountCents: null }),
+      li({ code: "80048", amountCents: null }), // component (column 2)
     ];
     const result = runC4Ncci(engineInput(lines), refs());
-    expect(result![0].amountImpactCents).toBe(9000);
+    expect(result![0].amountImpactCents).toBeNull();
+  });
+
+  it("disputes the component line's charge even when the comprehensive's is unknown", () => {
+    const lines = [
+      li({ code: "80053", amountCents: null }),
+      li({ code: "80048", amountCents: 4500 }), // component (column 2)
+    ];
+    const result = runC4Ncci(engineInput(lines), refs());
+    expect(result![0].amountImpactCents).toBe(4500);
   });
 });

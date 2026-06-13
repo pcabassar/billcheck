@@ -85,6 +85,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "no_completed_run" }, { status: 409 });
   }
 
+  // Idempotency (review F23): an open draft for this case is returned as-is
+  // instead of burning another letter-fill LLM call. The partial unique index
+  // (one open draft per case+type) is the DB backstop.
+  const { data: existingDraft } = await supabase
+    .from("artifacts")
+    .select("id")
+    .eq("case_id", caseId)
+    .eq("type", "dispute")
+    .is("approved_at", null)
+    .maybeSingle();
+  if (existingDraft) {
+    log("artifacts.draft_reused", { caseId, route: ROUTE });
+    return NextResponse.json({ artifactId: existingDraft.id, reused: true }, { status: 200 });
+  }
+
   const { data: findingsData } = await supabase
     .from("findings")
     .select("id, title, amount_impact_cents, evidence")
@@ -228,6 +243,19 @@ export async function POST(request: NextRequest) {
     .select("id")
     .single();
   if (insertError || !artifact) {
+    // Unique-index race (two concurrent generates): hand back the winner.
+    if (insertError?.code === "23505") {
+      const { data: winner } = await supabase
+        .from("artifacts")
+        .select("id")
+        .eq("case_id", caseId)
+        .eq("type", "dispute")
+        .is("approved_at", null)
+        .maybeSingle();
+      if (winner) {
+        return NextResponse.json({ artifactId: winner.id, reused: true }, { status: 200 });
+      }
+    }
     logError("artifacts.insert.failed", insertError ?? new Error("no_row"), {
       caseId,
       route: ROUTE,

@@ -22,10 +22,30 @@ Full slice PASSED on first run: synthetic bill (`/tmp/synthetic-bill.html` in re
 - Test account: `demo@billcheck.test` (dev-only; `profiles.is_test_account=true`; password known to Pedro/session — rotate or delete before launch)
 - Dev login route `/api/auth/dev-login` is hard-disabled outside `NODE_ENV=development`
 
+## Review round 1 (2026-06-12) — APPLIED IN CODE, MIGRATION PENDING
+
+12-persona review → 18 confirmed findings (2 critical) all fixed in code, plus
+~10 hand-verified ones from the spend-limit-truncated batch. Full record:
+`docs/reviews/2026-06-12-review-round-1.md`. **Flow change:** parse now stops
+at TRIAGED; the audit is an explicit kick from the confirm screen ("Looks
+right — run the audit"), and the plan page waits for the verdict.
+
+**BLOCKED ON PEDRO: migration 0008** (`supabase/migrations/0008_review_round_1.sql`)
+is NOT yet applied to the remote DB — the permission gate (rightly) wants an
+explicit go for RLS changes against the live database. The new code REQUIRES
+it (RPCs + columns): parse will fail until it's applied. Say "apply the
+migration" or paste the file into the dashboard SQL editor.
+
+Also rotated: demo@billcheck.test password (the old one was in the client
+bundle, F17). New creds live in `apps/web/.env.local` as DEV_LOGIN_EMAIL /
+DEV_LOGIN_PASSWORD; the dev-login route reads env only.
+
 ## Open blockers (Pedro)
 
 1. ~~Anonymous sign-ins toggle~~ — **FIXED 2026-06-12** (toggle needed its separate "Save changes" button; clicked via Pedro's Chrome; probe confirmed enabled). Existing anonymous profiles flagged `is_test_account=true` at that time — any anon user created later is unflagged (correct for Phase A: their LLM calls are blocked by the PHASE gate).
 2. **Production promote** — one command, awaiting explicit go.
+3. **Migration 0008 apply** — see Review round 1 above (blocks ALL parsing until applied).
+4. **claude.ai monthly spend limit hit** (2026-06-12, during review verification) — raise at claude.ai/settings/usage to re-enable workflow-scale agent runs.
 
 ## Known seams / debts (carry into next round)
 

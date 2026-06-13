@@ -7,14 +7,14 @@ import type { EngineFinding, EngineInput, ReferenceData } from "../types";
  * For each pair of coded lines on the same document + same date of service,
  * if the pair appears in the injected NCCI PTP set ("code1|code2", where
  * column1 is the comprehensive code and column2 the component), the component
- * should not have been billed separately → HIGH finding, amount = the lesser
- * line's amount_cents.
+ * should not have been billed separately → HIGH finding, amount = the
+ * component line's amount_cents (null when it prints no charge).
  *
  * Matching tries both orientations against the set; the evidence key uses the
  * lexicographically sorted pair so it is stable regardless of line order, and
  * repeat line combinations of the same pair dedupe to one finding.
  */
-export const CHECK_VERSION = "v1";
+export const CHECK_VERSION = "v2";
 
 export function runC4Ncci(
   input: EngineInput,
@@ -50,15 +50,17 @@ export function runC4Ncci(
         if (seenKeys.has(evidenceKey)) continue;
         seenKeys.add(evidenceKey);
 
-        const amounts = [a.amountCents, b.amountCents].filter(
-          (x): x is number => x !== null,
-        );
+
         findings.push({
           checkId: "C4",
           checkVersion: CHECK_VERSION,
-          refVersions: { ncci_ptp: refs.version },
+          refVersions: { ncci_ptp: refs.versions.ncciPtp },
           confidenceTier: "high",
-          amountImpactCents: amounts.length === 0 ? null : Math.min(...amounts),
+          // The disputed amount is what the COMPONENT line charged (the line
+          // that should not have been billed separately). When that line has
+          // no printed charge, the impact is unknown — never substitute the
+          // comprehensive line's amount (F07: overstated disputes).
+          amountImpactCents: matched.component.amountCents,
           title: `Unbundled pair: code ${matched.component.code} should not be billed separately with ${matched.comprehensive.code} (NCCI PTP)`,
           evidence: [
             {

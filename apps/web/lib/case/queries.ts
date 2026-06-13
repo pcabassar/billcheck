@@ -12,6 +12,7 @@ import type { AttestationStatus } from "@/lib/case/rules";
 export interface CaseRow {
   id: string;
   state: string;
+  audit_locked_at: string | null;
   primary_verdict: string | null;
   created_at: string;
 }
@@ -65,7 +66,7 @@ export async function getCaseBundle(
 ): Promise<CaseBundle | null> {
   const { data: caseRow, error: caseError } = await supabase
     .from("cases")
-    .select("id, state, primary_verdict, created_at")
+    .select("id, state, primary_verdict, created_at, audit_locked_at")
     .eq("id", caseId)
     .maybeSingle();
   if (caseError) {

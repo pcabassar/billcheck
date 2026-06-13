@@ -37,7 +37,7 @@ type FileEntry = {
 };
 
 const ERROR_COPY: Record<string, string> = {
-  too_large: "Over 20MB — re-export it smaller, or photograph the pages instead.",
+  too_large: "Over 4MB — re-export it smaller, or photograph the pages instead.",
   heic_not_supported:
     "iPhone HEIC photos aren’t supported — export as JPEG, or re-take it with the camera button here (that sends JPEG).",
   unsupported_type: "We accept JPEG and PNG photos and PDF files.",
@@ -53,6 +53,8 @@ export default function UploadPage() {
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [caseId, setCaseId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [kicking, setKicking] = useState(false);
+  const [kickError, setKickError] = useState<string | null>(null);
   const nextId = useRef(1);
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -153,7 +155,7 @@ export default function UploadPage() {
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold">Add your bill</h1>
         <p className="text-sm text-neutral-500">
-          Photograph every page, or drop a PDF. JPEG, PNG, or PDF — up to 20MB
+          Photograph every page, or drop a PDF. JPEG, PNG, or PDF — up to 4MB
           each. We read it, we never share it.
         </p>
       </header>
@@ -260,18 +262,41 @@ export default function UploadPage() {
       {qualityIssue?.response ? <QualityPanel quality={qualityIssue.response.quality} /> : null}
 
       {hasBill && caseId ? (
-        <button
-          type="button"
-          onClick={async () => {
-            // Kick the durable case workflow (parse → audit → verdict),
-            // then hand off to the confirm screen, which polls status.
-            await fetch(`/api/cases/${caseId}/process`, { method: "POST" }).catch(() => {});
-            window.location.href = `/case/${caseId}/confirm`;
-          }}
-          className="rounded-md bg-emerald-700 px-4 py-3 text-center text-sm font-medium text-white"
-        >
-          Looks good — review what we read
-        </button>
+        <div className="flex flex-col gap-2">
+          {kickError ? (
+            <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">
+              {kickError}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            // Disabled mid-batch (a partial bill must not be processed,
+            // review F70) and while a kick is in flight (review F69/F14).
+            disabled={busy || kicking}
+            onClick={async () => {
+              setKicking(true);
+              setKickError(null);
+              try {
+                // Kick the durable parse workflow (classify+parse → TRIAGED);
+                // the confirm screen polls status, and the audit is kicked
+                // there after the user reviews the extraction.
+                const res = await fetch(`/api/cases/${caseId}/process`, { method: "POST" });
+                if (!res.ok) {
+                  setKickError("We couldn't start reading this bill — try again in a moment.");
+                  setKicking(false);
+                  return;
+                }
+                window.location.href = `/case/${caseId}/confirm`;
+              } catch {
+                setKickError("Network hiccup — check your connection and try again.");
+                setKicking(false);
+              }
+            }}
+            className="rounded-md bg-emerald-700 px-4 py-3 text-center text-sm font-medium text-white disabled:opacity-50"
+          >
+            {kicking ? "Starting…" : "Looks good — review what we read"}
+          </button>
+        </div>
       ) : null}
     </main>
   );

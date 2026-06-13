@@ -181,7 +181,10 @@ function sdkTransport(apiKey: string): LlmTransport {
   let sdk: Anthropic | null = null;
   return {
     async create(req: LlmTransportRequest): Promise<LlmTransportResponse> {
-      sdk ??= new Anthropic({ apiKey });
+      // 2-minute ceiling per request (vision parses are the slowest call we
+      // make); the SDK default of 10 minutes wedges workflow steps and the
+      // synchronous upload request far past anything a user will wait for.
+      sdk ??= new Anthropic({ apiKey, timeout: 120_000, maxRetries: 2 });
       const res = await sdk.messages.create(
         req as unknown as Anthropic.Messages.MessageCreateParamsNonStreaming,
       );
@@ -308,8 +311,11 @@ export function createLlmClient(opts: CreateLlmClientOpts): LlmClient {
     };
 
     // PHASE gate (plan review S3): fail closed BEFORE any bytes reach
-    // Anthropic. Anything other than isTestAccount === true blocks.
-    if (phase === "A" && documents.length > 0 && input.isTestAccount !== true) {
+    // Anthropic. Document-bearing calls pass only when the phase is
+    // EXPLICITLY "B" or the owning account is flagged test/synthetic — an
+    // unset, mistyped, or future phase value blocks (review F49: the old
+    // `phase === "A"` check failed OPEN for unrecognized values).
+    if (phase !== "B" && documents.length > 0 && input.isTestAccount !== true) {
       const err = new PhaseGateError();
       await safeLedger({
         ...baseRow,

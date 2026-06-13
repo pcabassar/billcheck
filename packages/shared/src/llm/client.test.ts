@@ -140,6 +140,28 @@ describe("PHASE gate (pre-BAA boundary, fail closed)", () => {
     expect(requests).toHaveLength(0);
   });
 
+  it("blocks on unrecognized phase values — only an explicit 'B' opens the gate (review F49)", async () => {
+    for (const phase of ["", "a", " A", "C", "prod", "b"]) {
+      const { transport, requests } = transportOf([emitResponse({ value: 1 })]);
+      const { ledger } = ledgerOf();
+      const client = createLlmClient({ apiKey: "k", phase, ledger, transport });
+      await expect(
+        client.call({ ...baseInput(), documents: [PDF_DOC], isTestAccount: false, schema: Result }),
+      ).rejects.toBeInstanceOf(PhaseGateError);
+      expect(requests).toHaveLength(0);
+    }
+  });
+
+  it("blocks when phase is omitted entirely (defaults closed)", async () => {
+    const { transport, requests } = transportOf([emitResponse({ value: 1 })]);
+    const { ledger } = ledgerOf();
+    const client = createLlmClient({ apiKey: "k", ledger, transport });
+    await expect(
+      client.call({ ...baseInput(), documents: [PDF_DOC], isTestAccount: false, schema: Result }),
+    ).rejects.toBeInstanceOf(PhaseGateError);
+    expect(requests).toHaveLength(0);
+  });
+
   it("PHASE=A allows document-bearing calls for flagged test accounts", async () => {
     const { transport, requests } = transportOf([emitResponse({ value: 7 })]);
     const { ledger } = ledgerOf();

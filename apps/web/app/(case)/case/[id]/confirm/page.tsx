@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCaseBundle, type DocumentRow, type LineItemRow } from "@/lib/case/queries";
 import { formatCents } from "@/lib/case/money";
-import { isEditableState, isParsePending } from "@/lib/case/rules";
+import { isCaseEditable, isParsePending } from "@/lib/case/rules";
 import { LineItemEditor } from "./line-item-editor";
 import { ParseWait } from "./parse-wait";
+import { AuditKickButton } from "./audit-kick-button";
 
 /**
  * S3 confirm (plan U6): the user checks our extraction before anything else
@@ -58,7 +59,7 @@ export default async function ConfirmPage({
     );
   }
 
-  const editable = isEditableState(caseRow.state);
+  const editable = isCaseEditable(caseRow.state, caseRow.audit_locked_at);
   const reconciliationFailed = documents.some((d) => d.reconciliation_ok === false);
   const failedDocs = documents.filter((d) => d.parse_status === "failed");
   const itemsByDoc = new Map<string, LineItemRow[]>();
@@ -148,12 +149,16 @@ export default async function ConfirmPage({
       )}
 
       <footer className="flex justify-end">
-        <Link
-          href={`/case/${id}/decode`}
-          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
-        >
-          Looks right — explain my bill
-        </Link>
+        {editable ? (
+          <AuditKickButton caseId={id} />
+        ) : (
+          <Link
+            href={`/case/${id}/decode`}
+            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+          >
+            Continue — explain my bill
+          </Link>
+        )}
       </footer>
     </main>
   );

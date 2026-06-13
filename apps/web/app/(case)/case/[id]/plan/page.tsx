@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { formatCents } from "@billcheck/shared";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { GenerateLetterButton } from "./generate-letter-button";
+import { VerdictWait } from "./verdict-wait";
 
 /**
  * S12 — action plan (plan U9). Verdict summary placeholder (full verdict
@@ -39,10 +40,35 @@ export default async function PlanPage({
 
   const { data: caseRow } = await supabase
     .from("cases")
-    .select("id, state, primary_verdict, current_run_id")
+    .select("id, state, primary_verdict, current_run_id, audit_locked_at")
     .eq("id", id)
     .maybeSingle();
   if (!caseRow) notFound();
+
+  // The audit runs while the user walks decode — arrivals here may precede
+  // the verdict. Wait honestly instead of rendering an empty plan.
+  if (caseRow.state === "CAPTURED" || (caseRow.state === "TRIAGED" && !caseRow.audit_locked_at)) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-6 px-6 py-12">
+        <h1 className="text-2xl font-bold">Your action plan</h1>
+        <p className="rounded-lg border border-dashed border-neutral-300 p-8 text-center text-neutral-500 dark:border-neutral-700">
+          The audit hasn&apos;t run yet.{" "}
+          <Link href={`/case/${id}/confirm`} className="underline">
+            Review what we read first
+          </Link>
+          , then kick off the audit from there.
+        </p>
+      </main>
+    );
+  }
+  if (caseRow.state === "TRIAGED" || (caseRow.state === "AUDITED" && !caseRow.current_run_id)) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-6 px-6 py-12">
+        <h1 className="text-2xl font-bold">Your action plan</h1>
+        <VerdictWait caseId={id} />
+      </main>
+    );
+  }
 
   let findings: FindingRow[] = [];
   if (caseRow.current_run_id) {

@@ -31,7 +31,7 @@ export function engineInput(
 
 export function refs(overrides: Partial<ReferenceData> = {}): ReferenceData {
   return {
-    version: "TEST1",
+    versions: { ncciPtp: "TEST1", mue: "TEST1", medicareRates: "TEST1" },
     ncciPtp: new Set(["80053|80048", "97140|97110"]),
     mue: new Map([
       ["J0696", 4],
@@ -49,7 +49,7 @@ export function refs(overrides: Partial<ReferenceData> = {}): ReferenceData {
 
 export function emptyRefs(): ReferenceData {
   return {
-    version: "TEST1",
+    versions: { ncciPtp: "TEST1", mue: "TEST1", medicareRates: "TEST1" },
     ncciPtp: new Set(),
     mue: new Map(),
     medicareRatesCents: new Map(),

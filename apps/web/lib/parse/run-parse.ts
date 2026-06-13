@@ -67,6 +67,7 @@ interface DocumentRow {
   kind: string;
   storage_path: string;
   parse_status: string;
+  parse_attempts: number | null;
   extracted: Record<string, unknown> | null;
   cases: { id: string; user_id: string; state: string } | null;
 }
@@ -94,15 +95,17 @@ function clamp01(n: number): number {
   return Math.min(1, Math.max(0, n));
 }
 
+const MAX_PARSE_ATTEMPTS = 3;
+
 export async function runParse(
   documentId: string,
-): Promise<{ ok: boolean; reconciliationOk?: boolean }> {
+): Promise<{ ok: boolean; skipped?: boolean; reconciliationOk?: boolean }> {
   const admin = createSupabaseAdminClient();
 
   // 1. Load the document row + owning case.
   const { data, error: docError } = await admin
     .from("documents")
-    .select("id, case_id, kind, storage_path, parse_status, extracted, cases ( id, user_id, state )")
+    .select("id, case_id, kind, storage_path, parse_status, parse_attempts, extracted, cases ( id, user_id, state )")
     .eq("id", documentId)
     .single();
   if (docError || !data) {
@@ -128,16 +131,24 @@ export async function runParse(
 
   // 3. Claim the document: CAS pending|failed -> parsing. Never claims
   // 'parsing' (someone else is the writer) or 'parsed' (replays must not
-  // produce a second line_items set).
+  // produce a second line_items set). The claim stamps parse_started_at —
+  // the reconciliation sweep measures staleness from HERE, not upload time
+  // (review F09) — and burns one of a bounded attempt budget so a poison
+  // document cannot re-bill the LLM forever (review F36).
   const { data: claimed, error: claimError } = await admin
     .from("documents")
-    .update({ parse_status: "parsing" })
+    .update({
+      parse_status: "parsing",
+      parse_started_at: new Date().toISOString(),
+      parse_attempts: (doc.parse_attempts ?? 0) + 1,
+    })
     .eq("id", documentId)
     .in("parse_status", ["pending", "failed"])
+    .lt("parse_attempts", MAX_PARSE_ATTEMPTS)
     .select("id");
   if (claimError || !claimed || claimed.length === 0) {
     log("parse.claim_skipped", { documentId, status: doc.parse_status });
-    return { ok: false };
+    return { ok: false, skipped: true };
   }
 
   try {
@@ -175,41 +186,10 @@ export async function runParse(
     });
     const parsed = result.output;
 
-    // 6. Delete-and-replace this document's line items (guarded by the CAS
-    // claim above; safe pre-AUDITED).
-    const { error: delError } = await admin
-      .from("line_items")
-      .delete()
-      .eq("document_id", documentId);
-    if (delError) {
-      throw Object.assign(new Error("line_items delete failed"), {
-        code: "LINE_ITEMS_DELETE_FAILED",
-      });
-    }
-    if (parsed.lineItems.length > 0) {
-      const rows = parsed.lineItems.map((li) => ({
-        document_id: documentId,
-        code: li.code,
-        code_system: li.codeSystem,
-        description_raw: li.descriptionRaw,
-        description_plain: li.descriptionPlain,
-        units: li.units == null ? null : Math.round(li.units),
-        amount_cents: li.amountCents == null ? null : Math.round(li.amountCents),
-        date_of_service: li.dateOfService,
-        confidence: clamp01(li.confidence),
-      }));
-      const { error: insError } = await admin.from("line_items").insert(rows);
-      if (insError) {
-        throw Object.assign(new Error("line_items insert failed"), {
-          code: "LINE_ITEMS_INSERT_FAILED",
-        });
-      }
-    }
-
-    // 7. Arithmetic reconciliation gate (review A1): independently extracted
+    // 6. Arithmetic reconciliation gate (review A1): independently extracted
     // printed total vs sum of line amounts, $1 tolerance. null when the
     // document prints no total (nothing to reconcile against) — a false here
-    // forces full-line S3 review before AUDITED (U6 reads it).
+    // forces full-line S3 review before the audit kick (U6 reads it).
     const printedTotalCents =
       parsed.printedTotalCents == null ? null : Math.round(parsed.printedTotalCents);
     const lineSumCents = parsed.lineItems.reduce(
@@ -221,26 +201,38 @@ export async function runParse(
         ? null
         : Math.abs(lineSumCents - printedTotalCents) <= RECONCILIATION_TOLERANCE_CENTS;
 
-    // 8. Finish: CAS parsing -> parsed + persist parse outputs. `extracted`
-    // merge keeps the U4 classifier dedupe fields (provider/account/DOS)
-    // and adds the parse flags — IDs and flags only, never document text.
+    // 7. Atomic finish (review F10): delete-and-replace line items + CAS
+    // parsing -> parsed commit in ONE transaction, fenced on still holding
+    // the claim — a sweeper or competing writer makes this a clean no-op
+    // instead of interleaving into doubled line items. `extracted` merge
+    // keeps the U4 classifier dedupe fields (provider/account/DOS) and adds
+    // the parse flags — IDs and flags only, never document text.
     const extracted = {
       ...(doc.extracted ?? {}),
       itemized: parsed.itemized,
       adjudication_visible: parsed.adjudicationVisible,
     };
-    const { data: finished, error: finishError } = await admin
-      .from("documents")
-      .update({
-        parse_status: "parsed",
-        printed_total_cents: printedTotalCents,
-        reconciliation_ok: reconciliationOk,
-        extracted,
-      })
-      .eq("id", documentId)
-      .eq("parse_status", "parsing")
-      .select("id");
-    if (finishError || !finished || finished.length === 0) {
+    const rows = parsed.lineItems.map((li) => ({
+      code: li.code,
+      code_system: li.codeSystem,
+      description_raw: li.descriptionRaw,
+      description_plain: li.descriptionPlain,
+      units: li.units == null ? null : Math.round(li.units),
+      amount_cents: li.amountCents == null ? null : Math.round(li.amountCents),
+      date_of_service: li.dateOfService,
+      confidence: clamp01(li.confidence),
+    }));
+    const { data: finished, error: finishError } = await admin.rpc(
+      "replace_line_items_and_finish",
+      {
+        p_document_id: documentId,
+        p_rows: rows,
+        p_printed_total_cents: printedTotalCents,
+        p_reconciliation_ok: reconciliationOk,
+        p_extracted: extracted,
+      },
+    );
+    if (finishError || finished !== true) {
       throw Object.assign(new Error("parse finish compare-and-set failed"), {
         code: "PARSE_FINISH_CAS_FAILED",
       });
@@ -262,11 +254,16 @@ export async function runParse(
     // Sanitized log only — the full error payload is already on the ai_calls
     // ledger row when the LLM client threw; storage/DB errors log class+code.
     logError("parse.failed", err, { documentId, caseId: doc.case_id });
-    await admin
+    const { error: releaseError } = await admin
       .from("documents")
       .update({ parse_status: "failed" })
       .eq("id", documentId)
       .eq("parse_status", "parsing");
+    if (releaseError) {
+      // Claim stays 'parsing' — the reconciliation sweep (now keyed on
+      // parse_started_at, review F09/F35) frees it within 10 minutes.
+      logError("parse.release_failed", releaseError, { documentId });
+    }
     return { ok: false };
   }
 }

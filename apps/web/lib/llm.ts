@@ -31,34 +31,41 @@ let singleton: LlmClient | null = null;
  */
 async function writeAiCallRow(row: AiCallRow): Promise<string> {
   const admin = createSupabaseAdminClient();
-  const { data, error } = await admin
-    .from("ai_calls")
-    .insert({
-      case_id: row.caseId,
-      document_id: row.documentId,
-      engine_run_id: row.engineRunId,
-      purpose: row.purpose,
-      model_id: row.modelId,
-      prompt_version: row.promptVersion,
-      input_refs: row.inputRefs,
-      raw_completion: row.rawCompletion,
-      validated_output: row.validatedOutput ?? null,
-      tokens_in: row.tokensIn,
-      tokens_out: row.tokensOut,
-      latency_ms: row.latencyMs,
-      stop_reason: row.stopReason,
-      error_code: row.errorCode,
-      error_payload: row.errorPayload ?? null,
-    })
-    .select("id")
-    .single();
-  if (error || !data) {
-    // Constant message — supabase error details may echo row content.
-    throw Object.assign(new Error("ai_calls ledger insert failed"), {
-      code: "LEDGER_INSERT_FAILED",
-    });
+  // The success-path write is load-bearing (the row IS the audit record), so
+  // a single Supabase blip must not discard a completed — and paid-for —
+  // Anthropic call (review F33). Three attempts with short backoff.
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, attempt * 500));
+    const { data, error } = await admin
+      .from("ai_calls")
+      .insert({
+        case_id: row.caseId,
+        document_id: row.documentId,
+        engine_run_id: row.engineRunId,
+        purpose: row.purpose,
+        model_id: row.modelId,
+        prompt_version: row.promptVersion,
+        input_refs: row.inputRefs,
+        raw_completion: row.rawCompletion,
+        validated_output: row.validatedOutput ?? null,
+        tokens_in: row.tokensIn,
+        tokens_out: row.tokensOut,
+        latency_ms: row.latencyMs,
+        stop_reason: row.stopReason,
+        error_code: row.errorCode,
+        error_payload: row.errorPayload ?? null,
+      })
+      .select("id")
+      .single();
+    if (!error && data) return (data as { id: string }).id;
+    lastError = error;
   }
-  return (data as { id: string }).id;
+  void lastError;
+  // Constant message — supabase error details may echo row content.
+  throw Object.assign(new Error("ai_calls ledger insert failed"), {
+    code: "LEDGER_INSERT_FAILED",
+  });
 }
 
 function getLlm(): LlmClient {

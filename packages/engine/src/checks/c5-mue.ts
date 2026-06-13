@@ -35,7 +35,7 @@ export function runC5Mue(
     findings.push({
       checkId: "C5",
       checkVersion: CHECK_VERSION,
-      refVersions: { mue: refs.version },
+      refVersions: { mue: refs.versions.mue },
       confidenceTier: "high",
       amountImpactCents: perUnitCents === null ? null : (units - max) * perUnitCents,
       title: `Units exceed MUE limit: code ${code} billed ${units} units (limit ${max})`,

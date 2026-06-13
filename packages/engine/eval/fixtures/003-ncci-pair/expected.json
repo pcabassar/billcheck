@@ -2,8 +2,10 @@
   "findings": [
     {
       "checkId": "C4",
-      "checkVersion": "v1",
-      "refVersions": { "ncci_ptp": "TEST1" },
+      "checkVersion": "v2",
+      "refVersions": {
+        "ncci_ptp": "TEST1"
+      },
       "confidenceTier": "high",
       "amountImpactCents": 4500,
       "title": "Unbundled pair: code 80048 should not be billed separately with 80053 (NCCI PTP)",

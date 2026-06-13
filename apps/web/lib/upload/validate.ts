@@ -9,7 +9,10 @@
  * JPEG, and raw stragglers land here.
  */
 
-export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB hard cap
+// 4MB: Vercel serverless functions reject request bodies over 4.5MB, so a
+// larger cap would pass validation locally and fail in production (review
+// F77). Direct-to-storage signed uploads can raise this later.
+export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 export const MAX_PDF_PAGES = 40;
 
 export type SniffedKind = "jpeg" | "png" | "pdf";
@@ -75,8 +78,10 @@ export function sniffKind(bytes: Uint8Array): SniffedKind | "heic" | null {
  *
  * KNOWN LIMITATION: page objects inside compressed object streams (ObjStm)
  * are invisible to this scan, so it can UNDERCOUNT — a fully-compressed PDF
- * returns 0 and passes. This is a cost gate before the LLM, not a security
- * boundary; parse-time handling (U5) is the authoritative guard. It cannot
+ * returns 0 and passes (review F21). The real ceilings behind it are the
+ * 4MB size cap and Anthropic's own 100-page PDF limit (the API rejects
+ * oversized documents; the parse fails cleanly and the ledger records it).
+ * A true parse-time page count needs a PDF parser — punch-listed. It cannot
  * be gamed *upward* into a false reject of a small document.
  */
 export function countPdfPagesHeuristic(bytes: Uint8Array): number {

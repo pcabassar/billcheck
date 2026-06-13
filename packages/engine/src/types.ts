@@ -6,10 +6,17 @@ import type { CheckId, CoverageEntry, Finding, LineItem } from "@billcheck/share
  * ref_* rows and builds a ReferenceData snapshot).
  */
 
+/** Per-table reference version labels (F05: provenance is per table, never conflated). */
+export interface ReferenceVersions {
+  ncciPtp: string;
+  mue: string;
+  medicareRates: string;
+}
+
 /** A single versioned reference snapshot. Keys mirror the ref_* tables (U2). */
 export interface ReferenceData {
-  /** Reference set version label, e.g. "2026Q2" or "TEST1" (append-only sets, never mutated). */
-  version: string;
+  /** Version label per reference table, e.g. "2026Q2" or "TEST1" (append-only sets, never mutated). */
+  versions: ReferenceVersions;
   /** NCCI procedure-to-procedure pairs as "code1|code2" (column1 = comprehensive, column2 = component). */
   ncciPtp: Set<string>;
   /** Medically Unlikely Edits: code → max units. */
@@ -20,7 +27,7 @@ export interface ReferenceData {
 
 /** JSON-friendly shape of ReferenceData, used by eval fixtures (input.json). */
 export interface ReferenceDataJson {
-  version: string;
+  versions: ReferenceVersions;
   ncciPtp: string[];
   mue: Record<string, number>;
   medicareRatesCents: Record<string, number>;

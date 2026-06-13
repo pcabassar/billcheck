@@ -27,7 +27,7 @@ import { classifyDocument, normalizeExtracted, type ClassifyOutput } from "@/lib
  * (re-post with caseId=existing -> attaches as a new statement version).
  *
  * PHI: this response carries IDs + kind + quality only — never extracted
- * provider/account text, never document bytes (CI greps for base64).
+ * provider/account text, never document bytes.
  */
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     .upload(storagePath, bytes, { contentType: validation.contentType, upsert: false });
   if (storageErr) {
     logError("documents.storage_upload.failed", storageErr, { route: "/api/documents", caseId });
-    if (provisionalCase) await supabase.from("cases").delete().eq("id", caseId);
+    if (provisionalCase) await rollbackProvisionalCase(caseId);
     return NextResponse.json({ error: "storage_failed" }, { status: 500 });
   }
 
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
   if (docErr || !doc) {
     logError("documents.insert.failed", docErr, { route: "/api/documents", caseId });
     await admin.storage.from("documents").remove([storagePath]);
-    if (provisionalCase) await supabase.from("cases").delete().eq("id", caseId);
+    if (provisionalCase) await rollbackProvisionalCase(caseId);
     return NextResponse.json({ error: "document_insert_failed" }, { status: 500 });
   }
   const documentId = doc.id as string;
@@ -181,13 +181,25 @@ export async function POST(request: NextRequest) {
   let byteIdentical = false;
 
   if (extracted.provider && extracted.accountNumber && extracted.dateOfService) {
-    const { data: matches, error: matchErr } = await supabase
-      .from("documents")
-      .select("id, case_id, version_group, content_hash")
-      .eq("extracted->>provider", extracted.provider)
-      .eq("extracted->>accountNumber", extracted.accountNumber)
-      .eq("extracted->>dateOfService", extracted.dateOfService)
-      .neq("id", documentId);
+    // RPC, not PostgREST filters: provider/account/DOS travel in the POST
+    // body instead of URL query strings, which land in Supabase API logs
+    // (review F73). SECURITY INVOKER — RLS scopes results to this user.
+    interface DuplicateRow {
+      id: string;
+      case_id: string;
+      version_group: string;
+      content_hash: string | null;
+    }
+    const { data: matchData, error: matchErr } = await supabase.rpc(
+      "find_duplicate_documents",
+      {
+        p_provider: extracted.provider,
+        p_account: extracted.accountNumber,
+        p_dos: extracted.dateOfService,
+        p_exclude: documentId,
+      },
+    );
+    const matches = (matchData ?? []) as DuplicateRow[];
     if (matchErr) {
       logError("documents.dedupe.query_failed", matchErr, {
         route: "/api/documents",
@@ -196,8 +208,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const otherCaseMatch = (matches ?? []).find((m) => m.case_id !== caseId);
-    const sameCaseMatches = (matches ?? []).filter((m) => m.case_id === caseId);
+    const otherCaseMatch = matches.find((m) => m.case_id !== caseId);
+    const sameCaseMatches = matches.filter((m) => m.case_id === caseId);
 
     if (otherCaseMatch && !requestedCaseId) {
       // Same provider+account+DOS in another of this user's cases: don't
@@ -274,4 +286,22 @@ async function attachAsVersion(
     }
   }
   return false;
+}
+
+/**
+ * Empty provisional cases are removed through the sanctioned RPC — a bare
+ * cases delete NEVER worked: the INSERT state event gives every case a
+ * case_events row, and the append-only trigger blocks the cascade (review
+ * F26). Failure is logged, not surfaced — an orphan case is a known seam
+ * cleaned by the U17 purge.
+ */
+async function rollbackProvisionalCase(caseId: string): Promise<void> {
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin.rpc("rollback_provisional_case", { p_case_id: caseId });
+  if (error || data !== true) {
+    logError("documents.provisional_rollback.failed", error ?? new Error("not_rolled_back"), {
+      route: "/api/documents",
+      caseId,
+    });
+  }
 }

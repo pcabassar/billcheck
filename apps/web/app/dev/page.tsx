@@ -4,8 +4,9 @@ import { useState } from "react";
 
 /**
  * DEV-ONLY driver page: one-click login as the flagged test account, then
- * into the flow. The backing API route is hard-disabled outside development,
- * so this page is inert in production (the button just gets a 404).
+ * into the flow. Credentials live server-side in the dev-login route (env);
+ * this bundle carries none (review F17). The route is hard-disabled outside
+ * development, so this page is inert in production (the button gets a 404).
  */
 export default function DevPage() {
   const [msg, setMsg] = useState<string | null>(null);
@@ -18,14 +19,7 @@ export default function DevPage() {
         type="button"
         onClick={async () => {
           setMsg("logging in…");
-          const r = await fetch("/api/auth/dev-login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: "demo@billcheck.test",
-              password: "demo-billcheck-2026!",
-            }),
-          });
+          const r = await fetch("/api/auth/dev-login", { method: "POST" });
           if (r.ok) window.location.href = "/upload";
           else setMsg(`login failed (${r.status}) — dev only`);
         }}

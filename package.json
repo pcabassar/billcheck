@@ -7,7 +7,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "eval": "turbo run eval",
-    "lint": "eslint packages"
+    "lint": "eslint packages && turbo lint --filter=@billcheck/web"
   },
   "devDependencies": {
     "turbo": "^2",

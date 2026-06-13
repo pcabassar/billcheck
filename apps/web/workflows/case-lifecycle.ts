@@ -1,13 +1,20 @@
 /**
- * The durable case lifecycle (plan U7, arch D7): one workflow per case
- * orchestrates parse → triage(auto) → audit → verdict. Vercel Workflow DevKit:
- * the workflow function replays deterministically; each "use step" runs with
- * retries. PAYLOADS CARRY THE CASE ID ONLY — steps fetch PHI from Supabase
- * and nothing document-derived enters workflow state or logs (AGENTS.md #6).
+ * The durable case lifecycle (plan U7, arch D7), split in two since review
+ * round 1 (F03/F71): `processCase` carries a case through classify-parse to
+ * TRIAGED and STOPS — the user reviews the extraction on the confirm screen —
+ * then `auditCase` (kicked explicitly via POST /api/cases/[id]/audit after
+ * that review) runs the engine and writes the verdict. The split makes the
+ * reconciliation gate a real gate and closes the TOCTOU between line-item
+ * edits and the audit reading them.
  *
- * State writes are compare-and-set against the expected prior state, and the
- * DB transition trigger is the final arbiter — a step racing a user's close
- * action aborts harmlessly (FatalError) instead of resurrecting the case.
+ * PAYLOADS CARRY THE CASE ID ONLY — steps fetch PHI from Supabase and nothing
+ * document-derived enters workflow state or logs (AGENTS.md #6).
+ *
+ * Error discipline (review F01/F02): EVERY Supabase read/write is checked.
+ * Transient failures throw plain Errors (the step retries); only terminal
+ * conditions (case gone, terminal state, audit already running) throw
+ * FatalError. Load-bearing updates verify the matched-row count — a silent
+ * 0-row update must never let a stale run feed a verdict.
  */
 import { FatalError } from "workflow";
 import {
@@ -16,7 +23,7 @@ import {
   type EngineInput,
   type ReferenceDataJson,
 } from "@billcheck/engine";
-import { log, logError } from "@billcheck/shared";
+import { log } from "@billcheck/shared";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { runParse } from "@/lib/parse/run-parse";
 
@@ -26,6 +33,9 @@ const TERMINAL_STATES = new Set([
   "RESOLVED_VERIFIED",
 ]);
 
+/** Kinds the V0 parser understands; EOB joins in U16 (F04: 'other' docs must not feed the audit). */
+const PARSEABLE_KINDS = ["bill", "corrected_statement"];
+
 const ROUTER_VERSION = "demo-0.1";
 
 async function assertCaseActive(caseId: string): Promise<string> {
@@ -34,38 +44,53 @@ async function assertCaseActive(caseId: string): Promise<string> {
     .from("cases")
     .select("state")
     .eq("id", caseId)
-    .single();
-  if (error || !data) throw new FatalError(`case_not_found:${caseId}`);
+    .maybeSingle();
+  if (error) {
+    // Transient DB failure → retryable, NOT fatal (review F32).
+    throw new Error(`case_lookup_failed:${error.code ?? "unknown"}`);
+  }
+  if (!data) throw new FatalError(`case_not_found:${caseId}`);
   if (TERMINAL_STATES.has(data.state)) {
     throw new FatalError(`case_terminal:${data.state}`);
   }
   return data.state;
 }
 
-async function parseDocumentsStep(caseId: string): Promise<{ parsed: number; failed: number }> {
+async function parseDocumentsStep(
+  caseId: string,
+): Promise<{ parsed: number; failed: number; skipped: number }> {
   "use step";
   await assertCaseActive(caseId);
   const admin = createSupabaseAdminClient();
-  const { data: docs } = await admin
+  const { data: docs, error } = await admin
     .from("documents")
     .select("id, parse_status, kind")
     .eq("case_id", caseId)
-    .in("parse_status", ["pending", "failed"]);
+    .in("parse_status", ["pending", "failed"])
+    .in("kind", PARSEABLE_KINDS);
+  if (error) throw new Error(`documents_lookup_failed:${error.code ?? "unknown"}`);
 
   let parsed = 0;
   let failed = 0;
+  let skipped = 0;
   for (const doc of docs ?? []) {
     const result = await runParse(doc.id);
     if (result.ok) parsed += 1;
+    else if (result.skipped) skipped += 1;
     else failed += 1;
   }
-  log("workflow.parse_step.done", { caseId, count: parsed, status: failed > 0 ? "partial" : "ok" });
+  log("workflow.parse_step.done", {
+    caseId,
+    count: parsed,
+    status: failed > 0 ? "partial" : skipped > 0 ? "skipped" : "ok",
+  });
   if (parsed === 0 && failed > 0) {
-    // Nothing parseable — let the step retry; persistent failure surfaces via
-    // documents.parse_status='failed' and the confirm screen's wait state.
+    // Real failures with nothing parsed — retry the step. Documents that
+    // exhausted their attempt budget come back `skipped` instead, so a
+    // poison document cannot re-bill the LLM forever (review F36).
     throw new Error("all_documents_failed_parse");
   }
-  return { parsed, failed };
+  return { parsed, failed, skipped };
 }
 
 async function autoTriageStep(caseId: string): Promise<void> {
@@ -74,51 +99,84 @@ async function autoTriageStep(caseId: string): Promise<void> {
   if (state !== "CAPTURED") return; // already past — replay/no-op
   const admin = createSupabaseAdminClient();
   // Auto-advance until U10 ships the real triage (plan: demo slice marker).
-  const { error } = await admin
+  const { data: moved, error } = await admin
     .from("cases")
     .update({ state: "TRIAGED", coverage_profile: { auto: true, reason: "triage UI lands in U10" } })
     .eq("id", caseId)
-    .eq("state", "CAPTURED");
+    .eq("state", "CAPTURED")
+    .select("id");
   if (error) throw new Error(`triage_advance_failed:${error.code ?? "unknown"}`);
+  if (!moved || moved.length === 0) {
+    // Lost the CAS race — re-check; TRIAGED already is fine (replay).
+    const now = await assertCaseActive(caseId);
+    if (now === "CAPTURED") throw new Error("triage_advance_no_rows");
+  }
 }
 
-interface RefRow {
+interface RefVersionRow {
+  table_name: string;
   version: string;
 }
 
+/** Page through a reference table — supabase-js silently truncates at 1000 rows (review F78). */
+async function loadAllRows<T>(table: string, columns: string, version: string): Promise<T[]> {
+  const admin = createSupabaseAdminClient();
+  const pageSize = 1000;
+  const rows: T[] = [];
+  for (let page = 0; ; page++) {
+    const { data, error } = await admin
+      .from(table)
+      .select(columns)
+      .eq("version", version)
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+    if (error) throw new Error(`ref_load_failed:${table}:${error.code ?? "unknown"}`);
+    rows.push(...((data ?? []) as T[]));
+    if ((data ?? []).length < pageSize) return rows;
+  }
+}
+
+/**
+ * Latest version PER TABLE from the ref_versions registry — most recent load
+ * wins (review F05/F06: lexicographic label ordering let MINI1 shadow 2026Q2,
+ * and one table's label was stamped onto all three).
+ */
 async function loadLatestRefs(): Promise<ReferenceDataJson> {
   const admin = createSupabaseAdminClient();
-  // Latest version per table = lexicographically max version label present.
-  const [ncciVer, mueVer, ratesVer] = await Promise.all([
-    admin.from("ref_ncci_ptp").select("version").order("version", { ascending: false }).limit(1),
-    admin.from("ref_mue").select("version").order("version", { ascending: false }).limit(1),
-    admin.from("ref_medicare_rates").select("version").order("version", { ascending: false }).limit(1),
-  ]);
-  const version = (ncciVer.data?.[0] as RefRow | undefined)?.version ?? "EMPTY";
+  const { data: versionRows, error } = await admin
+    .from("ref_versions")
+    .select("table_name, version, loaded_at")
+    .order("loaded_at", { ascending: false });
+  if (error) throw new Error(`ref_versions_lookup_failed:${error.code ?? "unknown"}`);
 
-  const [ncci, mue, rates] = await Promise.all([
-    admin
-      .from("ref_ncci_ptp")
-      .select("code1, code2, modifier_allowed")
-      .eq("version", version)
-      .eq("modifier_allowed", false), // exclude modifier-allowed pairs (engine seam)
-    admin
-      .from("ref_mue")
-      .select("code, max_units")
-      .eq("version", (mueVer.data?.[0] as RefRow | undefined)?.version ?? version),
-    admin
-      .from("ref_medicare_rates")
-      .select("code, national_rate_cents")
-      .eq("version", (ratesVer.data?.[0] as RefRow | undefined)?.version ?? version),
+  const latest = new Map<string, string>();
+  for (const row of (versionRows ?? []) as RefVersionRow[]) {
+    if (!latest.has(row.table_name)) latest.set(row.table_name, row.version);
+  }
+  const ncciVersion = latest.get("ref_ncci_ptp") ?? "EMPTY";
+  const mueVersion = latest.get("ref_mue") ?? "EMPTY";
+  const ratesVersion = latest.get("ref_medicare_rates") ?? "EMPTY";
+
+  const [ncciAll, mue, rates] = await Promise.all([
+    loadAllRows<{ code1: string; code2: string; modifier_allowed: boolean }>(
+      "ref_ncci_ptp",
+      "code1, code2, modifier_allowed",
+      ncciVersion,
+    ),
+    loadAllRows<{ code: string; max_units: number }>("ref_mue", "code, max_units", mueVersion),
+    loadAllRows<{ code: string; national_rate_cents: number }>(
+      "ref_medicare_rates",
+      "code, national_rate_cents",
+      ratesVersion,
+    ),
   ]);
+  // Exclude modifier-allowed pairs (engine seam — modifier handling is U11).
+  const ncci = ncciAll.filter((r) => r.modifier_allowed === false);
 
   return {
-    version,
-    ncciPtp: (ncci.data ?? []).map((r) => `${r.code1}|${r.code2}`),
-    mue: Object.fromEntries((mue.data ?? []).map((r) => [r.code, r.max_units])),
-    medicareRatesCents: Object.fromEntries(
-      (rates.data ?? []).map((r) => [r.code, Number(r.national_rate_cents)]),
-    ),
+    versions: { ncciPtp: ncciVersion, mue: mueVersion, medicareRates: ratesVersion },
+    ncciPtp: ncci.map((r) => `${r.code1}|${r.code2}`),
+    mue: Object.fromEntries(mue.map((r) => [r.code, r.max_units])),
+    medicareRatesCents: Object.fromEntries(rates.map((r) => [r.code, Number(r.national_rate_cents)])),
   };
 }
 
@@ -127,18 +185,27 @@ async function auditStep(caseId: string): Promise<{ findings: number }> {
   const state = await assertCaseActive(caseId);
   const admin = createSupabaseAdminClient();
 
-  const { data: docs } = await admin
+  const { data: docs, error: docsError } = await admin
     .from("documents")
     .select("id, extracted")
     .eq("case_id", caseId)
-    .eq("parse_status", "parsed");
+    .eq("parse_status", "parsed")
+    .in("kind", PARSEABLE_KINDS);
+  if (docsError) throw new Error(`documents_lookup_failed:${docsError.code ?? "unknown"}`);
   const docIds = (docs ?? []).map((d) => d.id);
   if (docIds.length === 0) throw new Error("no_parsed_documents");
 
-  const { data: lineItems } = await admin
+  const { data: lineItems, error: liError } = await admin
     .from("line_items")
-    .select("id, document_id, code, code_system, description_raw, description_plain, units, amount_cents, date_of_service, confidence")
+    .select(
+      "id, document_id, code, code_system, description_raw, description_plain, units, amount_cents, date_of_service, confidence",
+    )
     .in("document_id", docIds);
+  if (liError) {
+    // A transient read failure must NEVER become a clean verdict (review
+    // F01): throw so the step retries with real data.
+    throw new Error(`line_items_lookup_failed:${liError.code ?? "unknown"}`);
+  }
 
   const itemized = (docs ?? []).some(
     (d) => (d.extracted as { itemized?: boolean } | null)?.itemized === true,
@@ -167,19 +234,28 @@ async function auditStep(caseId: string): Promise<{ findings: number }> {
   const result = runEngine(input, refs);
 
   // Append-only run semantics (plan data #2): findings land under a new run;
-  // the run is visible to consumers only once status='complete'.
+  // the run is visible to consumers only once status='complete'. The partial
+  // unique index (one running run per case, review F14) makes a concurrent
+  // duplicate audit die here instead of double-writing findings.
   const { data: run, error: runErr } = await admin
     .from("engine_runs")
     .insert({
       case_id: caseId,
       engine_version: result.engineVersion,
       check_versions: result.checkVersions,
-      ref_version_map: { ncci_ptp: refsJson.version, mue: refsJson.version, medicare_rates: refsJson.version },
+      ref_version_map: {
+        ncci_ptp: refsJson.versions.ncciPtp,
+        mue: refsJson.versions.mue,
+        medicare_rates: refsJson.versions.medicareRates,
+      },
       status: "running",
     })
     .select("id")
     .single();
-  if (runErr || !run) throw new Error(`engine_run_insert_failed:${runErr?.code ?? "unknown"}`);
+  if (runErr || !run) {
+    if (runErr?.code === "23505") throw new FatalError("audit_already_running");
+    throw new Error(`engine_run_insert_failed:${runErr?.code ?? "unknown"}`);
+  }
 
   if (result.findings.length > 0) {
     const { error: findErr } = await admin.from("findings").insert(
@@ -198,20 +274,37 @@ async function auditStep(caseId: string): Promise<{ findings: number }> {
     if (findErr) throw new Error(`findings_insert_failed:${findErr.code ?? "unknown"}`);
   }
 
-  const { error: completeErr } = await admin
+  const { data: completed, error: completeErr } = await admin
     .from("engine_runs")
     .update({ status: "complete", completed_at: new Date().toISOString() })
     .eq("id", run.id)
-    .eq("status", "running");
-  if (completeErr) throw new Error("engine_run_complete_failed");
+    .eq("status", "running")
+    .select("id");
+  if (completeErr) throw new Error(`engine_run_complete_failed:${completeErr.code ?? "unknown"}`);
+  if (!completed || completed.length === 0) throw new Error("engine_run_complete_no_rows");
 
-  await admin.from("cases").update({ current_run_id: run.id }).eq("id", caseId);
+  const { data: pointed, error: pointErr } = await admin
+    .from("cases")
+    .update({ current_run_id: run.id })
+    .eq("id", caseId)
+    .select("id");
+  if (pointErr) throw new Error(`current_run_update_failed:${pointErr.code ?? "unknown"}`);
+  if (!pointed || pointed.length === 0) throw new Error("current_run_update_no_rows");
 
   if (state === "TRIAGED") {
-    await admin.from("cases").update({ state: "AUDITED" }).eq("id", caseId).eq("state", "TRIAGED");
+    const { data: moved, error: moveErr } = await admin
+      .from("cases")
+      .update({ state: "AUDITED" })
+      .eq("id", caseId)
+      .eq("state", "TRIAGED")
+      .select("id");
+    if (moveErr) throw new Error(`audited_advance_failed:${moveErr.code ?? "unknown"}`);
+    if (!moved || moved.length === 0) {
+      const now = await assertCaseActive(caseId);
+      if (now !== "AUDITED" && now !== "VERDICT") throw new Error("audited_advance_no_rows");
+    }
   }
 
-  // Store coverage on the run's verdict later; pass only counts through state.
   log("workflow.audit_step.done", { caseId, runId: run.id, count: result.findings.length });
   return { findings: result.findings.length };
 }
@@ -221,36 +314,34 @@ async function verdictStep(caseId: string): Promise<void> {
   await assertCaseActive(caseId);
   const admin = createSupabaseAdminClient();
 
-  const { data: caseRow } = await admin
+  const { data: caseRow, error: caseErr } = await admin
     .from("cases")
     .select("id, state, current_run_id")
     .eq("id", caseId)
-    .single();
+    .maybeSingle();
+  if (caseErr) throw new Error(`case_lookup_failed:${caseErr.code ?? "unknown"}`);
   if (!caseRow?.current_run_id) throw new Error("no_current_run");
 
-  const [{ data: findings }, { data: docs }] = await Promise.all([
+  const [findingsRes, docsRes] = await Promise.all([
     admin.from("findings").select("id, amount_impact_cents").eq("run_id", caseRow.current_run_id),
-    admin.from("documents").select("extracted").eq("case_id", caseId).eq("parse_status", "parsed"),
+    admin
+      .from("documents")
+      .select("extracted")
+      .eq("case_id", caseId)
+      .eq("parse_status", "parsed")
+      .in("kind", PARSEABLE_KINDS),
   ]);
+  if (findingsRes.error) throw new Error(`findings_lookup_failed:${findingsRes.error.code ?? "unknown"}`);
+  if (docsRes.error) throw new Error(`documents_lookup_failed:${docsRes.error.code ?? "unknown"}`);
 
-  const itemized = (docs ?? []).some(
+  const itemized = (docsRes.data ?? []).some(
     (d) => (d.extracted as { itemized?: boolean } | null)?.itemized === true,
   );
-  const findingCount = findings?.length ?? 0;
+  const findingCount = findingsRes.data?.length ?? 0;
 
   // Demo router (full D10 v0.2 cascade lands in U12). Honesty gates hold:
   // a partial battery NEVER yields PAY; code-less bills route to GET_ITEMIZED.
   const primary = !itemized ? "GET_ITEMIZED" : findingCount > 0 ? "CONTEST" : "CLEAN_PARTIAL_BATTERY";
-
-  // Recompute coverage for the verdict row (deterministic from the run).
-  const { data: liCount } = await admin
-    .from("line_items")
-    .select("id", { count: "exact", head: true })
-    .in(
-      "document_id",
-      (await admin.from("documents").select("id").eq("case_id", caseId)).data?.map((d) => d.id) ?? [],
-    );
-  void liCount;
 
   const { error: verdictErr } = await admin.from("verdicts").insert({
     case_id: caseId,
@@ -262,19 +353,31 @@ async function verdictStep(caseId: string): Promise<void> {
   });
   if (verdictErr) throw new Error(`verdict_insert_failed:${verdictErr.code ?? "unknown"}`);
 
-  await admin
+  const { data: moved, error: moveErr } = await admin
     .from("cases")
     .update({ state: "VERDICT", primary_verdict: primary })
     .eq("id", caseId)
-    .eq("state", "AUDITED");
+    .eq("state", "AUDITED")
+    .select("id");
+  if (moveErr) throw new Error(`verdict_advance_failed:${moveErr.code ?? "unknown"}`);
+  if (!moved || moved.length === 0) {
+    const now = await assertCaseActive(caseId);
+    if (now !== "VERDICT") throw new Error("verdict_advance_no_rows");
+  }
 
   log("workflow.verdict_step.done", { caseId, status: primary });
 }
 
+/** Upload → parse → TRIAGED, then STOP for the user's confirm review. */
 export async function processCase(caseId: string) {
   "use workflow";
   await parseDocumentsStep(caseId);
   await autoTriageStep(caseId);
+}
+
+/** Kicked explicitly after the user confirms the extraction (review F03/F71). */
+export async function auditCase(caseId: string) {
+  "use workflow";
   await auditStep(caseId);
   await verdictStep(caseId);
 }

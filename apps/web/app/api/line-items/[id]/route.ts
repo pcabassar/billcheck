@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { log, logError } from "@billcheck/shared";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { isEditableState } from "@/lib/case/rules";
+import { isCaseEditable } from "@/lib/case/rules";
 
 /**
  * PATCH /api/line-items/[id] — inline corrections from the S3 confirm screen.
@@ -105,7 +105,7 @@ export async function PATCH(
 
   const { data: caseRow, error: caseError } = await supabase
     .from("cases")
-    .select("id, state")
+    .select("id, state, audit_locked_at")
     .eq("id", doc.case_id)
     .maybeSingle();
   if (caseError || !caseRow) {
@@ -118,8 +118,9 @@ export async function PATCH(
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  // Edit lock: corrections close at AUDITED (plan U6, data #1).
-  if (!isEditableState(caseRow.state)) {
+  // Edit lock (review F71): corrections close the moment the audit claim is
+  // taken — the DB trigger is the backstop for direct PostgREST writes.
+  if (!isCaseEditable(caseRow.state, caseRow.audit_locked_at as string | null)) {
     return NextResponse.json(
       { error: "case_locked", state: caseRow.state },
       { status: 409 },
