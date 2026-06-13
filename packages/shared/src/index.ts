@@ -5,6 +5,7 @@ export {
   LlmNotWiredError,
   LlmValidationError,
   PhaseGateError,
+  SpendAlarmError,
   zodToJsonSchema,
   MODEL_ID,
   PHASE,
@@ -21,6 +22,7 @@ export {
   type LlmTransportRequest,
   type LlmTransportResponse,
 } from "./llm/client";
+export { estimateCostCents, rateFor, sumCostCents } from "./llm/cost";
 export { ClassifyResult, ParsedBill, ParsedBillLineItem } from "./schemas/parsed-bill";
 export { ParsedEob, ParsedEobCarc } from "./schemas/parsed-eob";
 export {

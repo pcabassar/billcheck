@@ -126,6 +126,12 @@ export interface CreateLlmClientOpts {
   phase?: string;
   /** Writes one ai_calls row; returns its id. Injected by the app layer. */
   ledger: (row: AiCallRow) => Promise<string>;
+  /**
+   * Spend kill switch (injected by the app layer — it owns the ai_calls
+   * aggregate). Called BEFORE document-bearing calls; throws SpendAlarmError
+   * when the rolling budget ceiling is exceeded. Omitted ⇒ no cap.
+   */
+  spendGuard?: () => Promise<void>;
   /** Test seam: replaces the real Anthropic SDK transport. */
   transport?: LlmTransport;
 }
@@ -149,6 +155,15 @@ export class PhaseGateError extends Error {
       "PHASE=A: document-bearing LLM calls require the owning account to be flagged test/synthetic (fail closed)",
     );
     this.name = "PhaseGateError";
+  }
+}
+
+/** Thrown BEFORE any API call when the rolling spend ceiling (kill switch) is exceeded. */
+export class SpendAlarmError extends Error {
+  code = "SPEND_ALARM_TRIPPED";
+  constructor() {
+    super("Spend ceiling exceeded — document-bearing LLM calls are paused (budget kill switch)");
+    this.name = "SpendAlarmError";
   }
 }
 
@@ -270,6 +285,7 @@ export function createLlmClient(opts: CreateLlmClientOpts): LlmClient {
   const phase = opts.phase ?? "A";
   const transport = opts.transport ?? sdkTransport(opts.apiKey);
   const ledger = opts.ledger;
+  const spendGuard = opts.spendGuard;
 
   /** Failure-path ledger write: must never mask the original error. */
   async function safeLedger(row: AiCallRow): Promise<string | null> {
@@ -331,6 +347,31 @@ export function createLlmClient(opts: CreateLlmClientOpts): LlmClient {
         caseId: input.caseId,
       });
       throw err;
+    }
+
+    // Spend kill switch: after the PHASE gate, before any bytes leave. Only
+    // document-bearing calls (the expensive, anonymous-reachable ones) are
+    // gated; a tripped budget is ledgered like the PHASE block.
+    if (spendGuard && documents.length > 0) {
+      try {
+        await spendGuard();
+      } catch (err) {
+        if (err instanceof SpendAlarmError) {
+          await safeLedger({
+            ...baseRow,
+            ...emptyTail,
+            latencyMs: 0,
+            errorCode: err.code,
+            errorPayload: { documentCount: documents.length },
+          });
+          logError("llm.spend_alarm_tripped", err, {
+            purpose: input.purpose,
+            documentId: input.documentId,
+            caseId: input.caseId,
+          });
+        }
+        throw err;
+      }
     }
 
     // Build content: documents inline first, instruction text last.
