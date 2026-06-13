@@ -16,10 +16,20 @@ interface FindingRow {
   title: string;
   amount_impact_cents: number | null;
   confidence_tier: string;
+  check_id: string;
 }
+
+const ARTIFACT_LABELS: Record<string, string> = {
+  dispute: "Dispute letter",
+  validation: "Debt-validation demand",
+  itemized_request: "Itemized-bill request",
+  fap_application: "Financial-assistance checklist",
+  ppdr_guide: "Federal dispute walkthrough",
+};
 
 interface ArtifactRow {
   id: string;
+  type: string;
   approved_at: string | null;
   created_at: string;
 }
@@ -40,7 +50,7 @@ export default async function PlanPage({
 
   const { data: caseRow } = await supabase
     .from("cases")
-    .select("id, state, primary_verdict, current_run_id, audit_locked_at")
+    .select("id, state, primary_verdict, current_run_id, audit_locked_at, stacked_tracks")
     .eq("id", id)
     .maybeSingle();
   if (!caseRow) notFound();
@@ -74,7 +84,7 @@ export default async function PlanPage({
   if (caseRow.current_run_id) {
     const { data } = await supabase
       .from("findings")
-      .select("id, title, amount_impact_cents, confidence_tier")
+      .select("id, title, amount_impact_cents, confidence_tier, check_id")
       .eq("run_id", caseRow.current_run_id)
       .order("created_at", { ascending: true });
     findings = (data ?? []) as FindingRow[];
@@ -82,11 +92,38 @@ export default async function PlanPage({
 
   const { data: artifactsData } = await supabase
     .from("artifacts")
-    .select("id, approved_at, created_at")
+    .select("id, type, approved_at, created_at")
     .eq("case_id", id)
-    .eq("type", "dispute")
     .order("created_at", { ascending: false });
   const artifacts = (artifactsData ?? []) as ArtifactRow[];
+
+  // Per-track artifact offers (U13): primary verdict + stacked tracks decide
+  // which documents this case earns. Every verdict/track combination offers
+  // at least one artifact — no dead ends.
+  const trackKinds = new Set<string>([
+    ...(caseRow.primary_verdict ? [caseRow.primary_verdict] : []),
+    ...(((caseRow.stacked_tracks ?? []) as string[]) || []),
+  ]);
+  const offers: Array<{ type: string; label: string; needsFindings: boolean }> = [];
+  if (findings.length > 0 || trackKinds.has("CONTEST") || trackKinds.has("REJECT")) {
+    offers.push({ type: "dispute", label: "Generate my dispute letter", needsFindings: true });
+  }
+  if (trackKinds.has("VALIDATE")) {
+    offers.push({ type: "validation", label: "Generate my validation demand", needsFindings: false });
+  }
+  if (trackKinds.has("GET_ITEMIZED")) {
+    offers.push({ type: "itemized_request", label: "Generate my itemized-bill request", needsFindings: false });
+  }
+  if (trackKinds.has("REDUCE")) {
+    offers.push({ type: "fap_application", label: "Get my financial-assistance checklist", needsFindings: false });
+  }
+  if (findings.some((f) => f.check_id === "C8")) {
+    offers.push({ type: "ppdr_guide", label: "Get the federal dispute walkthrough", needsFindings: false });
+  }
+  if (offers.length === 0) {
+    // No dead ends: the itemized request is always a legitimate ask.
+    offers.push({ type: "itemized_request", label: "Generate an itemized-bill request", needsFindings: false });
+  }
 
   const totalImpactCents = findings.reduce(
     (sum, f) => sum + (f.amount_impact_cents ?? 0),
@@ -206,7 +243,7 @@ export default async function PlanPage({
                   className="flex items-center justify-between rounded-lg border border-neutral-200 p-4 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
                 >
                   <span className="font-medium">
-                    Dispute letter — {new Date(a.created_at).toLocaleDateString()}
+                    {ARTIFACT_LABELS[a.type] ?? "Document"} — {new Date(a.created_at).toLocaleDateString()}
                   </span>
                   <span className="text-xs text-neutral-500">
                     {a.approved_at ? "Approved" : "Awaiting your approval"}
@@ -216,11 +253,16 @@ export default async function PlanPage({
             ))}
           </ul>
         )}
-        <GenerateLetterButton
-          caseId={caseRow.id}
-          canGenerate={canGenerate}
-          hasExisting={artifacts.length > 0}
-        />
+        {offers.map((offer) => (
+          <GenerateLetterButton
+            key={offer.type}
+            caseId={caseRow.id}
+            canGenerate={offer.needsFindings ? canGenerate : true}
+            hasExisting={artifacts.some((a) => a.type === offer.type)}
+            artifactType={offer.type}
+            label={offer.label}
+          />
+        ))}
       </section>
 
       <p className="text-xs text-neutral-500">

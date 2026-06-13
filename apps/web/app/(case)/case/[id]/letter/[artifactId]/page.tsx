@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LETTER_FACT_ATTESTATION } from "@billcheck/shared";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { deliveryOptionsFor } from "@/lib/delivery/channels";
 import { ApprovalPanel } from "./approval-panel";
+import { SendPanel } from "./send-panel";
 
 /**
  * S13 — letter view (plan U9). Print-friendly rendering (the browser's print
@@ -11,6 +13,14 @@ import { ApprovalPanel } from "./approval-panel";
  */
 
 const RESPONSE_WINDOW_DAYS = 30;
+
+const ARTIFACT_TITLES: Record<string, string> = {
+  dispute: "Your dispute letter",
+  validation: "Your debt-validation demand",
+  itemized_request: "Your itemized-bill request",
+  fap_application: "Your financial-assistance checklist",
+  ppdr_guide: "Your federal dispute walkthrough",
+};
 
 export default async function LetterPage({
   params,
@@ -53,7 +63,7 @@ export default async function LetterPage({
         >
           &larr; Back to your action plan
         </Link>
-        <h1 className="text-2xl font-bold">Your dispute letter</h1>
+        <h1 className="text-2xl font-bold">{ARTIFACT_TITLES[artifact.type] ?? "Your document"}</h1>
         <p className="text-sm text-neutral-500">
           Read every line. You&apos;re confirming these facts as your own before
           anything is sent.
@@ -75,6 +85,14 @@ export default async function LetterPage({
           letterText={letterText}
           attestationText={LETTER_FACT_ATTESTATION}
           initiallyApproved={Boolean(artifact.approved_at)}
+        />
+      </div>
+
+      <div className="print:hidden">
+        <SendPanel
+          options={deliveryOptionsFor(artifact.type)}
+          letterText={letterText}
+          filename={`billcheck-${artifact.type}-${artifact.id.slice(0, 8)}.txt`}
         />
       </div>
 

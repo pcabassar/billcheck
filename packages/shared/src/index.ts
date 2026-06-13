@@ -49,3 +49,13 @@ export {
   type RoutingFlags,
   type TriState,
 } from "./triage";
+export {
+  renderFapChecklist,
+  renderItemizedRequest,
+  renderPpdrGuide,
+  renderValidationLetter,
+  type FapChecklistInput,
+  type ItemizedRequestInput,
+  type PpdrGuideInput,
+  type ValidationLetterInput,
+} from "./letters/static-templates";
