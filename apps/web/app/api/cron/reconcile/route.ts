@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
   const { data: staleAuditLocks } = await admin
     .from("cases")
     .update({ audit_locked_at: null })
-    .eq("state", "TRIAGED")
+    .in("state", ["TRIAGED", "WAITING_ADJUDICATION", "WAITING_ITEMIZED"])
     .not("audit_locked_at", "is", null)
     .lt("audit_locked_at", cutoff)
     .select("id");

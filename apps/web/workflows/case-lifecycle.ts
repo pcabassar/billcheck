@@ -98,10 +98,11 @@ async function autoTriageStep(caseId: string): Promise<void> {
   const state = await assertCaseActive(caseId);
   if (state !== "CAPTURED") return; // already past — replay/no-op
   const admin = createSupabaseAdminClient();
-  // Auto-advance until U10 ships the real triage (plan: demo slice marker).
+  // Mechanical state advance post-parse; the USER's triage answers (S4)
+  // overwrite coverage_profile via /api/cases/[id]/triage before the audit.
   const { data: moved, error } = await admin
     .from("cases")
-    .update({ state: "TRIAGED", coverage_profile: { auto: true, reason: "triage UI lands in U10" } })
+    .update({ state: "TRIAGED", coverage_profile: { auto: true, reason: "awaiting user triage (S4)" } })
     .eq("id", caseId)
     .eq("state", "CAPTURED")
     .select("id");
@@ -291,12 +292,12 @@ async function auditStep(caseId: string): Promise<{ findings: number }> {
   if (pointErr) throw new Error(`current_run_update_failed:${pointErr.code ?? "unknown"}`);
   if (!pointed || pointed.length === 0) throw new Error("current_run_update_no_rows");
 
-  if (state === "TRIAGED") {
+  if (["TRIAGED", "WAITING_ADJUDICATION", "WAITING_ITEMIZED"].includes(state)) {
     const { data: moved, error: moveErr } = await admin
       .from("cases")
       .update({ state: "AUDITED" })
       .eq("id", caseId)
-      .eq("state", "TRIAGED")
+      .eq("state", state)
       .select("id");
     if (moveErr) throw new Error(`audited_advance_failed:${moveErr.code ?? "unknown"}`);
     if (!moved || moved.length === 0) {

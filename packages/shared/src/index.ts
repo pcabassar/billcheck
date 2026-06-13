@@ -41,3 +41,10 @@ export {
   type LetterViolationKind,
 } from "./letters/validate";
 export * from "./types";
+export {
+  computeRoutingFlags,
+  TriageAnswers,
+  type CoverageProfile,
+  type RoutingFlags,
+  type TriState,
+} from "./triage";

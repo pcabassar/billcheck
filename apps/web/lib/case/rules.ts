@@ -6,7 +6,7 @@ import type { CaseState } from "@billcheck/shared";
  * version, never in-place mutation (protects the frozen savings baseline).
  * Attestations follow the same gate: the engine consumes them at audit time.
  */
-export const EDITABLE_STATES = ["CAPTURED", "TRIAGED"] as const satisfies readonly CaseState[];
+export const EDITABLE_STATES = ["CAPTURED", "TRIAGED", "WAITING_ADJUDICATION", "WAITING_ITEMIZED"] as const satisfies readonly CaseState[];
 
 export function isEditableState(state: string): boolean {
   return (EDITABLE_STATES as readonly string[]).includes(state);
