@@ -10,7 +10,7 @@ Plan of record: `docs/plans/2026-06-12-001-feat-billcheck-v0-plan.md` · Convent
 | GitHub | `pcabassar/billcheck` (private) — CI on push |
 | Supabase project | `billcheck`, ref `etakonvmsfkyjnwksydi`, us-east-1, org "Pedro's Lab" (`hecjpavqlhpszbcanhbi`), $10/mo, migrations 0001–0008 applied, Security Advisor clean |
 | Vercel project | `billcheck`, `prj_hYWF2qxNoDxRgcbZZTCowJNiUbDX`, team `team_qMEIrSgGqUAFRA5JsyYmAL2Y` (pedro-7901s-projects), rootDirectory=`apps/web`, linked at repo root (`.vercel/`) |
-| Preview deploy | https://billcheck-qay88iyll-pedro-7901s-projects.vercel.app (Ready; Vercel-SSO protected — Pedro can open; built 2026-06-12 from the review-round-1 commit `db3089b` with clean env + `BILLCHECK_PHASE=B`. Older preview URLs run pre-review code — don't use them.) |
+| Preview deploy | https://billcheck-9u0xh51ne-pedro-7901s-projects.vercel.app (Ready; Vercel-SSO protected — Pedro can open; built 2026-06-13 from `176adad` AFTER the env-record dedup. Older preview URLs run pre-review code or the corrupted key — don't use them.) |
 | Production | NOT promoted — awaiting Pedro's explicit "deploy it" (`vercel deploy --prod` from repo root) |
 | Env vars | local: `apps/web/.env.local` (7 keys incl. CRON_SECRET). Vercel: all 7 on production + preview + development targets. **Incident 2026-06-12:** an `echo >>` append onto a file with no trailing newline welded `CRON_SECRET` onto `ANTHROPIC_API_KEY` → `API_401 invalid x-api-key` on every LLM call (caught by the ai_calls ledger in one query). Repaired locally + re-pushed to all Vercel targets + preview redeployed. Lesson: never blind-append to env files. |
 
@@ -52,6 +52,7 @@ DEV_LOGIN_PASSWORD; the dev-login route reads env only.
 - Provisional-case orphans from dedupe flow; cleanup with U14 close action / U17 purge.
 - pg_cron registration for `/api/cron/reconcile` (needs deployed URL + CRON_SECRET header) — register after prod promote.
 - `vercel env add ... preview` via CLI is broken non-interactively — use the REST API (`POST /v10/projects/{id}/env?teamId=...&upsert=true`).
+- **Vercel env vars can hold MULTIPLE records per key with overlapping targets** — upsert only updates the record matching its exact target set, and a stale sibling silently shadows it for that environment (bit us 2026-06-12: a corrupted `['preview','development']` ANTHROPIC_API_KEY record survived the repair and 401'd every preview LLM call). After any env change: list records and assert each key covers each target exactly once.
 - AMA dev-program signup, Wellthy benchmark ask, domain/trademark check on "billcheck" — Pedro-led, untouched.
 
 ## Next round (Phase B.5 + C)
