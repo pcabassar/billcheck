@@ -8,9 +8,9 @@ Plan of record: `docs/plans/2026-06-12-001-feat-billcheck-v0-plan.md` · Convent
 | What | Identifier |
 |---|---|
 | GitHub | `pcabassar/billcheck` (private) — CI on push |
-| Supabase project | `billcheck`, ref `etakonvmsfkyjnwksydi`, us-east-1, org "Pedro's Lab" (`hecjpavqlhpszbcanhbi`), $10/mo, migrations 0001–0007 applied, Security Advisor clean |
+| Supabase project | `billcheck`, ref `etakonvmsfkyjnwksydi`, us-east-1, org "Pedro's Lab" (`hecjpavqlhpszbcanhbi`), $10/mo, migrations 0001–0008 applied, Security Advisor clean |
 | Vercel project | `billcheck`, `prj_hYWF2qxNoDxRgcbZZTCowJNiUbDX`, team `team_qMEIrSgGqUAFRA5JsyYmAL2Y` (pedro-7901s-projects), rootDirectory=`apps/web`, linked at repo root (`.vercel/`) |
-| Preview deploy | https://billcheck-6dm9nd4cd-pedro-7901s-projects.vercel.app (Ready; Vercel-SSO protected — Pedro can open; built 2026-06-12 with clean ANTHROPIC_API_KEY **and `BILLCHECK_PHASE=B`** — any session can run LLM calls, no test-account flag needed. Older preview URLs have the corrupted key and/or Phase A — don't use them.) |
+| Preview deploy | https://billcheck-qay88iyll-pedro-7901s-projects.vercel.app (Ready; Vercel-SSO protected — Pedro can open; built 2026-06-12 from the review-round-1 commit `db3089b` with clean env + `BILLCHECK_PHASE=B`. Older preview URLs run pre-review code — don't use them.) |
 | Production | NOT promoted — awaiting Pedro's explicit "deploy it" (`vercel deploy --prod` from repo root) |
 | Env vars | local: `apps/web/.env.local` (7 keys incl. CRON_SECRET). Vercel: all 7 on production + preview + development targets. **Incident 2026-06-12:** an `echo >>` append onto a file with no trailing newline welded `CRON_SECRET` onto `ANTHROPIC_API_KEY` → `API_401 invalid x-api-key` on every LLM call (caught by the ai_calls ledger in one query). Repaired locally + re-pushed to all Vercel targets + preview redeployed. Lesson: never blind-append to env files. |
 
@@ -30,11 +30,9 @@ Full slice PASSED on first run: synthetic bill (`/tmp/synthetic-bill.html` in re
 at TRIAGED; the audit is an explicit kick from the confirm screen ("Looks
 right — run the audit"), and the plan page waits for the verdict.
 
-**BLOCKED ON PEDRO: migration 0008** (`supabase/migrations/0008_review_round_1.sql`)
-is NOT yet applied to the remote DB — the permission gate (rightly) wants an
-explicit go for RLS changes against the live database. The new code REQUIRES
-it (RPCs + columns): parse will fail until it's applied. Say "apply the
-migration" or paste the file into the dashboard SQL editor.
+Migration 0008 APPLIED to remote (Pedro's go, 2026-06-12). E2E re-verified on
+the new flow: bill-1 → CONTEST $774 (C3/C4/C5), idempotent double-kicks, edit
+lock 409 post-audit, letter draft reuse. Commits pushed; preview rebuilt.
 
 Also rotated: demo@billcheck.test password (the old one was in the client
 bundle, F17). New creds live in `apps/web/.env.local` as DEV_LOGIN_EMAIL /
@@ -44,8 +42,7 @@ DEV_LOGIN_PASSWORD; the dev-login route reads env only.
 
 1. ~~Anonymous sign-ins toggle~~ — **FIXED 2026-06-12** (toggle needed its separate "Save changes" button; clicked via Pedro's Chrome; probe confirmed enabled). Existing anonymous profiles flagged `is_test_account=true` at that time — any anon user created later is unflagged (correct for Phase A: their LLM calls are blocked by the PHASE gate).
 2. **Production promote** — one command, awaiting explicit go.
-3. **Migration 0008 apply** — see Review round 1 above (blocks ALL parsing until applied).
-4. **claude.ai monthly spend limit hit** (2026-06-12, during review verification) — raise at claude.ai/settings/usage to re-enable workflow-scale agent runs.
+3. **claude.ai monthly spend limit hit** (2026-06-12, during review verification) — raise at claude.ai/settings/usage to re-enable workflow-scale agent runs.
 
 ## Known seams / debts (carry into next round)
 
