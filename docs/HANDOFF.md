@@ -22,6 +22,48 @@ Full slice PASSED on first run: synthetic bill (`/tmp/synthetic-bill.html` in re
 - Test account: `demo@billcheck.test` (dev-only; `profiles.is_test_account=true`; password known to Pedro/session — rotate or delete before launch)
 - Dev login route `/api/auth/dev-login` is hard-disabled outside `NODE_ENV=development`
 
+## Phase B.5 + C (2026-06-13) — BUILT ON `feat/phase-b5-c`, MIGRATION 0009 PENDING
+
+All planned units complete on branch `feat/phase-b5-c` (NOT yet pushed/merged —
+awaiting Pedro's go). 188 unit + 35 eval tests green, lint+typecheck+build clean.
+
+- **U10 triage (S4) + wait (S5):** coverage questions route the case
+  (WAIT/VALIDATE/APPEAL/REJECT-premise/C8/C9); flow is now confirm → triage →
+  (wait | audit). Editable states extended to WAITING_*.
+- **U11 engine completion:** C8 (GFE breach), C9 (FAP screening), C10 (Medicare
+  anchor, null amount), C13 (payments not credited) + FAP/PFS seeds (MINI1/MINI2)
+  + `ref_versions` registry + refresh-reference.ts registration. ENGINE 0.3.0.
+- **U12 D10 router v0.2:** premise→status→fights→affordability cascade, stacking
+  by statutory urgency; honesty gates (PAY needs full battery + zero findings;
+  CLEAN_PARTIAL otherwise; summary→GET_ITEMIZED). S11 verdict + S10 coverage
+  screens. `engine_runs.coverage` persisted.
+- **U16 EOB + C1/C2/C6:** ParsedEob schema, EOB parse branch, balance-billing
+  (pure arithmetic), never-submitted, CARC liability. ENGINE 0.4.0. Full 10-check
+  battery.
+- **U13 artifacts:** validation (gated on collection notice), itemized request,
+  FAP checklist, PPDR guide — all behind DeliveryChannel (portal-guided + download).
+- **U14 resolution + PWYW:** savings-diff (frozen baseline, anti-phantom gates),
+  actions route (sent/self_report/verify_savings/close), S16 outcome, my-bills
+  actions, **Stripe checkout + signature-verified webhook — env-guarded, inert
+  without STRIPE_SECRET_KEY**.
+- **U15 eval:** matrix fixtures 006–012 (CONTEST/REDUCE/REJECT/VALIDATE/PAY +
+  injection-resilience + reproducibility), end-to-end verdict assertions, engine README.
+- **U17 purge:** anonymous bytes+rows+auth users after 30d (SECURITY DEFINER
+  RPCs, re-asserts is_anonymous, batch-capped, failure-isolated). `/api/jobs/purge`.
+- **U18 claim path:** email-collision merge — re-parent ONLY after the target
+  email's owner authenticates; single-use TTL token; uniform timing/copy.
+- **Spend alarm:** rolling ai_calls cost ceiling kill switch on document-bearing
+  calls (BILLCHECK_SPEND_CEILING_CENTS default $50/24h; 0 disables; fail-open).
+
+**BLOCKED ON PEDRO:**
+1. **Apply migration 0009** (`supabase/migrations/0009_phase_b5c.sql`) to remote —
+   triage/router/EOB/resolution/purge/claim all need it (columns, RPCs,
+   ref_versions rows, claim_tokens, CARC/FAP/PFS seeds). The new code requires it.
+2. **Push `feat/phase-b5-c` + open PR** (direct pushes are gated).
+3. **Stripe test keys** (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) when ready —
+   PWYW is inert until then (everything else in resolution works).
+4. Review round 2 once the claude.ai spend limit is raised.
+
 ## Review round 1 (2026-06-12) — APPLIED IN CODE, MIGRATION PENDING
 
 12-persona review → 18 confirmed findings (2 critical) all fixed in code, plus
