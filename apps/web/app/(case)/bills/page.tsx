@@ -1,10 +1,11 @@
+import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { CaseActions } from "./case-actions";
 
 /**
  * My bills (plan U3 / spec S14-lite): list of the user's cases with status
- * chips. State-conditional actions (add document / I sent it / what happened /
- * close) are wired in U14 — rendered as placeholders until then so cases
- * never look like dead ends.
+ * chips and state-conditional actions (U14): I sent it / tell us what
+ * happened / add document / verify savings / close — so cases never dead-end.
  */
 
 const STATE_LABELS: Record<string, string> = {
@@ -49,20 +50,23 @@ export default async function BillsPage() {
           {cases.map((c) => (
             <li
               key={c.id}
-              className="flex items-center justify-between rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
+              className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
             >
-              <div className="flex flex-col">
-                <span className="font-medium">
-                  Case {c.id.slice(0, 8)}
-                  {c.primary_verdict ? ` — ${c.primary_verdict}` : ""}
-                </span>
-                <span className="text-sm text-neutral-500">
-                  {new Date(c.created_at).toLocaleDateString()}
+              <div className="flex items-center justify-between gap-3">
+                <Link href={`/case/${c.id}/plan`} className="flex flex-col hover:underline">
+                  <span className="font-medium">
+                    Case {c.id.slice(0, 8)}
+                    {c.primary_verdict ? ` — ${c.primary_verdict}` : ""}
+                  </span>
+                  <span className="text-sm text-neutral-500">
+                    {new Date(c.created_at).toLocaleDateString()}
+                  </span>
+                </Link>
+                <span className="shrink-0 rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+                  {STATE_LABELS[c.state] ?? c.state}
                 </span>
               </div>
-              <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
-                {STATE_LABELS[c.state] ?? c.state}
-              </span>
+              <CaseActions caseId={c.id} state={c.state} />
             </li>
           ))}
         </ul>

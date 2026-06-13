@@ -78,3 +78,10 @@ insert into public.ref_carc_rarc (version, code, description, liability_class) v
 on conflict do nothing;
 insert into public.ref_versions (table_name, version) values ('ref_carc_rarc', 'MINI1')
 on conflict do nothing;
+
+-- ------------------------------------------------------------- U14 resolution
+-- Frozen savings baseline (deepening data #1): totals snapshotted ONCE when
+-- the verdict lands; the corrected-statement diff always compares against
+-- this, never against a recomputed or edited original.
+alter table public.cases add column if not exists baseline_snapshot jsonb;
+alter table public.cases add column if not exists verified_savings_cents bigint;

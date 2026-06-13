@@ -516,6 +516,56 @@ async function verdictStep(caseId: string): Promise<void> {
     if (now !== "VERDICT") throw new Error("verdict_advance_no_rows");
   }
 
+  // Frozen savings baseline (U14, data #1): snapshotted ONCE at first
+  // verdict from the version-1 originals; corrected-statement diffs always
+  // compare against this, never a recomputed original.
+  const { data: baselineCheck, error: blErr } = await admin
+    .from("cases")
+    .select("baseline_snapshot")
+    .eq("id", caseId)
+    .maybeSingle();
+  if (blErr) throw new Error(`baseline_lookup_failed:${blErr.code ?? "unknown"}`);
+  if (!baselineCheck?.baseline_snapshot) {
+    const { data: originals, error: origErr } = await admin
+      .from("documents")
+      .select("id, printed_total_cents")
+      .eq("case_id", caseId)
+      .in("kind", BILL_KINDS)
+      .eq("parse_status", "parsed")
+      .eq("version_number", 1);
+    if (origErr) throw new Error(`baseline_docs_failed:${origErr.code ?? "unknown"}`);
+    const originalIds = (originals ?? []).map((d) => d.id);
+    const billTotalCents = (originals ?? []).reduce(
+      (sum, d) => sum + (d.printed_total_cents === null ? 0 : Number(d.printed_total_cents)),
+      0,
+    );
+    let fingerprints: string[] = [];
+    if (originalIds.length > 0) {
+      const { data: lines, error: lineErr } = await admin
+        .from("line_items")
+        .select("code, amount_cents, units")
+        .in("document_id", originalIds);
+      if (lineErr) throw new Error(`baseline_lines_failed:${lineErr.code ?? "unknown"}`);
+      fingerprints = (lines ?? []).map(
+        (li) => `${li.code ?? ""}|${li.amount_cents ?? ""}|${li.units ?? ""}`,
+      );
+    }
+    if (billTotalCents > 0) {
+      const { error: snapErr } = await admin
+        .from("cases")
+        .update({
+          baseline_snapshot: {
+            billTotalCents,
+            lineFingerprints: fingerprints,
+            snapshotAt: new Date().toISOString(),
+          },
+        })
+        .eq("id", caseId)
+        .is("baseline_snapshot", null);
+      if (snapErr) throw new Error(`baseline_write_failed:${snapErr.code ?? "unknown"}`);
+    }
+  }
+
   log("workflow.verdict_step.done", { caseId, status: result.primary });
 }
 
