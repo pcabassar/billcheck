@@ -85,3 +85,55 @@ on conflict do nothing;
 -- this, never against a recomputed or edited original.
 alter table public.cases add column if not exists baseline_snapshot jsonb;
 alter table public.cases add column if not exists verified_savings_cents bigint;
+
+-- ----------------------------------------------------------------- U17 purge
+-- Anonymous-data purge (plan R8 / data #3). Anonymous accounts older than the
+-- retention window are deleted in full: storage bytes (via the route), then
+-- rows (cascade), then the auth user. Claimed accounts (is_anonymous=false)
+-- are NEVER selected, regardless of age.
+--
+-- select_purgeable_anon_users: oldest-first batch of anonymous user IDs past
+-- the cutoff. SECURITY DEFINER to read auth.users.
+create or replace function public.select_purgeable_anon_users(p_cutoff timestamptz, p_limit int)
+returns table (user_id uuid)
+language sql security definer set search_path = public, auth as $$
+  select u.id
+  from auth.users u
+  where u.is_anonymous = true
+    and u.created_at < p_cutoff
+  order by u.created_at asc
+  limit greatest(p_limit, 0)
+$$;
+revoke execute on function public.select_purgeable_anon_users(timestamptz, int) from public, anon, authenticated;
+
+-- storage_paths_for_user: every document object key the user owns (collected
+-- BEFORE row deletion so the route can remove the bytes).
+create or replace function public.storage_paths_for_user(p_user_id uuid)
+returns table (storage_path text)
+language sql security definer set search_path = public as $$
+  select d.storage_path
+  from public.documents d
+  join public.cases c on c.id = d.case_id
+  where c.user_id = p_user_id and d.storage_path is not null
+$$;
+revoke execute on function public.storage_paths_for_user(uuid) from public, anon, authenticated;
+
+-- purge_anonymous_user_rows: delete the user's cases (cascade removes
+-- documents, line_items, attestations, engine_runs, findings, verdicts,
+-- artifacts, deadlines, payments, ai_calls, AND case_events) under the
+-- append-only bypass GUC. Re-asserts is_anonymous so a claimed account can
+-- never be purged even if a stale ID is passed. Returns rows deleted.
+create or replace function public.purge_anonymous_user_rows(p_user_id uuid)
+returns int
+language plpgsql security definer set search_path = public, auth as $$
+declare v_count int;
+begin
+  if not exists (select 1 from auth.users where id = p_user_id and is_anonymous = true) then
+    return 0; -- claimed or unknown — refuse
+  end if;
+  perform set_config('billcheck.purge', 'on', true);
+  delete from public.cases where user_id = p_user_id;
+  get diagnostics v_count = row_count;
+  return v_count;
+end $$;
+revoke execute on function public.purge_anonymous_user_rows(uuid) from public, anon, authenticated;
