@@ -1,7 +1,7 @@
 # billcheck — session handoff / live state (2026-06-12)
 
 Durable record of everything that lives outside the code. Update on every significant session.
-Plan of record: `docs/plans/2026-06-12-001-feat-billcheck-v0-plan.md` · Conventions: `AGENTS.md`.
+Plan of record: `docs/plans/2026-06-12-001-feat-billcheck-v0-plan.md` · Conventions: `AGENTS.md` · Product: `docs/PRODUCT.md` · Roadmap/deferred: `docs/ROADMAP.md`.
 
 ## Live infrastructure
 
@@ -55,14 +55,26 @@ awaiting Pedro's go). 188 unit + 35 eval tests green, lint+typecheck+build clean
 - **Spend alarm:** rolling ai_calls cost ceiling kill switch on document-bearing
   calls (BILLCHECK_SPEND_CEILING_CENTS default $50/24h; 0 disables; fail-open).
 
-**BLOCKED ON PEDRO:**
-1. **Apply migration 0009** (`supabase/migrations/0009_phase_b5c.sql`) to remote —
-   triage/router/EOB/resolution/purge/claim all need it (columns, RPCs,
-   ref_versions rows, claim_tokens, CARC/FAP/PFS seeds). The new code requires it.
-2. **Push `feat/phase-b5-c` + open PR** (direct pushes are gated).
-3. **Stripe test keys** (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) when ready —
-   PWYW is inert until then (everything else in resolution works).
-4. Review round 2 once the claude.ai spend limit is raised.
+**DONE 2026-06-13:** migration 0009 applied to remote; branch pushed; PR #1
+opened (https://github.com/pcabassar/billcheck/pull/1); full E2E re-verified
+LOCALLY on the new flow — CONTEST $774 (C3+C4+C5, with C10 anchors null-amount
++ MINI2 rates + per-table provenance + frozen baseline $7,218), dispute letter
++ static itemized_request artifacts, WAIT routing (insured+not-adjudicated →
+WAITING_ADJUDICATION + 21d reminder). No server errors. WDK usage audited
+against current docs (vercel:workflow): clean. Preview rebuilt from branch
+(https://billcheck-ldmuaii9x-pedro-7901s-projects.vercel.app, READY).
+
+**STILL ON PEDRO:**
+1. **Preview app-route smoke test** — the deployment is behind Vercel
+   deployment protection (SSO), so its app routes need Pedro's browser (or
+   explicit go to open protection / add an automation-bypass token). Build is
+   READY and identical to the locally-verified code.
+2. **Merge PR #1** when satisfied.
+3. **Stripe test keys** (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) — PWYW
+   inert until then; rest of resolution works.
+4. **Review round 2** once the claude.ai spend limit is raised.
+5. **Production promote + pg_cron** for reconcile/purge (after merge + the
+   BAA preconditions for the PHASE=B flip).
 
 ## Review round 1 (2026-06-12) — APPLIED IN CODE, MIGRATION PENDING
 
