@@ -137,3 +137,59 @@ begin
   return v_count;
 end $$;
 revoke execute on function public.purge_anonymous_user_rows(uuid) from public, anon, authenticated;
+
+-- ------------------------------------------------------------------ U18 claim
+-- Email-collision account claim (plan R5/R8, deepening security #1). When an
+-- anonymous user enters an email that already has an account, their data is
+-- merged into it ONLY after that account's owner authenticates. A single-use,
+-- short-TTL token bound to (anon uid, target email) carries the intent; the
+-- re-parent is atomic and audited.
+create table if not exists public.claim_tokens (
+  token_hash text primary key,        -- sha256 of the opaque token; raw never stored
+  anon_user_id uuid not null,
+  target_email text not null,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null,
+  consumed_at timestamptz
+);
+alter table public.claim_tokens enable row level security; -- server-only: no policies
+
+-- consume_claim_token: atomic single-use re-parent. The ROUTE is the auth
+-- boundary (it verifies the authenticated session's email matches the token
+-- target before calling); this RPC enforces single-use + atomicity and moves
+-- the rows. Re-parenting is an UPDATE of cases.user_id (the append-only
+-- trigger only guards case_events), so no purge GUC is needed. Locks the
+-- anon user's cases FOR UPDATE to narrow the purge race (data #3). Returns
+-- cases moved, or -1 when the token is invalid/expired/already consumed.
+create or replace function public.consume_claim_token(p_token_hash text, p_target_uid uuid)
+returns int
+language plpgsql security definer set search_path = public as $$
+declare v_anon uuid; v_count int;
+begin
+  select anon_user_id into v_anon
+  from public.claim_tokens
+  where token_hash = p_token_hash and consumed_at is null and expires_at > now()
+  for update;
+  if v_anon is null then
+    return -1;
+  end if;
+
+  update public.claim_tokens set consumed_at = now() where token_hash = p_token_hash;
+
+  -- Lock the anon user's cases, then re-parent them to the target, capturing
+  -- EXACTLY the moved IDs so the audit event covers only those (not cases the
+  -- target already owned).
+  perform 1 from public.cases where user_id = v_anon for update;
+  with moved as (
+    update public.cases set user_id = p_target_uid where user_id = v_anon returning id
+  ),
+  audited as (
+    insert into public.case_events (case_id, type, payload, by_role)
+    select id, 'session_claimed', jsonb_build_object('from_anon', v_anon), 'system' from moved
+    returning 1
+  )
+  select count(*)::int into v_count from moved;
+
+  return v_count;
+end $$;
+revoke execute on function public.consume_claim_token(text, uuid) from public, anon, authenticated;
