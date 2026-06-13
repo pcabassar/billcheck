@@ -34,7 +34,9 @@ const TERMINAL_STATES = new Set([
 ]);
 
 /** Kinds the V0 parser understands; EOB joins in U16 (F04: 'other' docs must not feed the audit). */
-const PARSEABLE_KINDS = ["bill", "corrected_statement"];
+const PARSEABLE_KINDS = ["bill", "corrected_statement", "receipt", "gfe"];
+/** Kinds whose LINE ITEMS feed the engine and define "itemized" — receipts/GFEs contribute totals only (U11). */
+const BILL_KINDS = ["bill", "corrected_statement"];
 
 const ROUTER_VERSION = "demo-0.1";
 
@@ -156,8 +158,9 @@ async function loadLatestRefs(): Promise<ReferenceDataJson> {
   const ncciVersion = latest.get("ref_ncci_ptp") ?? "EMPTY";
   const mueVersion = latest.get("ref_mue") ?? "EMPTY";
   const ratesVersion = latest.get("ref_medicare_rates") ?? "EMPTY";
+  const fapVersion = latest.get("ref_fap_policies") ?? "EMPTY";
 
-  const [ncciAll, mue, rates] = await Promise.all([
+  const [ncciAll, mue, rates, fap] = await Promise.all([
     loadAllRows<{ code1: string; code2: string; modifier_allowed: boolean }>(
       "ref_ncci_ptp",
       "code1, code2, modifier_allowed",
@@ -169,15 +172,26 @@ async function loadLatestRefs(): Promise<ReferenceDataJson> {
       "code, national_rate_cents",
       ratesVersion,
     ),
+    loadAllRows<{ hospital_name: string; state: string; threshold_free_fpl: number | null; threshold_discount_fpl: number | null }>(
+      "ref_fap_policies",
+      "hospital_name, state, threshold_free_fpl, threshold_discount_fpl",
+      fapVersion,
+    ),
   ]);
   // Exclude modifier-allowed pairs (engine seam — modifier handling is U11).
   const ncci = ncciAll.filter((r) => r.modifier_allowed === false);
 
   return {
-    versions: { ncciPtp: ncciVersion, mue: mueVersion, medicareRates: ratesVersion },
+    versions: { ncciPtp: ncciVersion, mue: mueVersion, medicareRates: ratesVersion, fapPolicies: fapVersion },
     ncciPtp: ncci.map((r) => `${r.code1}|${r.code2}`),
     mue: Object.fromEntries(mue.map((r) => [r.code, r.max_units])),
     medicareRatesCents: Object.fromEntries(rates.map((r) => [r.code, Number(r.national_rate_cents)])),
+    fapPolicies: fap.map((r) => ({
+      hospitalName: r.hospital_name,
+      state: r.state,
+      thresholdFreeFpl: r.threshold_free_fpl === null ? null : Number(r.threshold_free_fpl),
+      thresholdDiscountFpl: r.threshold_discount_fpl === null ? null : Number(r.threshold_discount_fpl),
+    })),
   };
 }
 
@@ -186,14 +200,26 @@ async function auditStep(caseId: string): Promise<{ findings: number }> {
   const state = await assertCaseActive(caseId);
   const admin = createSupabaseAdminClient();
 
-  const { data: docs, error: docsError } = await admin
+  const { data: allDocs, error: docsError } = await admin
     .from("documents")
-    .select("id, extracted")
+    .select("id, kind, extracted, printed_total_cents, version_group, version_number")
     .eq("case_id", caseId)
     .eq("parse_status", "parsed")
     .in("kind", PARSEABLE_KINDS);
   if (docsError) throw new Error(`documents_lookup_failed:${docsError.code ?? "unknown"}`);
-  const docIds = (docs ?? []).map((d) => d.id);
+
+  // Latest version per group: corrected statements supersede their originals
+  // for the audit; receipts/GFEs contribute printed totals only (U11).
+  const latestByGroup = new Map<string, NonNullable<typeof allDocs>[number]>();
+  for (const d of allDocs ?? []) {
+    const prev = latestByGroup.get(d.version_group);
+    if (!prev || d.version_number > prev.version_number) latestByGroup.set(d.version_group, d);
+  }
+  const latest = [...latestByGroup.values()];
+  const docs = latest.filter((d) => BILL_KINDS.includes(d.kind));
+  const receiptDocs = latest.filter((d) => d.kind === "receipt");
+  const gfeDocs = latest.filter((d) => d.kind === "gfe");
+  const docIds = docs.map((d) => d.id);
   if (docIds.length === 0) throw new Error("no_parsed_documents");
 
   const { data: lineItems, error: liError } = await admin
@@ -208,9 +234,44 @@ async function auditStep(caseId: string): Promise<{ findings: number }> {
     throw new Error(`line_items_lookup_failed:${liError.code ?? "unknown"}`);
   }
 
-  const itemized = (docs ?? []).some(
+  const itemized = docs.some(
     (d) => (d.extracted as { itemized?: boolean } | null)?.itemized === true,
   );
+
+  // U11 inputs: totals + provider identity + triage coverage flags.
+  const sumTotals = (rows: typeof docs): number | null => {
+    const totals = rows
+      .map((d) => (d.printed_total_cents === null ? null : Number(d.printed_total_cents)))
+      .filter((n): n is number => n !== null);
+    return totals.length === 0 ? null : totals.reduce((a, b) => a + b, 0);
+  };
+  const billTotalCents = sumTotals(docs);
+  const receiptsTotalCents = sumTotals(receiptDocs);
+  const gfeTotalCents = sumTotals(gfeDocs);
+  const providerName =
+    (docs
+      .map((d) => (d.extracted as { provider?: string } | null)?.provider)
+      .find((p) => typeof p === "string" && p.length > 0) as string | undefined) ?? null;
+
+  const { data: caseMeta, error: caseMetaErr } = await admin
+    .from("cases")
+    .select("coverage_profile")
+    .eq("id", caseId)
+    .maybeSingle();
+  if (caseMetaErr) throw new Error(`case_lookup_failed:${caseMetaErr.code ?? "unknown"}`);
+  const profile = (caseMeta?.coverage_profile ?? {}) as {
+    triage?: { state?: string | null; incomeBand?: string | null };
+    flags?: { c8Enabled?: boolean; c9Enabled?: boolean };
+  };
+  const incomeBand = profile.triage?.incomeBand;
+  const coverage: import("@billcheck/engine").EngineCoverage = {
+    c8Enabled: profile.flags?.c8Enabled === true,
+    c9Enabled: profile.flags?.c9Enabled === true,
+    incomeBand:
+      incomeBand === "under_2x_fpl" || incomeBand === "2x_to_4x_fpl" || incomeBand === "over_4x_fpl"
+        ? incomeBand
+        : null,
+  };
 
   const refsJson = await loadLatestRefs();
   const refs = referenceDataFromJson(refsJson);
@@ -218,6 +279,12 @@ async function auditStep(caseId: string): Promise<{ findings: number }> {
   const input: EngineInput = {
     caseId,
     itemized,
+    billTotalCents,
+    receiptsTotalCents,
+    gfeTotalCents,
+    providerName,
+    providerState: profile.triage?.state ?? null,
+    coverage,
     lineItems: (lineItems ?? []).map((li) => ({
       id: li.id,
       documentId: li.document_id,
@@ -248,6 +315,7 @@ async function auditStep(caseId: string): Promise<{ findings: number }> {
         ncci_ptp: refsJson.versions.ncciPtp,
         mue: refsJson.versions.mue,
         medicare_rates: refsJson.versions.medicareRates,
+        fap_policies: refsJson.versions.fapPolicies,
       },
       status: "running",
     })
@@ -330,7 +398,7 @@ async function verdictStep(caseId: string): Promise<void> {
       .select("extracted")
       .eq("case_id", caseId)
       .eq("parse_status", "parsed")
-      .in("kind", PARSEABLE_KINDS),
+      .in("kind", BILL_KINDS),
   ]);
   if (findingsRes.error) throw new Error(`findings_lookup_failed:${findingsRes.error.code ?? "unknown"}`);
   if (docsRes.error) throw new Error(`documents_lookup_failed:${docsRes.error.code ?? "unknown"}`);

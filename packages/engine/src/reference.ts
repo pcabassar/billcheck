@@ -11,5 +11,6 @@ export function referenceDataFromJson(json: ReferenceDataJson): ReferenceData {
     ncciPtp: new Set(json.ncciPtp),
     mue: new Map(Object.entries(json.mue)),
     medicareRatesCents: new Map(Object.entries(json.medicareRatesCents)),
+    fapPolicies: json.fapPolicies ?? [],
   };
 }

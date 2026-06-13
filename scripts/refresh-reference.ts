@@ -73,6 +73,14 @@ function sqlInt(value: string, context: string): string {
   return String(n);
 }
 
+function sqlNumeric(value: string, context: string): string {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) {
+    fail(`${context}: "${value}" is not a non-negative number`);
+  }
+  return String(n);
+}
+
 function sqlBool(value: string, context: string): string {
   const v = value.toLowerCase();
   if (v === "true" || v === "1") return "true";
@@ -126,6 +134,40 @@ function main(): void {
     out.push(
       `insert into public.ref_medicare_rates (version, code, national_rate_cents) values ` +
         `(${v}, ${sqlString(code)}, ${sqlInt(cents, `medicare_rates ${code}`)}) ` +
+        `on conflict do nothing;`,
+    );
+  }
+
+  // fap_policies.csv → public.ref_fap_policies (OPTIONAL — FAP sets refresh
+  // on their own cadence; absent file just skips the table). U11.
+  const fapPath = join(rawDir, "fap_policies.csv");
+  const loadedTables = ["ref_ncci_ptp", "ref_mue", "ref_medicare_rates"];
+  if (existsSync(fapPath)) {
+    const fap = readCsv(fapPath, [
+      "hospital_name",
+      "state",
+      "threshold_free_fpl",
+      "threshold_discount_fpl",
+      "source_url",
+    ]);
+    for (const [name, state, free, discount, url] of fap.rows) {
+      const freeSql = free === "" ? "null" : sqlNumeric(free, `fap ${name} free`);
+      const discountSql = discount === "" ? "null" : sqlNumeric(discount, `fap ${name} discount`);
+      const urlSql = url === "" ? "null" : sqlString(url);
+      out.push(
+        `insert into public.ref_fap_policies (version, hospital_name, state, threshold_free_fpl, threshold_discount_fpl, source_url) values ` +
+          `(${v}, ${sqlString(name)}, ${sqlString(state.toUpperCase())}, ${freeSql}, ${discountSql}, ${urlSql}) ` +
+          `on conflict do nothing;`,
+      );
+    }
+    loadedTables.push("ref_fap_policies");
+  }
+
+  // Version registry (U11/review F05-F06): the engine resolves "latest" per
+  // table from ref_versions by loaded_at — registration IS the activation.
+  for (const table of loadedTables) {
+    out.push(
+      `insert into public.ref_versions (table_name, version) values (${sqlString(table)}, ${v}) ` +
         `on conflict do nothing;`,
     );
   }

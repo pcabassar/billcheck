@@ -22,11 +22,33 @@
         }
       ],
       "evidenceKey": "C4:80048|80053:2026-05-03:doc-1"
+    },
+    {
+      "checkId": "C10",
+      "checkVersion": "v1",
+      "refVersions": {
+        "medicare_rates": "TEST1"
+      },
+      "confidenceTier": "medium",
+      "amountImpactCents": null,
+      "title": "Negotiation anchor: code 80053 billed at 6.2\u00d7 the Medicare rate",
+      "evidence": [
+        {
+          "documentId": "doc-1",
+          "lineItemId": "L1",
+          "note": "billed 90.00 vs Medicare 14.51 for 1 unit(s)"
+        }
+      ],
+      "evidenceKey": "C10:80053:doc-1:L1"
     }
   ],
   "coverage": {
     "C3": "ran",
     "C4": "ran",
-    "C5": "ran"
+    "C5": "ran",
+    "C8": "skipped_no_data",
+    "C9": "skipped_no_data",
+    "C10": "ran",
+    "C13": "skipped_no_data"
   }
 }

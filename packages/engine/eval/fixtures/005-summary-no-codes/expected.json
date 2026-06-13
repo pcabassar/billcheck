@@ -3,6 +3,10 @@
   "coverage": {
     "C3": "skipped_no_data",
     "C4": "skipped_no_data",
-    "C5": "skipped_no_data"
+    "C5": "skipped_no_data",
+    "C8": "skipped_no_data",
+    "C9": "skipped_no_data",
+    "C10": "skipped_no_data",
+    "C13": "skipped_no_data"
   }
 }

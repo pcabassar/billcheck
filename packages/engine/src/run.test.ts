@@ -22,18 +22,28 @@ describe("runEngine", () => {
 
   it("marks unimplemented checks not_yet_available, never silently absent", () => {
     const result = runEngine(engineInput([]), refs());
+    // U16 (C1/C2/C6) and V1 (C7/C11/C12) are the remaining gaps.
     const others = result.coverage.filter(
-      (c) => !["C3", "C4", "C5"].includes(c.checkId),
+      (c) => !["C3", "C4", "C5", "C8", "C9", "C10", "C13"].includes(c.checkId),
     );
-    expect(others).toHaveLength(10);
+    expect(others).toHaveLength(6);
     for (const entry of others) expect(entry.status).toBe("not_yet_available");
+  });
+
+  it("U11 checks skip honestly on an input without their data", () => {
+    const result = runEngine(engineInput([]), refs());
+    for (const id of ["C8", "C9", "C10", "C13"] as const) {
+      const entry = result.coverage.find((c) => c.checkId === id);
+      expect(entry?.status).toBe("skipped_no_data");
+      expect(entry?.reason).toBeTruthy();
+    }
   });
 
   it("stamps engine and check versions for reproducibility", () => {
     const result = runEngine(engineInput([]), refs());
     expect(result.engineVersion).toBe(ENGINE_VERSION);
     expect(result.checkVersions).toEqual(CHECK_VERSIONS);
-    expect(Object.keys(CHECK_VERSIONS).sort()).toEqual(["C3", "C4", "C5"]);
+    expect(Object.keys(CHECK_VERSIONS).sort()).toEqual(["C10", "C13", "C3", "C4", "C5", "C8", "C9"]);
   });
 
   it("concatenates findings across checks in C3 → C4 → C5 order", () => {

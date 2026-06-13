@@ -169,6 +169,27 @@ export function TriageForm({ caseId }: { caseId: string }) {
         </section>
       ))}
 
+      {answers.gfeReceived === "yes" ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
+          Great — your written estimate is powerful. If the bill ran over it by
+          more than $400, federal dispute rights kick in.{" "}
+          <a href={`/upload?caseId=${caseId}`} className="font-medium underline">
+            Add your estimate
+          </a>{" "}
+          and we&apos;ll compare them in the audit.
+        </div>
+      ) : null}
+
+      {answers.alreadyPaid === "yes" ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
+          If you have a receipt,{" "}
+          <a href={`/upload?caseId=${caseId}`} className="font-medium underline">
+            add it
+          </a>{" "}
+          — we&apos;ll check that every payment is actually credited on the bill.
+        </div>
+      ) : null}
+
       <section className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
         <div className="flex flex-col gap-1">
           <p className="font-medium">Which state was the care in?</p>

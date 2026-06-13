@@ -31,14 +31,19 @@ export function engineInput(
 
 export function refs(overrides: Partial<ReferenceData> = {}): ReferenceData {
   return {
-    versions: { ncciPtp: "TEST1", mue: "TEST1", medicareRates: "TEST1" },
+    versions: { ncciPtp: "TEST1", mue: "TEST1", medicareRates: "TEST1", fapPolicies: "TEST1" },
     ncciPtp: new Set(["80053|80048", "97140|97110"]),
     mue: new Map([
       ["J0696", 4],
       ["36415", 1],
       ["80053", 1],
     ]),
+    fapPolicies: [
+      { hospitalName: "St. Mary's Medical Center", state: "NY", thresholdFreeFpl: 2.0, thresholdDiscountFpl: 4.0 },
+      { hospitalName: "Lakewood Urgent Care", state: "NJ", thresholdFreeFpl: null, thresholdDiscountFpl: 3.0 },
+    ],
     medicareRatesCents: new Map([
+      ["99285", 18500],
       ["80053", 1451],
       ["36415", 300],
       ["J0696", 1200],
@@ -49,9 +54,10 @@ export function refs(overrides: Partial<ReferenceData> = {}): ReferenceData {
 
 export function emptyRefs(): ReferenceData {
   return {
-    versions: { ncciPtp: "TEST1", mue: "TEST1", medicareRates: "TEST1" },
+    versions: { ncciPtp: "TEST1", mue: "TEST1", medicareRates: "TEST1", fapPolicies: "TEST1" },
     ncciPtp: new Set(),
     mue: new Map(),
     medicareRatesCents: new Map(),
+    fapPolicies: [],
   };
 }

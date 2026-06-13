@@ -31,7 +31,8 @@
     "versions": {
       "ncciPtp": "TEST1",
       "mue": "TEST1",
-      "medicareRates": "TEST1"
+      "medicareRates": "TEST1",
+      "fapPolicies": "TEST1"
     },
     "ncciPtp": [
       "80053|80048",
@@ -46,6 +47,7 @@
       "80053": 1451,
       "36415": 300,
       "J0696": 1200
-    }
+    },
+    "fapPolicies": []
   }
 }
