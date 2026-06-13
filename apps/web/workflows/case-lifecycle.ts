@@ -37,7 +37,7 @@ const TERMINAL_STATES = new Set([
 ]);
 
 /** Kinds the V0 parser understands; EOB joins in U16 (F04: 'other' docs must not feed the audit). */
-const PARSEABLE_KINDS = ["bill", "corrected_statement", "receipt", "gfe"];
+const PARSEABLE_KINDS = ["bill", "corrected_statement", "receipt", "gfe", "eob"];
 /** Kinds whose LINE ITEMS feed the engine and define "itemized" — receipts/GFEs contribute totals only (U11). */
 const BILL_KINDS = ["bill", "corrected_statement"];
 
@@ -160,8 +160,9 @@ async function loadLatestRefs(): Promise<ReferenceDataJson> {
   const mueVersion = latest.get("ref_mue") ?? "EMPTY";
   const ratesVersion = latest.get("ref_medicare_rates") ?? "EMPTY";
   const fapVersion = latest.get("ref_fap_policies") ?? "EMPTY";
+  const carcVersion = latest.get("ref_carc_rarc") ?? "EMPTY";
 
-  const [ncciAll, mue, rates, fap] = await Promise.all([
+  const [ncciAll, mue, rates, fap, carc] = await Promise.all([
     loadAllRows<{ code1: string; code2: string; modifier_allowed: boolean }>(
       "ref_ncci_ptp",
       "code1, code2, modifier_allowed",
@@ -178,12 +179,17 @@ async function loadLatestRefs(): Promise<ReferenceDataJson> {
       "hospital_name, state, threshold_free_fpl, threshold_discount_fpl",
       fapVersion,
     ),
+    loadAllRows<{ code: string; liability_class: string | null }>(
+      "ref_carc_rarc",
+      "code, liability_class",
+      carcVersion,
+    ),
   ]);
   // Exclude modifier-allowed pairs (engine seam — modifier handling is U11).
   const ncci = ncciAll.filter((r) => r.modifier_allowed === false);
 
   return {
-    versions: { ncciPtp: ncciVersion, mue: mueVersion, medicareRates: ratesVersion, fapPolicies: fapVersion },
+    versions: { ncciPtp: ncciVersion, mue: mueVersion, medicareRates: ratesVersion, fapPolicies: fapVersion, carcRarc: carcVersion },
     ncciPtp: ncci.map((r) => `${r.code1}|${r.code2}`),
     mue: Object.fromEntries(mue.map((r) => [r.code, r.max_units])),
     medicareRatesCents: Object.fromEntries(rates.map((r) => [r.code, Number(r.national_rate_cents)])),
@@ -193,6 +199,9 @@ async function loadLatestRefs(): Promise<ReferenceDataJson> {
       thresholdFreeFpl: r.threshold_free_fpl === null ? null : Number(r.threshold_free_fpl),
       thresholdDiscountFpl: r.threshold_discount_fpl === null ? null : Number(r.threshold_discount_fpl),
     })),
+    carcLiability: Object.fromEntries(
+      carc.filter((r) => r.liability_class !== null).map((r) => [r.code, r.liability_class as string]),
+    ),
   };
 }
 
@@ -220,6 +229,7 @@ async function auditStep(caseId: string): Promise<{ findings: number }> {
   const docs = latest.filter((d) => BILL_KINDS.includes(d.kind));
   const receiptDocs = latest.filter((d) => d.kind === "receipt");
   const gfeDocs = latest.filter((d) => d.kind === "gfe");
+  const eobDocs = latest.filter((d) => d.kind === "eob");
   const docIds = docs.map((d) => d.id);
   if (docIds.length === 0) throw new Error("no_parsed_documents");
 
@@ -261,7 +271,7 @@ async function auditStep(caseId: string): Promise<{ findings: number }> {
     .maybeSingle();
   if (caseMetaErr) throw new Error(`case_lookup_failed:${caseMetaErr.code ?? "unknown"}`);
   const profile = (caseMeta?.coverage_profile ?? {}) as {
-    triage?: { state?: string | null; incomeBand?: string | null };
+    triage?: { state?: string | null; incomeBand?: string | null; insured?: string };
     flags?: { c8Enabled?: boolean; c9Enabled?: boolean };
   };
   const incomeBand = profile.triage?.incomeBand;
@@ -272,7 +282,29 @@ async function auditStep(caseId: string): Promise<{ findings: number }> {
       incomeBand === "under_2x_fpl" || incomeBand === "2x_to_4x_fpl" || incomeBand === "over_4x_fpl"
         ? incomeBand
         : null,
+    insured: profile.triage?.insured === "yes",
   };
+
+  // EOB facts (U16): latest parsed EOB's document-level adjudication.
+  interface EobExtract {
+    patientResponsibilityCents?: number | null;
+    allowedCents?: number | null;
+    planPaidCents?: number | null;
+    dateOfService?: string | null;
+    carcCodes?: Array<{ code: string; amountCents: number | null }>;
+  }
+  const eobRaw = eobDocs
+    .map((d) => (d.extracted as { eob?: EobExtract } | null)?.eob)
+    .find((e) => e !== undefined && e !== null);
+  const eob = eobRaw
+    ? {
+        patientResponsibilityCents: eobRaw.patientResponsibilityCents ?? null,
+        allowedCents: eobRaw.allowedCents ?? null,
+        planPaidCents: eobRaw.planPaidCents ?? null,
+        dateOfService: eobRaw.dateOfService ?? null,
+        carcCodes: eobRaw.carcCodes ?? [],
+      }
+    : null;
 
   const refsJson = await loadLatestRefs();
   const refs = referenceDataFromJson(refsJson);
@@ -286,6 +318,7 @@ async function auditStep(caseId: string): Promise<{ findings: number }> {
     providerName,
     providerState: profile.triage?.state ?? null,
     coverage,
+    eob,
     lineItems: (lineItems ?? []).map((li) => ({
       id: li.id,
       documentId: li.document_id,
@@ -317,6 +350,7 @@ async function auditStep(caseId: string): Promise<{ findings: number }> {
         mue: refsJson.versions.mue,
         medicare_rates: refsJson.versions.medicareRates,
         fap_policies: refsJson.versions.fapPolicies,
+        carc_rarc: refsJson.versions.carcRarc,
       },
       coverage: result.coverage,
       status: "running",

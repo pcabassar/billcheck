@@ -44,18 +44,38 @@ export async function POST(
     return NextResponse.json({ error: "claim_failed" }, { status: 500 });
   }
   if (!fresh || fresh.length === 0) {
+    // Re-kick is legitimate in exactly two shapes: a stale claim on a case
+    // that never advanced, or FOLLOW-UP documents waiting to parse (the S5
+    // "EOB arrived" flow, corrected statements, receipts). Without pending
+    // docs a re-kick is a double-submit — idempotent no-op.
+    const { data: pendingDocs } = await admin
+      .from("documents")
+      .select("id")
+      .eq("case_id", caseId)
+      .eq("parse_status", "pending")
+      .limit(1);
     const staleCutoff = new Date(Date.now() - STALE_KICK_MS).toISOString();
-    const { data: reclaimed } = await admin
+    const { data: staleReclaim } = await admin
       .from("cases")
       .update({ process_started_at: new Date().toISOString() })
       .eq("id", caseId)
       .eq("state", "CAPTURED")
       .lt("process_started_at", staleCutoff)
       .select("id");
-    if (!reclaimed || reclaimed.length === 0) {
-      // Already kicked (and not stale) — idempotent success, no second workflow.
+    const hasPending = (pendingDocs ?? []).length > 0;
+    if ((!staleReclaim || staleReclaim.length === 0) && !hasPending) {
       log("case.process.already_started", { caseId, route: "/api/cases/[id]/process" });
       return NextResponse.json({ ok: true, alreadyStarted: true });
+    }
+    if (hasPending && (!staleReclaim || staleReclaim.length === 0)) {
+      const { error: bumpErr } = await admin
+        .from("cases")
+        .update({ process_started_at: new Date().toISOString() })
+        .eq("id", caseId);
+      if (bumpErr) {
+        logError("case.process.claim_failed", bumpErr, { caseId });
+        return NextResponse.json({ error: "claim_failed" }, { status: 500 });
+      }
     }
   }
 

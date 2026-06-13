@@ -12,5 +12,6 @@ export function referenceDataFromJson(json: ReferenceDataJson): ReferenceData {
     mue: new Map(Object.entries(json.mue)),
     medicareRatesCents: new Map(Object.entries(json.medicareRatesCents)),
     fapPolicies: json.fapPolicies ?? [],
+    carcLiability: new Map(Object.entries(json.carcLiability ?? {})),
   };
 }

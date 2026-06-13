@@ -7,7 +7,7 @@ import { emptyRefs, engineInput, li, refs } from "../test-helpers";
 import type { EngineCoverage, EngineInput } from "../types";
 
 function coverage(overrides: Partial<EngineCoverage> = {}): EngineCoverage {
-  return { c8Enabled: false, c9Enabled: false, incomeBand: null, ...overrides };
+  return { c8Enabled: false, c9Enabled: false, incomeBand: null, insured: false, ...overrides };
 }
 
 function input(overrides: Partial<EngineInput>, items = [li({ code: "99285", amountCents: 90000 })]): EngineInput {

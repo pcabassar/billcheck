@@ -22,6 +22,7 @@ export {
   type LlmTransportResponse,
 } from "./llm/client";
 export { ClassifyResult, ParsedBill, ParsedBillLineItem } from "./schemas/parsed-bill";
+export { ParsedEob, ParsedEobCarc } from "./schemas/parsed-eob";
 export {
   buildLetterFillPrompt,
   formatCents,

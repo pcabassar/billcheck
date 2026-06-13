@@ -44,7 +44,8 @@
       "ncciPtp": "TEST1",
       "mue": "TEST1",
       "medicareRates": "TEST1",
-      "fapPolicies": "TEST1"
+      "fapPolicies": "TEST1",
+      "carcRarc": "TEST1"
     },
     "ncciPtp": [
       "80053|80048",
@@ -60,6 +61,7 @@
       "36415": 300,
       "J0696": 1200
     },
-    "fapPolicies": []
+    "fapPolicies": [],
+    "carcLiability": {}
   }
 }

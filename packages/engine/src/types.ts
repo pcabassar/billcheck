@@ -12,6 +12,7 @@ export interface ReferenceVersions {
   mue: string;
   medicareRates: string;
   fapPolicies: string;
+  carcRarc: string;
 }
 
 /** One hospital's published financial-assistance thresholds (C9, U11). */
@@ -36,6 +37,8 @@ export interface ReferenceData {
   medicareRatesCents: Map<string, number>;
   /** Seeded hospital financial-assistance policies (C9). */
   fapPolicies: FapPolicy[];
+  /** CARC code → liability class ('provider_writeoff' | 'patient' | ...), C6. */
+  carcLiability: Map<string, string>;
 }
 
 /** JSON-friendly shape of ReferenceData, used by eval fixtures (input.json). */
@@ -45,6 +48,7 @@ export interface ReferenceDataJson {
   mue: Record<string, number>;
   medicareRatesCents: Record<string, number>;
   fapPolicies: FapPolicy[];
+  carcLiability: Record<string, string>;
 }
 
 /** Income band from triage (S4) — coarse, FAP screening only. */
@@ -57,6 +61,8 @@ export interface EngineCoverage {
   /** Income band given (triage flag) — C9 may run. */
   c9Enabled: boolean;
   incomeBand: IncomeBand | null;
+  /** Triage said insured (C2: was insurance billed at all?). */
+  insured: boolean;
 }
 
 export interface EngineInput {
@@ -76,6 +82,14 @@ export interface EngineInput {
   /** Two-letter state from triage, for FAP matching (C9). */
   providerState?: string | null;
   coverage?: EngineCoverage;
+  /** Parsed EOB facts (U16), document-level. Null when no EOB was provided. */
+  eob?: {
+    patientResponsibilityCents: number | null;
+    allowedCents: number | null;
+    planPaidCents: number | null;
+    dateOfService: string | null;
+    carcCodes: Array<{ code: string; amountCents: number | null }>;
+  } | null;
 }
 
 /**

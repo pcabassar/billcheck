@@ -58,3 +58,23 @@ on conflict do nothing;
 -- The coverage map (ran / skipped_no_data / not_yet_available per check) is
 -- the S10 rendering source of truth; persisted per run for reproducibility.
 alter table public.engine_runs add column if not exists coverage jsonb not null default '[]';
+
+-- ------------------------------------------------------------------ U16 CARC
+-- Hand-authored MINI1 CARC liability classes (C6): provider_writeoff codes
+-- are contractually NOT patient responsibility; patient codes are normal
+-- cost-sharing. Quarterly refresh rides scripts/refresh-reference.ts later.
+insert into public.ref_carc_rarc (version, code, description, liability_class) values
+  ('MINI1','CO-16','Claim lacks information for adjudication','provider_resubmit'),
+  ('MINI1','CO-29','Time limit for filing has expired','provider_writeoff'),
+  ('MINI1','CO-45','Charge exceeds contracted fee schedule','provider_writeoff'),
+  ('MINI1','CO-50','Not deemed medically necessary','appealable'),
+  ('MINI1','CO-97','Bundled into another billed service','provider_writeoff'),
+  ('MINI1','CO-242','Service not provided by network provider','appealable'),
+  ('MINI1','OA-23','Impact of prior payer adjudication','informational'),
+  ('MINI1','PR-1','Deductible','patient'),
+  ('MINI1','PR-2','Coinsurance','patient'),
+  ('MINI1','PR-3','Copayment','patient'),
+  ('MINI1','PR-204','Service not covered under this plan','appealable')
+on conflict do nothing;
+insert into public.ref_versions (table_name, version) values ('ref_carc_rarc', 'MINI1')
+on conflict do nothing;
