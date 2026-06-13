@@ -11,5 +11,7 @@
     "C1": "skipped_no_data",
     "C2": "skipped_no_data",
     "C6": "skipped_no_data"
-  }
+  },
+  "verdict": "GET_ITEMIZED",
+  "flags": {}
 }

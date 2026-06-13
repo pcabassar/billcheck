@@ -1,0 +1,36 @@
+{
+  "findings": [
+    {
+      "checkId": "C9",
+      "checkVersion": "v1",
+      "refVersions": {
+        "fap_policies": "TEST1"
+      },
+      "confidenceTier": "medium",
+      "amountImpactCents": null,
+      "title": "Likely eligible for free care under St. Mary's Medical Center's financial-assistance policy",
+      "evidence": [
+        {
+          "documentId": "doc-1",
+          "lineItemId": null,
+          "note": "published thresholds: free ≤ 2× FPL, discounted ≤ 4× FPL"
+        }
+      ],
+      "evidenceKey": "C9:st marys medical center:under_2x_fpl"
+    }
+  ],
+  "coverage": {
+    "C1": "skipped_no_data",
+    "C2": "skipped_no_data",
+    "C3": "ran",
+    "C4": "skipped_no_data",
+    "C5": "skipped_no_data",
+    "C6": "skipped_no_data",
+    "C8": "skipped_no_data",
+    "C9": "ran",
+    "C10": "skipped_no_data",
+    "C13": "skipped_no_data"
+  },
+  "verdict": "REDUCE",
+  "flags": {}
+}
