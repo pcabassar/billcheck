@@ -4,12 +4,13 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runEngine } from "../src/run";
 import { referenceDataFromJson } from "../src/reference";
+import { routeVerdict, type RouterFlags } from "../src/verdict/router";
 import type {
   EngineFinding,
   EngineInput,
   ReferenceDataJson,
 } from "../src/types";
-import type { CoverageStatus } from "@billcheck/shared";
+import type { CoverageStatus, VerdictKind } from "@billcheck/shared";
 
 /**
  * Golden-case eval harness (plan U8/U15, non-negotiable per arch D2).
@@ -25,6 +26,10 @@ interface FixtureExpected {
   findings: EngineFinding[];
   /** Expected coverage status for each implemented check (C3/C4/C5 in U8). */
   coverage: Record<string, CoverageStatus>;
+  /** Optional end-to-end check (U15): run the D10 router on the engine output. */
+  verdict?: VerdictKind;
+  /** Triage flags fed to the router when `verdict` is asserted. */
+  flags?: RouterFlags;
 }
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
@@ -84,6 +89,33 @@ describe("engine golden fixtures", () => {
           "not_yet_available",
         );
       }
+    }
+  });
+
+  // U15: end-to-end golden coverage — fixtures that declare a verdict run the
+  // engine output through the D10 router and assert the primary verdict.
+  const verdictFixtures = fixtureDirs.filter((dir) => loadFixture(dir).expected.verdict);
+  it.each(verdictFixtures)("fixture %s routes to the expected verdict", (dir) => {
+    const { input, refs, expected } = loadFixture(dir);
+    const result = runEngine(input, referenceDataFromJson(refs));
+    const routed = routeVerdict({
+      itemized: input.itemized,
+      flags: expected.flags ?? {},
+      findings: result.findings.map((f) => ({
+        checkId: f.checkId,
+        confidenceTier: f.confidenceTier,
+        amountImpactCents: f.amountImpactCents,
+      })),
+      coverage: result.coverage,
+    });
+    expect(routed.primary).toBe(expected.verdict);
+  });
+
+  it("covers the V0 verdict matrix across fixtures", () => {
+    const verdicts = new Set(verdictFixtures.map((dir) => loadFixture(dir).expected.verdict));
+    // The honesty-critical verdicts must each appear in at least one fixture.
+    for (const v of ["CONTEST", "PAY", "GET_ITEMIZED", "REJECT", "REDUCE"] as const) {
+      expect(verdicts, `matrix missing ${v}`).toContain(v);
     }
   });
 });

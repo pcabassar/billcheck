@@ -104,13 +104,13 @@ export default async function DecodePage({
 
       <footer className="flex items-center justify-between">
         <Link
-          href={`/case/${id}/plan`}
+          href={`/case/${id}/verdict`}
           className="text-sm text-neutral-500 underline hover:text-neutral-700 dark:hover:text-neutral-300"
         >
           Skip for now
         </Link>
         <Link
-          href={`/case/${id}/plan`}
+          href={`/case/${id}/verdict`}
           className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
         >
           Continue

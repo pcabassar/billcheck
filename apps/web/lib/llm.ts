@@ -14,6 +14,10 @@
  */
 import {
   createLlmClient,
+  log,
+  logError,
+  SpendAlarmError,
+  sumCostCents,
   type AiCallRow,
   type LlmCallInput,
   type LlmCallResult,
@@ -21,6 +25,50 @@ import {
   type LlmSchema,
 } from "@billcheck/shared";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+
+/**
+ * Spend kill switch (plan: spend alarm — required before the public
+ * anonymous funnel). A coarse GLOBAL ceiling on rolling LLM cost estimated
+ * from the ai_calls ledger; trips → document-bearing calls are paused. This
+ * is the runaway-cost backstop; the per-account 20/hr limit is the
+ * per-user one.
+ *
+ *   BILLCHECK_SPEND_CEILING_CENTS  rolling-window cost cap (default $50.00)
+ *   BILLCHECK_SPEND_WINDOW_HOURS   lookback window (default 24h)
+ *
+ * Set the ceiling to 0 to DISABLE the cap (e.g. a controlled load test).
+ * Fail-OPEN on a ledger read error: the cap must never wedge the product on
+ * a transient DB blip (the PHASE gate is the hard pre-BAA boundary; this is
+ * a budget guard).
+ */
+const DEFAULT_CEILING_CENTS = 5000;
+const DEFAULT_WINDOW_HOURS = 24;
+
+async function spendGuard(): Promise<void> {
+  const ceiling = Number(process.env.BILLCHECK_SPEND_CEILING_CENTS ?? DEFAULT_CEILING_CENTS);
+  if (!Number.isFinite(ceiling) || ceiling <= 0) return; // disabled
+  const windowHours = Number(process.env.BILLCHECK_SPEND_WINDOW_HOURS ?? DEFAULT_WINDOW_HOURS);
+  const since = new Date(Date.now() - windowHours * 60 * 60 * 1000).toISOString();
+
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("ai_calls")
+    .select("model_id, tokens_in, tokens_out")
+    .gte("created_at", since)
+    .limit(100_000);
+  if (error) {
+    // Fail open — never wedge the product on a transient read failure.
+    logError("llm.spend_guard.read_failed", error, {});
+    return;
+  }
+  const spentCents = sumCostCents(
+    (data ?? []) as Array<{ model_id: string; tokens_in: number | null; tokens_out: number | null }>,
+  );
+  if (spentCents >= ceiling) {
+    log("llm.spend_guard.tripped", { count: Math.round(spentCents) });
+    throw new SpendAlarmError();
+  }
+}
 
 let singleton: LlmClient | null = null;
 
@@ -81,6 +129,7 @@ function getLlm(): LlmClient {
       model: process.env.BILLCHECK_MODEL,
       phase: process.env.BILLCHECK_PHASE ?? "A",
       ledger: writeAiCallRow,
+      spendGuard,
     });
   }
   return singleton;

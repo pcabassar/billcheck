@@ -51,7 +51,14 @@ const ERROR_COPY: Record<string, string> = {
 
 export default function UploadPage() {
   const [entries, setEntries] = useState<FileEntry[]>([]);
-  const [caseId, setCaseId] = useState<string | null>(null);
+  // The S5 wait screen sends users here with ?caseId= so the EOB (or any
+  // follow-up document) attaches to the existing case instead of a new one.
+  // Lazy initializer: runs client-side only ("use client" page).
+  const [caseId, setCaseId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const fromQuery = new URLSearchParams(window.location.search).get("caseId");
+    return fromQuery && /^[0-9a-f-]{36}$/i.test(fromQuery) ? fromQuery : null;
+  });
   const [busy, setBusy] = useState(false);
   const [kicking, setKicking] = useState(false);
   const [kickError, setKickError] = useState<string | null>(null);

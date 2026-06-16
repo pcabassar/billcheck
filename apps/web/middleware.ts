@@ -10,9 +10,11 @@ import { NextResponse, type NextRequest } from "next/server";
  * AI-invoking actions are login-gated from day 1 (public URL decision).
  */
 
-// /api/cron/* is secret-gated inside the route (pg_net has no session);
-// /.well-known/workflow + /_workflow cover WDK runtime callbacks.
-const PUBLIC_PATHS = ["/", "/dev", "/api/auth", "/api/health", "/api/cron", "/.well-known/workflow", "/_workflow"];
+// /api/cron/* and /api/jobs/* are secret-gated inside the route (pg_net has
+// no session); /api/webhooks/* is signature-verified inside the route (Stripe
+// is server-to-server, no session); /.well-known/workflow + /_workflow cover
+// WDK runtime callbacks.
+const PUBLIC_PATHS = ["/", "/dev", "/api/auth", "/api/health", "/api/cron", "/api/jobs", "/api/webhooks", "/.well-known/workflow", "/_workflow"];
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));

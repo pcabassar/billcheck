@@ -5,6 +5,7 @@ import {
   zodToJsonSchema,
   PhaseGateError,
   LlmValidationError,
+  SpendAlarmError,
   type AiCallRow,
   type LlmTransport,
   type LlmTransportRequest,
@@ -199,6 +200,54 @@ describe("PHASE gate (pre-BAA boundary, fail closed)", () => {
 
     const res = await client.call({ ...baseInput(), isTestAccount: false });
     expect(res.output).toBe("hello");
+    expect(requests).toHaveLength(1);
+  });
+});
+
+describe("spend alarm (budget kill switch)", () => {
+  it("a tripping spendGuard blocks a document-bearing call BEFORE the API and ledgers the block", async () => {
+    const { transport, requests } = transportOf([emitResponse({ value: 1 })]);
+    const { rows, ledger } = ledgerOf();
+    const client = createLlmClient({
+      apiKey: "k",
+      phase: "B",
+      ledger,
+      transport,
+      spendGuard: () => Promise.reject(new SpendAlarmError()),
+    });
+
+    await expect(
+      client.call({ ...baseInput(), documents: [PDF_DOC], isTestAccount: true, schema: Result }),
+    ).rejects.toBeInstanceOf(SpendAlarmError);
+    expect(requests).toHaveLength(0);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].errorCode).toBe("SPEND_ALARM_TRIPPED");
+  });
+
+  it("the guard does NOT gate documentless calls (letters keep flowing)", async () => {
+    const { transport, requests } = transportOf([textResponse("ok")]);
+    const { ledger } = ledgerOf();
+    const guard = vi.fn(() => Promise.reject(new SpendAlarmError()));
+    const client = createLlmClient({ apiKey: "k", phase: "B", ledger, transport, spendGuard: guard });
+
+    const res = await client.call({ ...baseInput(), isTestAccount: true });
+    expect(res.output).toBe("ok");
+    expect(guard).not.toHaveBeenCalled();
+    expect(requests).toHaveLength(1);
+  });
+
+  it("a passing guard lets the call through", async () => {
+    const { transport, requests } = transportOf([emitResponse({ value: 9 })]);
+    const { ledger } = ledgerOf();
+    const client = createLlmClient({
+      apiKey: "k",
+      phase: "B",
+      ledger,
+      transport,
+      spendGuard: () => Promise.resolve(),
+    });
+    const res = await client.call({ ...baseInput(), documents: [PDF_DOC], isTestAccount: true, schema: Result });
+    expect(res.output).toEqual({ value: 9 });
     expect(requests).toHaveLength(1);
   });
 });

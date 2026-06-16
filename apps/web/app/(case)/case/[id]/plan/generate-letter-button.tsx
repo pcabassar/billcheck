@@ -16,16 +16,22 @@ const ERROR_COPY: Record<string, string> = {
   letter_validation_failed:
     "We couldn't verify every figure in the draft against your bill, so we blocked it. Please try again.",
   letter_generation_failed: "We couldn't generate the letter right now. Please try again in a minute.",
+  collection_notice_required:
+    "Upload the collection letter you received first — the validation demand is built from it (and it's what proves a collector is involved).",
 };
 
 export function GenerateLetterButton({
   caseId,
   canGenerate,
   hasExisting,
+  artifactType = "dispute",
+  label,
 }: {
   caseId: string;
   canGenerate: boolean;
   hasExisting: boolean;
+  artifactType?: string;
+  label?: string;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -38,7 +44,7 @@ export function GenerateLetterButton({
       const res = await fetch("/api/artifacts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caseId, type: "dispute" }),
+        body: JSON.stringify({ caseId, type: artifactType }),
       });
       const body: { artifactId?: string; error?: string } | null = await res
         .json()
@@ -66,12 +72,10 @@ export function GenerateLetterButton({
         className="rounded-md bg-neutral-900 px-4 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black"
       >
         {pending
-          ? "Generating your letter…"
-          : hasExisting
-            ? "Generate a fresh letter"
-            : "Generate my dispute letter"}
+          ? "Generating…"
+          : (label ?? (hasExisting ? "Generate a fresh letter" : "Generate my dispute letter"))}
       </button>
-      {!canGenerate && (
+      {!canGenerate && artifactType === "dispute" && (
         <p className="text-sm text-neutral-500">
           Letter generation unlocks once your audit finishes with at least one
           disputable finding.

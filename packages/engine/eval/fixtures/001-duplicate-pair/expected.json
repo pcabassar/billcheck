@@ -20,11 +20,54 @@
         }
       ],
       "evidenceKey": "C3:36415:2026-05-01:doc-1"
+    },
+    {
+      "checkId": "C10",
+      "checkVersion": "v1",
+      "refVersions": {
+        "medicare_rates": "TEST1"
+      },
+      "confidenceTier": "medium",
+      "amountImpactCents": null,
+      "title": "Negotiation anchor: code 36415 billed at 5.0\u00d7 the Medicare rate",
+      "evidence": [
+        {
+          "documentId": "doc-1",
+          "lineItemId": "L1",
+          "note": "billed 15.00 vs Medicare 3.00 for 1 unit(s)"
+        }
+      ],
+      "evidenceKey": "C10:36415:doc-1:L1"
+    },
+    {
+      "checkId": "C10",
+      "checkVersion": "v1",
+      "refVersions": {
+        "medicare_rates": "TEST1"
+      },
+      "confidenceTier": "medium",
+      "amountImpactCents": null,
+      "title": "Negotiation anchor: code 36415 billed at 5.0\u00d7 the Medicare rate",
+      "evidence": [
+        {
+          "documentId": "doc-1",
+          "lineItemId": "L2",
+          "note": "billed 15.00 vs Medicare 3.00 for 1 unit(s)"
+        }
+      ],
+      "evidenceKey": "C10:36415:doc-1:L2"
     }
   ],
   "coverage": {
     "C3": "ran",
     "C4": "ran",
-    "C5": "ran"
+    "C5": "ran",
+    "C8": "skipped_no_data",
+    "C9": "skipped_no_data",
+    "C10": "ran",
+    "C13": "skipped_no_data",
+    "C1": "skipped_no_data",
+    "C2": "skipped_no_data",
+    "C6": "skipped_no_data"
   }
 }

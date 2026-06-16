@@ -1,0 +1,34 @@
+{
+  "findings": [
+    {
+      "checkId": "C8",
+      "checkVersion": "v1",
+      "refVersions": {},
+      "confidenceTier": "high",
+      "amountImpactCents": 80000,
+      "title": "Bill exceeds your Good Faith Estimate by $800.00 — over the $400 federal dispute trigger",
+      "evidence": [
+        {
+          "documentId": "doc-1",
+          "lineItemId": null,
+          "note": "billed 1800.00 vs estimated 1000.00 (PPDR-eligible)"
+        }
+      ],
+      "evidenceKey": "C8:180000:100000"
+    }
+  ],
+  "coverage": {
+    "C1": "skipped_no_data",
+    "C2": "skipped_no_data",
+    "C3": "ran",
+    "C4": "skipped_no_data",
+    "C5": "skipped_no_data",
+    "C6": "skipped_no_data",
+    "C8": "ran",
+    "C9": "skipped_no_data",
+    "C10": "skipped_no_data",
+    "C13": "skipped_no_data"
+  },
+  "verdict": "CONTEST",
+  "flags": {}
+}

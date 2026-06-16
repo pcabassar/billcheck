@@ -92,5 +92,8 @@ export const VerdictKind = z.enum([
   "NEGOTIATE",
   "PAY",
   "GET_ITEMIZED",
+  // Itemized + clean, but the battery only partially ran: "no issues in the
+  // N checks we could run" — never the same screen as PAY (D10 honesty gate).
+  "CLEAN_PARTIAL",
 ]);
 export type VerdictKind = z.infer<typeof VerdictKind>;

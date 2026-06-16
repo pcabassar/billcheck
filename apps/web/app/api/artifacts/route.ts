@@ -7,6 +7,10 @@ import {
   log,
   logError,
   renderDisputeLetter,
+  renderFapChecklist,
+  renderItemizedRequest,
+  renderPpdrGuide,
+  renderValidationLetter,
   validateLetter,
 } from "@billcheck/shared";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -66,7 +70,8 @@ export async function POST(request: NextRequest) {
   }
   const caseId = (body as { caseId?: unknown })?.caseId;
   const type = (body as { type?: unknown })?.type;
-  if (typeof caseId !== "string" || caseId.length === 0 || type !== "dispute") {
+  const ARTIFACT_TYPES = ["dispute", "validation", "itemized_request", "fap_application", "ppdr_guide"];
+  if (typeof caseId !== "string" || caseId.length === 0 || typeof type !== "string" || !ARTIFACT_TYPES.includes(type)) {
     return NextResponse.json({ error: "invalid_body" }, { status: 400 });
   }
 
@@ -81,23 +86,69 @@ export async function POST(request: NextRequest) {
   if (!caseRow) {
     return NextResponse.json({ error: "case_not_found" }, { status: 404 });
   }
-  if (!caseRow.current_run_id) {
+  // Only the dispute letter needs a completed engine run; static artifacts
+  // (U13) render from case documents and reference data alone.
+  if (type === "dispute" && !caseRow.current_run_id) {
     return NextResponse.json({ error: "no_completed_run" }, { status: 409 });
   }
 
-  // Idempotency (review F23): an open draft for this case is returned as-is
-  // instead of burning another letter-fill LLM call. The partial unique index
-  // (one open draft per case+type) is the DB backstop.
+  // Idempotency (review F23): an open draft for this case+type is returned
+  // as-is. The partial unique index (one open draft per case+type) backs it.
   const { data: existingDraft } = await supabase
     .from("artifacts")
     .select("id")
     .eq("case_id", caseId)
-    .eq("type", "dispute")
+    .eq("type", type)
     .is("approved_at", null)
     .maybeSingle();
   if (existingDraft) {
     log("artifacts.draft_reused", { caseId, route: ROUTE });
     return NextResponse.json({ artifactId: existingDraft.id, reused: true }, { status: 200 });
+  }
+
+  // ---- Static artifacts (U13): deterministic templates, no LLM, no
+  // validation pipeline — bracketed placeholders mark user-supplied fields.
+  if (type !== "dispute") {
+    const staticText = await renderStaticArtifact(supabase, caseId, type);
+    if ("error" in staticText) {
+      return NextResponse.json({ error: staticText.error }, { status: 409 });
+    }
+    const adminStatic = createSupabaseAdminClient();
+    const { data: staticArtifact, error: staticErr } = await adminStatic
+      .from("artifacts")
+      .insert({
+        case_id: caseId,
+        type,
+        content: { letterText: staticText.text, generatedAt: new Date().toISOString() },
+        finding_ids: [],
+      })
+      .select("id")
+      .single();
+    if (staticErr || !staticArtifact) {
+      if (staticErr?.code === "23505") {
+        const { data: winner } = await supabase
+          .from("artifacts")
+          .select("id")
+          .eq("case_id", caseId)
+          .eq("type", type)
+          .is("approved_at", null)
+          .maybeSingle();
+        if (winner) return NextResponse.json({ artifactId: winner.id, reused: true }, { status: 200 });
+      }
+      logError("artifacts.insert.failed", staticErr ?? new Error("no_row"), { caseId, route: ROUTE });
+      return NextResponse.json({ error: "artifact_insert_failed" }, { status: 500 });
+    }
+    const { error: staticEventErr } = await adminStatic.from("case_events").insert({
+      case_id: caseId,
+      type: "artifact_generated",
+      payload: { artifactId: staticArtifact.id, artifactType: type },
+      by_role: "system",
+    });
+    if (staticEventErr) {
+      logError("artifacts.event_append.failed", staticEventErr, { caseId, route: ROUTE });
+    }
+    log("artifacts.generated", { caseId, route: ROUTE, status: type });
+    return NextResponse.json({ artifactId: staticArtifact.id }, { status: 201 });
   }
 
   const { data: findingsData } = await supabase
@@ -275,4 +326,95 @@ export async function POST(request: NextRequest) {
 
   log("artifacts.generated", { caseId, route: ROUTE, purpose: "letter" });
   return NextResponse.json({ artifactId: artifact.id }, { status: 201 });
+}
+
+interface ExtractedDocFields {
+  provider?: string;
+  accountNumber?: string;
+  dateOfService?: string;
+}
+
+/**
+ * Static artifact renderers (U13). Data comes from the case's own documents
+ * (classifier dedupe fields + printed totals) and the seeded reference sets.
+ * The validation letter is GATED on an actual collection notice (review A3):
+ * FDCPA rights attach to third-party collectors — the notice proves one.
+ */
+async function renderStaticArtifact(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  caseId: string,
+  type: string,
+): Promise<{ text: string } | { error: string }> {
+  const { data: docs } = await supabase
+    .from("documents")
+    .select("id, kind, extracted, printed_total_cents")
+    .eq("case_id", caseId);
+  const all = docs ?? [];
+  const billDoc = all.find((d) => d.kind === "bill" || d.kind === "corrected_statement");
+  const billFields = ((billDoc?.extracted ?? {}) as ExtractedDocFields) ?? {};
+
+  if (type === "itemized_request") {
+    return {
+      text: renderItemizedRequest({
+        providerName: billFields.provider ?? null,
+        accountNumber: billFields.accountNumber ?? null,
+        dateOfService: billFields.dateOfService ?? null,
+      }),
+    };
+  }
+
+  if (type === "validation") {
+    const notice = all.find((d) => d.kind === "collection_notice");
+    if (!notice) return { error: "collection_notice_required" };
+    const noticeFields = (notice.extracted ?? {}) as ExtractedDocFields;
+    return {
+      text: renderValidationLetter({
+        collectorName: noticeFields.provider ?? "[COLLECTOR NAME FROM THE NOTICE]",
+        accountNumber: noticeFields.accountNumber ?? null,
+        demandedCents: notice.printed_total_cents === null ? null : Number(notice.printed_total_cents),
+      }),
+    };
+  }
+
+  if (type === "fap_application") {
+    const provider = billFields.provider ?? null;
+    let policy: { hospital_name: string; threshold_free_fpl: number | null; threshold_discount_fpl: number | null; source_url: string | null } | null = null;
+    if (provider) {
+      const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+      const { data: versions } = await supabase
+        .from("ref_versions")
+        .select("version, loaded_at")
+        .eq("table_name", "ref_fap_policies")
+        .order("loaded_at", { ascending: false })
+        .limit(1);
+      const fapVersion = versions?.[0]?.version;
+      if (fapVersion) {
+        const { data: policies } = await supabase
+          .from("ref_fap_policies")
+          .select("hospital_name, threshold_free_fpl, threshold_discount_fpl, source_url")
+          .eq("version", fapVersion);
+        policy =
+          (policies ?? []).find(
+            (p) => norm(provider).includes(norm(p.hospital_name)) || norm(p.hospital_name).includes(norm(provider)),
+          ) ?? null;
+      }
+    }
+    return {
+      text: renderFapChecklist({
+        hospitalName: policy?.hospital_name ?? provider,
+        thresholdFreeFpl: policy?.threshold_free_fpl === null || policy === null ? null : Number(policy.threshold_free_fpl),
+        thresholdDiscountFpl: policy?.threshold_discount_fpl === null || policy === null ? null : Number(policy.threshold_discount_fpl),
+        sourceUrl: policy?.source_url ?? null,
+      }),
+    };
+  }
+
+  if (type === "ppdr_guide") {
+    const gfeDoc = all.find((d) => d.kind === "gfe");
+    const billTotal = billDoc?.printed_total_cents === null || !billDoc ? null : Number(billDoc.printed_total_cents);
+    const gfeTotal = gfeDoc?.printed_total_cents === null || !gfeDoc ? null : Number(gfeDoc.printed_total_cents);
+    return { text: renderPpdrGuide({ gfeCents: gfeTotal, billedCents: billTotal }) };
+  }
+
+  return { error: "invalid_body" };
 }

@@ -33,7 +33,8 @@ export async function POST(
   if (!caseRow) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
-  if (caseRow.state !== "TRIAGED") {
+  const AUDITABLE = ["TRIAGED", "WAITING_ADJUDICATION", "WAITING_ITEMIZED"];
+  if (!AUDITABLE.includes(caseRow.state)) {
     // AUDITED/VERDICT → the audit already ran; the client treats 409 as "move along".
     return NextResponse.json({ error: "not_auditable", state: caseRow.state }, { status: 409 });
   }
@@ -63,7 +64,7 @@ export async function POST(
     .from("cases")
     .update({ audit_locked_at: new Date().toISOString() })
     .eq("id", caseId)
-    .eq("state", "TRIAGED")
+    .in("state", AUDITABLE)
     .is("audit_locked_at", null)
     .select("id");
   if (lockErr) {
