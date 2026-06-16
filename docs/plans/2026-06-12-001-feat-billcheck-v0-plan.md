@@ -9,6 +9,8 @@ origin: medical-bill-app-flow-wireframes-2026-06-12.html (product spec v0.2) + m
 
 # feat: Bill Check V0 — consumer medical-bill audit app
 
+> **Status: HISTORICAL (V0).** The V0 plan of record (built & merged). Background only; v2 direction is [RETHINK](../RETHINK-2026-06-15-agentic-architecture.md). · _classified 2026-06-16_
+
 **Target repo:** `billcheck` — new, to be created at `/Users/pedro/claude-workspace/billcheck`. All file paths below are relative to that repo root. This plan lives in the gtm-pedro workspace; copy it to `docs/plans/` once the repo exists.
 
 ## Summary

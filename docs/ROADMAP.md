@@ -1,5 +1,7 @@
 # billcheck — Roadmap & deferred work
 
+> **Status: HISTORICAL (V0).** Deferred-work list for the V0 build; superseded by the v2 rethink. Current direction: [RETHINK](RETHINK-2026-06-15-agentic-architecture.md). · _classified 2026-06-16_
+
 Living doc. What we've consciously deferred, why, and what's next. Status doc
 for live state is `HANDOFF.md`; the plan of record is
 `docs/plans/2026-06-12-001-feat-billcheck-v0-plan.md`.

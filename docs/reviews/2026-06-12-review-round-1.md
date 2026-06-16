@@ -1,5 +1,7 @@
 # Review round 1 — 2026-06-12
 
+> **Status: HISTORICAL (V0).** Round-1 review of the V0 build. Background only. · Map: [../V2-START-HERE.md](../V2-START-HERE.md) · _classified 2026-06-16_
+
 12-persona whole-repo review (correctness, security, adversarial, data-integrity,
 reliability, TypeScript, testing, maintainability, standards, frontend-races,
 PHI-leaks, performance) + dedup + adversarial verification (2-of-3 vote on

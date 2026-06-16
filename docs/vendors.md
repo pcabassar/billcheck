@@ -1,5 +1,7 @@
 # Vendors
 
+> **Status: OPERATIONAL (current).** Vendor/BAA policy — still in force. · _classified 2026-06-16_
+
 Per AGENTS.md vendor policy: any SDK that captures runtime data requires a BAA
 path for Phase B, PII/body capture disabled, and an entry here.
 

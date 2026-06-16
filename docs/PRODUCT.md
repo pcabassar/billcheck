@@ -1,5 +1,7 @@
 # billcheck — Product
 
+> **Status: HISTORICAL (V0) for the linear flow & verdict mechanics; the problem framing + honesty principles are evergreen.** v2 reframes the product per [RETHINK](RETHINK-2026-06-15-agentic-architecture.md). · _classified 2026-06-16_
+
 ## The problem
 
 Medical bills are wrong constantly and people pay them anyway, because they

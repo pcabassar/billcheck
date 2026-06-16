@@ -1,5 +1,7 @@
 # billcheck
 
+> **Current direction (v2):** see [docs/V2-START-HERE.md](docs/V2-START-HERE.md) (doc map) and [docs/RETHINK-2026-06-15-agentic-architecture.md](docs/RETHINK-2026-06-15-agentic-architecture.md) (north star). This README describes the **V0** build. _(2026-06-16)_
+
 Consumer medical-bill audit: decide **pay vs. contest**, then help contest — with evidence, not vibes.
 
 Upload a bill → we read it, run a deterministic audit, and give an honest

@@ -1,5 +1,7 @@
 # Rethink — agentic, chat/voice-first architecture (2026-06-15)
 
+> **Status: LEADING (v2) — foundational thesis, NOT gospel.** The clearest statement of the core direction (especially the §5 bright line). But it's a Jun-15 decision doc, and we've learned things since — insurance-connect / system-of-record, the problem taxonomy — so treat it as **input to the brainstorm, to be revised**, not a spec. · Map: [V2-START-HERE.md](V2-START-HERE.md) · _classified 2026-06-16_
+
 Trigger: Pedro's voice note (Jun 15). The feeling that we rushed, and that the
 front end is "too linear, too old school." This doc takes that seriously,
 lays the current architecture next to the one Pedro is describing, names the
