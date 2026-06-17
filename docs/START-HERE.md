@@ -22,8 +22,8 @@ a number or verdict must be trustworthy — the bright line below), not the spin
 **Start with the build plan, then the design docs it rests on:**
 | Doc | What |
 |---|---|
-| [v0.1-design/PLAN](v0.1-design/PLAN.md) | **The implementation plan** for V0.1 — codebase-grounded, reuse/adapt/drop, 4 phases, open-Qs resolved (+ fresh-eyes review addendum) |
-| [v0.1-design/00-v0-reuse-inventory](v0.1-design/00-v0-reuse-inventory.md) | What we **keep / adapt / drop** from V0 (verified file map) |
+| [v0.1-design/PLAN](v0.1-design/PLAN.md) | **The implementation plan** for V0.1 — greenfield (see its banner), 4 phases, open-Qs resolved (+ fresh-eyes review addendum) |
+| [v0.1-design/00-v0-reuse-inventory](v0.1-design/00-v0-reuse-inventory.md) | ⚠ **Historical reference only** — V0.1 is **pure greenfield** (do not reuse/adapt V0 code) |
 | [v0.1-design/](v0.1-design/) | The Q2–Q7 brainstorm: 02 intake & triage · 03 agent loop + tools · 04 chat UX · 05 knowledge base · 06 V0.1 scope · 07 eval & safety |
 | [v0.1-design-notes](v0.1-design-notes.md) | Living decisions: framing, data model, vocabulary, lifecycle, status rollup, **triage-first** |
 | [v0.1-cases/SYNTHESIS](v0.1-cases/SYNTHESIS.md) | Cross-case synthesis (31 cases): situation × lever × outcome → build implications |
@@ -83,9 +83,12 @@ a number or verdict must be trustworthy — the bright line below), not the spin
    implementation now. First optional accelerant (later) = FHIR for top payers
    (covers most *lives*, no password custody); Granted-style credential scraping is
    a later/maybe (password custody + a maintenance treadmill).
-5. **Start fresh on the shell.** Brainstorm the product greenfield; keep the
-   validated *core* (deterministic engine, data model, PHI discipline) as reusable
-   assets — not constraints. The V0 click-through shell is not preserved as a fallback.
+5. **Pure greenfield (updated 2026-06-17, comment 10).** Build V0.1 as if V0 did not
+   exist — **all V0 code, incl. the engine, is reference only, never a foundation; never
+   adapt-to-fit.** Re-author the validated parts (engine, bright-line gate, PHI/RLS) anew
+   for the new architecture + latest model. What carries over is the **acceptance bar**
+   (the 31 cases + the golden fixtures' properties), not the code. _(Supersedes the earlier
+   "keep the validated core as reusable assets" framing.)_
 6. **Voice:** chat-first for the V0.1 cut; voice is a fast-follow.
 
 ## Status (2026-06-17): brainstorm complete → plan built
@@ -102,4 +105,4 @@ is greenfield** in the market.
 
 ## Next action
 Review the **[plan](v0.1-design/PLAN.md)**. On approval, build per its phases —
-start fresh on the shell, reuse the validated core. Repo dev server: `pnpm dev`.
+**pure greenfield** (V0 is reference only), testing-first. Repo dev server: `pnpm dev`.

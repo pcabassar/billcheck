@@ -1,33 +1,37 @@
 # billcheck V0.1 — Implementation Plan
 
-> **Status: LEADING (V0.1).** The build plan, operationalizing the Q2–Q7 brainstorm + reuse inventory,
-> grounded in the actual codebase (every reuse/adapt/drop claim verified against source). Built by the
-> Plan architect agent, then revised by an independent fresh-eyes review (full findings in the
-> **Review addendum** at the end). Not gospel. Entry: [../START-HERE.md](../START-HERE.md). _2026-06-17._
+> **Status: LEADING (V0.1) — being reframed for the pure-greenfield decision.** Originally written
+> reuse-centric; **superseded by the greenfield banner below.** Built by the Plan architect agent + an
+> independent fresh-eyes review (**Review addendum** at the end). Not gospel. Entry:
+> [../START-HERE.md](../START-HERE.md). _2026-06-17._
 >
 > **Framing:** build **V0.1 now**; the June 27 hackathon is a checkpoint to cherry-pick from, not the
 > target. With current coding models the build is fast — **testing is the pacing constraint** (§7), so
 > invest in eval + user-simulation early. (Phase sizes below are relative weights, not a date countdown.)
 
-> **⚠ Post-review resolutions (these supersede the body where they conflict — do these in Phase 0):**
-> 1. **Run the agent loop on the existing shared LLM client, NOT a parallel Vercel AI SDK Anthropic
->    provider.** A second `@ai-sdk/anthropic` entry point silently bypasses the PHASE gate, spend
->    kill-switch, and PHI-logging (and the ESLint ban only catches `@anthropic-ai/sdk` by name). Add a
->    `converse()`/tools-mode to `packages/shared/src/llm/client.ts` (don't force `emit`; return tool-use
->    blocks for the caller to dispatch) → keeps every guard + the one-entry-point invariant for free.
->    Add `@ai-sdk/anthropic` to the ESLint `no-restricted-imports`. Size: ~1.5–2 days (the keystone).
-> 2. **Keep `cases.state` in its existing vocabulary; do NOT repurpose it.** Repurposing breaks the
->    line-items edit guard, the INSERT-requires-`CAPTURED` branch, `rollback_provisional_case`, and
->    `EDITABLE_STATES`. Store the living-thread lifecycle as a narrated value in `coverage_profile` /
->    `case_events` (the agent narrates it anyway). Net DB migration for June 27 ≈ **zero** (or a tiny
->    additive one), not "one ~30-line trigger rewrite."
-> 3. **The bright line is structural, not a stream-blocking regex.** Numbers/verdicts reach the user
->    **only** via tool-fact cards (VerdictCard/AmountsPanel) bound to tool outputs; the system prompt
->    forbids originating figures in prose. `validateLetter` stays fail-closed for artifacts (the real
->    bright line). The prose scanner is a **flag-only** belt-and-suspenders linter (you can't block a
->    stream the user has already seen). Eval the **structural property**, not the regex.
+> **⚠⚠ PURE GREENFIELD (Pedro, 2026-06-17, comment 10) — read this first; it supersedes the reuse framing
+> throughout the body.** Plan/build as if V0 did not exist; **treat all V0 code (incl. the engine) as
+> reference only, never a foundation; never adapt-to-fit.** So, throughout: every "reuse / adapt / wraps /
+> keep ~as-is" below ⇒ **"build fresh"** (V0 is at most a spec to read). What carries over is the
+> **acceptance bar** — the 31 cases + the engine golden fixtures' *properties* (anti-circular,
+> injection-resilience, reproducibility), re-expressed for the new design — **not the code.** This
+> **dissolves the two reuse-driven P0s**:
+> - ~~P0-1 (loop on the shared client vs a parallel provider)~~ → **build ONE agent-loop LLM client with
+>   the guards baked in from the start** (PHASE gate, spend kill-switch, PHI-safe logging, `ai_calls`-style
+>   ledger), designed for multi-turn tool-calling. No "second client bypass" — that was a reuse artifact.
+>   Keep an ESLint ban on any *other* raw model SDK so the one-entry-point invariant holds.
+> - ~~P0-2 (don't repurpose the legacy `cases.state` trigger)~~ → **design a fresh schema** with the
+>   living-thread lifecycle + amounts + insurance-situation **native**. No legacy trigger to loosen; net
+>   "migration" is just the new schema.
+>
+> **P0-3 stands (it's a design principle, not reuse): the bright line is STRUCTURAL** — numbers/verdicts
+> reach the user only via tool-fact cards bound to tool outputs; the system prompt forbids originating
+> figures in prose; validate at the **artifact boundary** (a fresh `validateLetter`-style gate); the prose
+> scanner is **flag-only** (you can't block a stream already seen). Eval the **structural property**, not a regex.
 
-## 0. Codebase ground-truth (verified; deltas that change the plan)
+## 0. V0 ground-truth (REFERENCE ONLY — what V0 did; we build fresh)
+_Under the greenfield decision these are **lessons + the acceptance bar**, not reuse targets. Useful to
+avoid repeating V0's mistakes and to know what "correct" looked like — but build every part anew._
 1. **The engine is genuinely pure and DB-free.** `runEngine(input, refs)` + `routeVerdict(input)` are exported from `@billcheck/engine`; `referenceDataFromJson()` builds refs from plain JSON → **the engine runs with in-memory refs, no Supabase.** Trivial to wrap as a tool.
 2. **The LLM client does NOT do an agentic tool-calling loop.** `packages/shared/src/llm/client.ts` forces exactly one `emit` tool (single-shot structured output, one retry). Great for parse/classify/letter-fill; **it cannot be the agent loop** — the loop is net-new (Vercel AI SDK) and needs its own Anthropic path. Central architectural tension (see §4, §8b, §9.1).
 3. **There is no `bills` table.** `cases` directly own `documents`/`line_items`/`engine_runs`/`findings`/`verdicts`/`artifacts`/`deadlines` (two-level Case→Documents, not the three-level design). Core data-model gap (see §2).
@@ -84,11 +88,13 @@ tools** returning **human-readable** facts (opaque IDs tempt the model to invent
 bright-line evals** from day one (did it parse before auditing? does every number trace to a fact?).
 
 ## 2. Data model / schema — case → living thread
-> **Superseded by Post-review resolution #2:** do **not** repurpose `cases.state` (it breaks the
-> line-items guard, the INSERT-requires-`CAPTURED` branch, `rollback_provisional_case`, and
-> `EDITABLE_STATES`). Keep `state` as-is and represent the living-thread lifecycle as a **narrated value
-> in `coverage_profile`/`case_events`**. The rest of this section (amounts/situation/activity faked in
-> JSONB + computed-on-read) stands; the net migration is ≈ zero, not "one trigger rewrite."
+> **Greenfield (supersedes the reuse text below):** design a **fresh schema** with the **living-thread
+> lifecycle, amounts, and insurance-situation native** (no legacy `cases.state` trigger to fight; the
+> P0-2 "don't repurpose the trigger" problem only existed under reuse). Keep the *good patterns* V0
+> proved — owner-only **RLS**, an **append-only activity log**, **money as integer cents**, **private
+> server-proxied document storage**, an **`ai_calls`-style ledger** — but **author them anew** for the
+> V0.1 model, not by migrating V0's tables. The Case→Bill→Documents three-level model can still ship as
+> **one-episode-one-bill** for the first cut (defer multi-biller), but as a *fresh* design choice.
 
 **Recommendation (original): minimal migration; lean on `coverage_profile` JSONB + `case_events`; defer the Bill table.** The June 27 demo is **one episode = one bill**, so a `bills` table buys nothing and costs schema/RLS/query rework.
 

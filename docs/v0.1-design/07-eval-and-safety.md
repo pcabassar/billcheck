@@ -40,10 +40,12 @@ Conservative-by-design: when situation/verdict confidence is low, the expected b
 - Clocks: eval that the agent registered the **right deadlines** for the situation (missing a clock is a
   silent, high-cost failure — see the Medicare cases).
 
-## PHI & data safety (carry from V0)
+## PHI & data safety (re-author the discipline; don't reuse V0 code)
+_Greenfield: rebuild these, but keep the principles V0 proved._
 - **Storage:** Supabase Postgres + **RLS**; documents in Storage with per-user access; least-privilege.
-- **Model calls:** single Anthropic client + the **`ai_calls` ledger** (every call logged) + the **PHASE
-  gate**. Minimize PHI in prompts; redact where the task doesn't need identifiers.
+- **Model calls:** a **single (fresh, greenfield) agent-loop client** with guards baked in — an
+  **`ai_calls`-style ledger** (every call logged) + a **PHASE-style gate** + a spend kill-switch. Minimize
+  PHI in prompts; redact where the task doesn't need identifiers.
 - **Retention/deletion:** user can delete a case/document; define retention windows.
 - **Audit:** the activity log doubles as an audit trail (who/what/when) — also the evidence chain for
   chargebacks/regulators.
@@ -69,11 +71,36 @@ Conservative-by-design: when situation/verdict confidence is low, the expected b
   explicit user confirmation; drafts are clearly drafts.
 - **Honest expectations:** present **odds**, not promises; "won on paper ≠ made whole" — don't oversell.
 
+## Testing & simulation — the pacing constraint (research-backed)
+With current models **coding is fast; testing is the bottleneck** — and under **pure greenfield** (we're
+rebuilding the engine/safety logic) testing is what *guarantees* correctness. So testing is a first-class
+workstream. Full brief: [../research/2026-06-17-testing-and-user-simulation.md](../research/2026-06-17-testing-and-user-simulation.md).
+- **Simulate users — "learn 100-at-a-time."** Build a small in-house **three-agent triangle** harness
+  (`packages/eval-sim`): our agent ↔ an LLM **user-simulator** (persona + goal) ↔ a **grader**. Run a
+  **persona population** as one batched experiment; ~100 multi-turn sims ≈ single-digit minutes, ~$5–$50.
+- **Persona population from our taxonomy** (don't free-form): sweep **insurance situation** (×FI-vs-self-
+  funded ×dual/QMB) × **document type** × **problem/lever** × **behavioral persona** — incl. the
+  **non-assertion default user** (just pays), **already-tried-and-failed**, **confused/low-numeracy**,
+  **adversarial/non-collaborative**, and **prompt-injection / "just estimate what I owe"** personas.
+  **Oversample the dangerous "looks-fine-but-isn't" and "statement-mistaken-for-final-bill" cells.**
+- **Deterministic gates first, judge last.** Blocking, code-based: the **bright-line / no-ungrounded-number
+  gate** (Proof-Carrying-Numbers style — also the runtime guardrail), the **false-"pay it" never-event
+  gate** (recall on "something's off"), **tool-trajectory**, **lever-legality + clocks**. The **LLM-judge**
+  (free-text quality) is **non-blocking until κ-calibrated** against human labels (binary pass/fail +
+  critique; different model family than the agent to avoid self-preference).
+- **Offline + PHI-safe:** **synthetic data only** — the 31 cases (public, non-PHI) as golden scenarios +
+  **Synthea**-generated synthetic patients/EOBs for volume; **self-hosted** harness (Langfuse or Phoenix);
+  model calls only via a **BAA-covered endpoint**. Use **N−1 replay** on the deep seed cases.
+- **Build vs buy:** build the sim loop (few hundred LOC, through our own LLM client); adopt a self-hosted
+  dataset/tracing layer; don't build dashboards.
+
 ## How we run evals
-- **Golden set:** the 31 cases (+ grow toward the "30 more" and beyond) as fixtures with expected outputs.
-- **Per-PR regression:** triage + groundedness suites run in CI; track the false-OK rate over time.
-- **LLM-as-judge** for the free-text quality (clarity, faithfulness, no over-promising), with the
-  deterministic checks (groundedness, clocks, lever-legality) as hard gates.
+- **Golden set:** the 31 cases (+ grow via the synthetic sweep) as fixtures with expected outputs.
+- **Per-PR regression:** triage + groundedness + the sim population run in CI as **blocking gates**; track
+  the **false-OK rate** as the headline safety metric (never-event on known-bad cases).
+- **Acceptance bar (greenfield):** the engine golden fixtures' *properties* (anti-circular, injection-
+  resilience, reproducibility) are re-created as the bar the **rebuilt** engine must pass.
+- **Grade trajectories, not just outputs**; run **multiple trials/scenario** and track variance.
 - **Human spot-review** of a sample each iteration, focused on the dangerous-error class.
 
 ## Open questions

@@ -1,9 +1,14 @@
-# V0.1 design — V0 reuse inventory (what we keep / adapt / drop)
+# V0.1 design — V0 inventory (HISTORICAL REFERENCE ONLY)
 
-> **Status: LEADING (V0.1).** Grounded inventory of the existing codebase (read-only), to drive the
-> build plan. Entry: [../START-HERE.md](../START-HERE.md). _2026-06-17._
-> Principle (from RETHINK §7): keep the validated **core** (engine, contracts, AI/PHI layer, letters,
-> schema/RLS, tests); **rebuild the shell** (the linear workflow corridor + the click-through UI/REST funnel).
+> **Status: HISTORICAL / REFERENCE.** ⚠ **DECISION 2026-06-17 (Pedro, comment 10): V0.1 is *pure
+> greenfield* — we are NOT building on V0.** This inventory is kept only as a map of what V0 did and where,
+> for *occasional reference* — **do not adapt V0 code, and never bend the V0.1 design to reuse it**
+> (adapting 95%-fit code quietly costs the 5% that matters). The only thing that carries over is the
+> **acceptance bar** — the documented test cases + the engine golden fixtures' *properties*
+> (anti-circular, injection-resilience, reproducibility), re-expressed for the rebuilt design — not the code.
+> See [../v0.1-design-notes.md](../v0.1-design-notes.md) → "DECISION — pure greenfield." Entry:
+> [../START-HERE.md](../START-HERE.md). _The "keep/adapt/drop" recommendations below are SUPERSEDED:
+> read every row as "what V0 did," not "what to reuse."_
 
 ## Stack (confirmed)
 pnpm + turbo monorepo (`pnpm@10.34.3`). `apps/web` = Next.js **16.2.9** / React **19.2.4** (App Router).
