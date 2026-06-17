@@ -48,6 +48,18 @@ Conservative-by-design: when situation/verdict confidence is low, the expected b
 - **Audit:** the activity log doubles as an audit trail (who/what/when) — also the evidence chain for
   chargebacks/regulators.
 
+## Security: prompt injection & untrusted model-rendered UI
+- **Indirect prompt injection (OWASP LLM01)** is a live risk: a malicious **document/EOB/email** we parse,
+  or provider text, could try to redirect the agent. Mitigations: treat all parsed/ingested content as
+  **untrusted**; the engine's **injection-resilience** posture already applies (adversarial text in a line
+  description must not change findings — keep that eval); never let ingested text escalate tool use without
+  the bright-line/confirmation gates.
+- **Untrusted UI surface:** since cards render from tool output, **don't auto-load remote images**
+  (markdown-image exfiltration vector for PHI), **allowlist URL schemes**, and render from our **owned
+  component catalog** (not model-authored markup) — which also fixes the accessibility risk (Q4).
+- **Live-region reality check:** ARIA live regions are buggy across NVDA/JAWS/VoiceOver → **test with real
+  assistive tech**, don't assume.
+
 ## Guardrails (content & action)
 - **Not legal/medical advice:** KB output is *information*; surface a light, non-nagging disclaimer where
   it matters; recommend professionals for genuinely high-stakes/ambiguous calls.
