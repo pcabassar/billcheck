@@ -1,0 +1,87 @@
+# V0.1 design — Q6: June 27 scope cut
+
+> **Status: LEADING (V0.1).** Brainstorm output — the scope decisions the plan turns into steps.
+> Not gospel. Entry: [../START-HERE.md](../START-HERE.md). Builds on
+> [SYNTHESIS](../v0.1-cases/SYNTHESIS.md), [00 reuse-inventory](00-v0-reuse-inventory.md), and Q2–Q5/Q7.
+> _2026-06-17._
+
+## The framing
+June 27 target = **a *full* V0.1, not a thin slice** (Pedro) — but "full" means **the real product
+experience for the common path, end-to-end**, narrow in lever-coverage. Complete enough to be real;
+narrow enough to ship. The cut below optimizes the **triage center of gravity** first (don't-pay-yet /
+looks-fine), then a small, demoable set of dispute levers behind it.
+
+## IN — the spine, end-to-end
+1. **Chat-first UI** with a **minimal inline component catalog** (owned, accessible, text-fallback each):
+   document chip + viewer · **verdict card** · **amounts panel** · **intake mini-form** (insurance
+   situation) · **risk-tiered confirm buttons** · a **light activity log**. Empty state with suggested
+   starts (no blank box). (Q4)
+2. **Intake & triage for the common path** (Q2): any-shape input (upload / forward / paste / ask) →
+   **document-type detection** (statement vs itemized vs EOB) → **insurance situation** → file into
+   **case → bill → documents + amounts** → one of the **4 common verdicts** (don't-pay-yet / looks-fine /
+   something's-off / need-more). Conservative on the false-"pay it."
+3. **The agent loop** (Q3): the durable orchestrator calling tools, with the **bright line enforced**
+   (numbers/verdicts only from deterministic sources; validator on output).
+4. **Tools wired:** document **parse** (reuse, agent-invoked) · **KB lookup** (new, seeded for the demo
+   levers) · the **engine** (reuse as-is, on its home turf) · **artifact drafting** (reuse the letters
+   layer) · the **case/bill/docs/amounts** store (reuse schema, adapted).
+5. **A small set of levers fully working** (not the whole arsenal) — chosen to be high-frequency,
+   demoable, and to span the situation→lever map:
+   - **"Don't pay yet — it's a statement"** (doc-type driven; the #1 common verdict).
+   - **"Looks correct — OK to pay"** (EOB↔bill reconciliation via amounts + savings-diff; the #2).
+   - **Engine coding flag** on its home turf — **duplicate / unbundled (NCCI)** and/or
+     **preventive-vs-diagnostic** — → "something's off."
+   - **One assertion-of-right lever end-to-end with a drafted artifact:** recommend **ACA §2713
+     preventive-$0** *or* **charity care / 501(r)** (pick one in the plan), draft the letter (bright-line),
+     confirm-to-send.
+6. **KB seeded from the cases** for exactly the chosen levers (full rule schema; populate only what the
+   demo needs — versioning/citations included). (Q5)
+7. **Eval harness extended** (Q7): doc-type + verdict classification on a handful of the case fixtures,
+   plus the inherited engine golden eval and bright-line groundedness check.
+
+## DEFERRED — fast-follow, explicitly not June 27
+- The **full durable multi-week campaign engine** (escalation ladders, auto-cadence). *Stub* the
+  deadline scheduler; don't build the multi-week runner.
+- **Press / public "wall"** + journalist outreach.
+- **Integrations** (insurer portal, FHIR) — accelerants, not dependencies.
+- **Voice** (the text-fallbacks make it a clean fast-follow).
+- The **long tail of levers** and the **full 50-state KB**.
+- Rich timeline/deadline-tracking UI polish.
+
+## Reuse vs build (from the inventory)
+- **KEEP ~as-is:** engine (10 checks C1–C6, C8–C10, C13) + D10 router; data-contract value objects;
+  Anthropic client + PHASE gate + ai_calls ledger + spendGuard; PHI logger; **letters bounded-generation
+  + `validateLetter`**; **savings-diff**; Supabase schema/RLS core + ref tables; engine tests + golden eval.
+- **ADAPT:** case state → **living thread** (not the 10-state linear enum); triage → **agent-driven**;
+  parse/upload → **agent-invoked**; **WDK** kept as the **durable substrate** for the agent loop.
+- **DROP:** the WDK **corridor** (`case-lifecycle.ts` fixed parse→triage→audit→verdict march); the
+  **click-through UI** + most REST funnel (mine the verdict **copy** for content).
+
+## Stack
+Next.js 16 / React 19 (existing) · Supabase (existing) · **Vercel AI SDK** (generative UI + `needsApproval`
+HITL) · **shadcn/ui** for the owned component catalog · single Anthropic client (V0 pins
+`claude-sonnet-4-6`; **decide whether to move to the latest Sonnet for V0.1** — open question for the plan).
+
+## The demo narrative (proof the architecture works end-to-end)
+1. User uploads a hospital **statement** → agent: **"Don't pay yet — this is a summary, not the itemized
+   bill; watch for the EOB."** (verdict card + doc chip). 
+2. User uploads the **itemized bill + EOB** → agent reconciles (amounts panel). Two branches, both real:
+   - **Clean:** **"This checks out — OK to pay,"** with the reconciliation shown.
+   - **Flagged:** engine finds a **duplicate/unbundled** line (or preventive miscoding) → **"Something's
+     off,"** ranked options, offers to **draft an appeal/dispute** citing the KB rule.
+3. Agent **drafts the letter** (numbers injected from findings, `validateLetter` passes) → **confirm to
+   send.** Activity log shows the paper trail.
+
+This exercises: any-shape intake, doc-type detection, insurance-situation routing, the engine as a tool,
+the KB, bright-line artifact drafting, HITL confirm, and the case/bill/amounts/activity model.
+
+## Cut line (if time gets short)
+Absolute minimum that's still a coherent product: the **common triage path** (don't-pay-yet + looks-fine)
+with doc-type detection, the amounts panel, **one** engine check, and **one** drafted letter behind a
+confirm. Everything in IN-#5 beyond that is the first thing to trim.
+
+## Open questions for the plan
+- Which single assertion-of-right lever for the demo: **ACA preventive-$0** vs **charity care/501(r)**?
+- Move to the latest Sonnet, or stay on the pinned `claude-sonnet-4-6`?
+- Adopt the Vercel AI SDK generative-UI pattern directly, or a thin in-house tool→component renderer?
+- How much of the case→living-thread schema migration is needed for June 27 vs. faked in app code?
