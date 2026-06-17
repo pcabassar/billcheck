@@ -29,7 +29,7 @@ Medicare cases prove the need.)
 - **Concise, insightful, direct — don't over-explain.** Default to the useful answer; offer **"explain
   why / say more / in detail"** as a follow-up affordance (a chip, or the user just asks). Pairs with the
   conversation-trap / cognitive-load research (Q4).
-- **Open-ended advice is *safe because of* the bright line.** The agent can reason freely about *what to
+- **Open-ended advice is *safe because of* the Provenance principle.** The agent can reason freely about *what to
   say and which lever* precisely because it **cannot originate a number or a dollar-verdict** — those come
   only from tools. So the rule is: **deterministic where numbers live; open-ended where judgment adds
   value.** This is the whole architecture in one line.
@@ -47,7 +47,7 @@ For every new input or event (user message, uploaded doc, a fired deadline, an i
 
 The loop is re-entrant: a fired deadline wakes the agent the same way a user message does.
 
-## The bright line, enforced structurally
+## The Provenance principle, enforced structurally
 **The agent never originates a dollar amount or a verdict.** Every number/verdict a user sees, or a
 letter contains, must **trace to a deterministic source**: a parsed line item, an engine finding, a
 KB reference value, or a verified document diff.
@@ -64,7 +64,7 @@ boundary** — the real, checkable gate is `validateLetter`-style validation on 
 letter, summary), not a regex over streamed prose (you can't block what the user already saw); the prose
 scanner is a flag-only tripwire. (2) **Deterministic pipeline, open-ended conversation** — the
 number-producing path (**parse → audit → fact-generation**) is a **fixed workflow**; the *conversation*
-(situation-recognition, lever choice, framing, drafting) is open-ended. The bright line is what makes the
+(situation-recognition, lever choice, framing, drafting) is open-ended. The Provenance principle is what makes the
 open-ended part safe.
 
 ## Tool catalog (priority from the synthesis)
@@ -88,7 +88,7 @@ open-ended part safe.
    differentiator, not the default play (see selection-bias caveat in the synthesis).
 8. **Integrations (accelerants only)** — insurer-portal/FHIR document retrieval, etc. Never a dependency.
 
-**Guards live in the tools, not only the prompt (load-bearing principle).** The bright line + guards —
+**Guards live in the tools, not only the prompt (load-bearing principle).** The Provenance principle + guards —
 ID-bearing facts, a `validateLetter`-style gate, HITL gates — belong **in the tools themselves**, so
 correctness/safety holds regardless of how the orchestrator is prompted. Required for our own app's safety
 + testability (review P0-3 + the architecture research). _(MCP / exposing tools inside ChatGPT-Claude is
@@ -118,10 +118,10 @@ From [../v0.1-cases/SYNTHESIS.md](../v0.1-cases/SYNTHESIS.md) §2. The agent pic
 
 ## A single model client
 One Anthropic client (Sonnet-class) with the `ai_calls` ledger + PHASE gate carried from V0. The agent
-loop, tool-calling, and the bright-line validation all sit around this one client.
+loop, tool-calling, and the provenance validation all sit around this one client.
 
 ## Open questions
 - How much of the loop is the model's tool-calling vs. an explicit state machine around it? (Likely:
-  model drives within a thin orchestrator that owns state, clocks, and the bright-line validator.)
+  model drives within a thin orchestrator that owns state, clocks, and the provenance validator.)
 - Durable execution substrate for the multi-week cadence (carry V0's Vercel Workflow DevKit + Supabase Queues?).
 - How does the agent decide *when* to skip the internal-appeal dead-end straight to external review/regulator? (a KB-encoded heuristic)

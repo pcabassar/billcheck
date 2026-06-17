@@ -16,7 +16,7 @@
 V0 is built, tested, and merged. We're building **V0.1: a helpful, chat-first
 medical-bill advisor** — an agent that gives the most useful advice, backed by broad
 knowledge and many tools. The deterministic engine is *one* of those tools (used when
-a number or verdict must be trustworthy — the bright line below), not the spine.
+a number or verdict must be trustworthy — the Provenance principle below), not the spine.
 
 ## 🧭 LEADING — V0.1 design & plan (brainstorm complete 2026-06-17)
 **Start with the build plan, then the design docs it rests on:**
@@ -41,7 +41,7 @@ a number or verdict must be trustworthy — the bright line below), not the spin
 ## ⚙️ OPERATIONAL — the running system (current)
 - [HANDOFF.md](HANDOFF.md) — live infra/deploy state (Supabase, Vercel, what's deployed)
 - [vendors.md](vendors.md) — vendor/BAA policy
-- [../AGENTS.md](../AGENTS.md) — engineering invariants (PHI rules, single LLM entry, the bright line)
+- [../AGENTS.md](../AGENTS.md) — engineering invariants (PHI rules, single LLM entry, the Provenance principle)
 
 ## 🗄️ HISTORICAL (V0) — background only, do NOT treat as current
 - [PRODUCT.md](PRODUCT.md) — V0 product + verdict model (problem framing evergreen; the linear flow is superseded)
@@ -51,7 +51,7 @@ a number or verdict must be trustworthy — the bright line below), not the spin
 - [v0-archive/](v0-archive/) — D1–D10 architecture decisions + the linear wireframes ("the before")
 
 ## Core principles (non-negotiable)
-1. **The bright line (RETHINK §5).** The agent converses, gathers context, picks
+1. **The Provenance principle (RETHINK §5).** The agent converses, gathers context, picks
    tools, and explains. The **engine adjudicates** — every number/verdict a user
    sees or a letter contains traces to a deterministic source. The agent never
    originates a dollar amount or a verdict.
@@ -85,7 +85,7 @@ a number or verdict must be trustworthy — the bright line below), not the spin
    a later/maybe (password custody + a maintenance treadmill).
 5. **Pure greenfield (updated 2026-06-17, comment 10).** Build V0.1 as if V0 did not
    exist — **all V0 code, incl. the engine, is reference only, never a foundation; never
-   adapt-to-fit.** Re-author the validated parts (engine, bright-line gate, PHI/RLS) anew
+   adapt-to-fit.** Re-author the validated parts (engine, provenance gate, PHI/RLS) anew
    for the new architecture + latest model. What carries over is the **acceptance bar**
    (the 31 cases + the golden fixtures' properties), not the code. _(Supersedes the earlier
    "keep the validated core as reusable assets" framing.)_
@@ -100,7 +100,7 @@ on Pedro's go-ahead.
 
 Headline: **triage is the spine** (the common path is "don't pay yet, that's a statement"
 and "this looks fine, pay it"); the **engine is one tool** behind a chat-first advisor;
-the **bright line** holds (no agent-originated numbers/verdicts); **chat-first bill triage
+the **Provenance principle** holds (no agent-originated numbers/verdicts); **chat-first bill triage
 is greenfield** in the market.
 
 ## Next action

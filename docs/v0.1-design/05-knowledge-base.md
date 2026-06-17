@@ -14,7 +14,7 @@ The KB operationalizes the **situation → lever map**: given a situation + prob
 applicable levers with the conditions to qualify, the deadlines, and the citations to back the claim.
 
 ## The rule schema
-Each KB entry is a structured, **citeable** rule (so the bright line can reference it by id):
+Each KB entry is a structured, **citeable** rule (so the Provenance principle can reference it by id):
 
 ```
 rule:
@@ -42,7 +42,7 @@ Key fields that earn their place:
 - **`qualifies_when` / `does_not_apply_when`** — turns "there's a rule" into "does it apply *here*."
 - **`clocks`** — feed the deadline scheduler; missing a clock is a top failure mode.
 - **`actions`** — link a rule to the artifact-drafting tool (rule → letter).
-- **`citations` + `as_of` + `version` + `last_reviewed`** — freshness and the bright-line source trail.
+- **`citations` + `as_of` + `version` + `last_reviewed`** — freshness and the provenance source trail.
 - **`confidence`** — low-confidence rules force the agent to hedge and recommend human/expert verification.
 
 ## Organization (by the situation → lever map)
@@ -73,7 +73,7 @@ fill obvious gaps. The case files double as **fixtures** for testing retrieval (
 2. KB lookup returns candidate **rules**, filtered by `qualifies_when`.
 3. Rules supply: the **verdict's basis** (cited), the **lever options** (ranked), the **clocks** (scheduled),
    and the **drafting hooks** (rule → letter).
-4. Every asserted right/number cites a **rule id** → satisfies the bright line.
+4. Every asserted right/number cites a **rule id** → satisfies the Provenance principle.
 
 ## Open questions
 - Build vs. buy for the legal/billing content — how much can we license vs. must we curate?

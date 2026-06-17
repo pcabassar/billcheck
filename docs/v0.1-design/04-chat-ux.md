@@ -38,17 +38,17 @@ component (a `<VerdictCard/>` on `output-available`, a **skeleton** while pendin
 **assistant-ui** as the chat shell (streaming, attachments, a11y, generative-UI primitives, inline
 approval out of the box). Components are **shadcn/ui**-style, owned, accessible-once. **HITL** uses the
 AI SDK's **`needsApproval`** flow (tool pauses → `approval-requested` → Approve/Reject/Edit in the bubble;
-`addToolApprovalResponse`). This keeps the **bright line** intact: a card only displays values the tool
+`addToolApprovalResponse`). This keeps the **Provenance principle** intact: a card only displays values the tool
 returned (parsed line items, engine findings, KB rules) — the model picks the card, not the numbers.
 
 **Build our own chat-first (mobile-first) app — full stop.** We keep control of the experience, the
-persistent-advocate behavior, and the bright line.
+persistent-advocate behavior, and the Provenance principle.
 
 > _MCP (out of V0.1, Pedro 2026-06-17):_ someday, exposing billcheck inside ChatGPT/Claude via MCP could
 > answer "why not just use a general model?" (our moat = the tools + data/system-of-record + durable state
-> + bright line, which general models lack). **But it's explicitly out of scope now** — "get the app right,
+> + Provenance principle, which general models lack). **But it's explicitly out of scope now** — "get the app right,
 > don't build for a future that may never come." It must not add any V0.1 complexity. _Note: the one
-> principle it had motivated — **keep the bright line + guards inside the tools** — stays, because it's the
+> principle it had motivated — **keep the Provenance principle + guards inside the tools** — stays, because it's the
 > right call for our own app's safety/testing anyway (see [03](03-agent-loop-and-tools.md)), not because of MCP._
 
 ## The inline component catalog (mapped to our model + verdicts)
@@ -141,10 +141,10 @@ This is also where we set expectations (what we do / that it's information, not 
 - **The conversation trap** — don't force typing for known/structured input; offer the card/tap.
 - **The blank-canvas problem** — never ship a bare textbox; lead with capabilities + suggested starts.
 - **False-authority of a styled number** — a polished card can make a wrong number look authoritative;
-  our **bright line** (numbers only from deterministic sources) is the structural defense, but copy
+  our **Provenance principle** (numbers only from deterministic sources) is the structural defense, but copy
   should still show provenance ("from your EOB" / "per the itemized bill").
 - **Approval fatigue** — risk-tier confirmations; don't gate safe actions (over-confirming → rubber-stamping;
-  under-confirming → dangerous auto-actions). Match the bright-line/eval stance on external actions.
+  under-confirming → dangerous auto-actions). Match the provenance/eval stance on external actions.
 - **Generated-UI inaccessibility & layout instability** — owned catalog + reserved space + live regions.
 - **Over-clever cards** — when plain text is clearer (nuanced advice, empathy), use text. Cards are for
   verdicts, amounts, facts, and actions; the *advice* stays conversational. Use **skeletons, not spinners**.

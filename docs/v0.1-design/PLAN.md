@@ -17,7 +17,7 @@ audit engine, artifact/letter drafting, a case store). It recognizes the user's 
 useful advice, and runs the play — from the common "*don't pay yet, that's a statement*" / "*this looks
 fine, pay it*" all the way to a drafted appeal.
 
-**The bright line (non-negotiable):** the agent **never originates a dollar amount or a verdict.** Every
+**The Provenance principle (non-negotiable):** the agent **never originates a dollar amount or a verdict.** Every
 number and judgment the user sees traces to a **deterministic source** (a parsed line item, an engine
 finding, a KB rule, a verified diff). The agent talks and decides; **the tools own the numbers and
 verdicts.** This is the trust foundation and is enforced *structurally* (§5, §6), not by prompting.
@@ -36,7 +36,7 @@ so triage is conservative and we weight the **false-OK rate** as the headline sa
   / say more"** as a follow-up.
 - **Deterministic where numbers live; open-ended where judgment adds value.** The number-producing path
   (**parse → audit → fact-generation**) is a fixed, deterministic pipeline; the **conversation**
-  (situation-recognition, lever choice, framing, drafting) is open-ended. **The bright line is exactly what
+  (situation-recognition, lever choice, framing, drafting) is open-ended. **The Provenance principle is exactly what
   makes open-ended reasoning safe.**
 - **Guards live in the tools, not just the prompt.** ID-bearing facts, a `validateLetter`-style gate, and
   HITL gates belong inside the tools, so correctness/safety holds regardless of prompting.
@@ -65,7 +65,7 @@ USER (types / uploads / pastes / forwards)         mobile-first chat
         │   (finding:… · line:… · rule:… · eob:… · doc-diff:… · verdict:…)
         │   guards live IN the tools (validateLetter, HITL, fail-closed)
         ▼
-   BRIGHT-LINE: numbers/verdicts reach the user ONLY as tool-fact cards;
+   PROVENANCE: numbers/verdicts reach the user ONLY as tool-fact cards;
    prose forbidden from originating figures; validate at the artifact boundary
         ▼
    message.parts[] → owned cards (VerdictCard, AmountsPanel, …) + skeletons
@@ -122,7 +122,7 @@ to invent). Guards live inside each tool.
 - **`caseStore`** — read/write the case bundle (documents, line items, amounts derived-on-read with source
   ids, lifecycle, situation, activity). Reads under the user session (RLS); writes server-side.
 
-**The bright line, structurally:** (1) tools emit id-bearing facts; (2) `draftArtifact`'s `validateLetter`
+**The Provenance principle, structurally:** (1) tools emit id-bearing facts; (2) `draftArtifact`'s `validateLetter`
 is fail-closed; (3) **a verify pass at the artifact boundary** — any number/verdict in an outbound card or
 letter must resolve to a fact id surfaced this turn, else block/flag (the runtime side of the §9 eval). A
 prose scanner is a **flag-only** tripwire (you can't block a stream the user already saw), never the
@@ -186,7 +186,7 @@ surfaces "as-of" dates for time-sensitive law. Freshness/versioning is a hard re
 ## 9. Testing & simulation (the pacing constraint — build first)
 Full plan: [testing research](../research/2026-06-17-testing-and-user-simulation.md). Sequence: **safety
 gates first**, then a simulated-user population.
-- **Deterministic gates (code, BLOCKING, before any judge):** the **bright-line / no-ungrounded-number
+- **Deterministic gates (code, BLOCKING, before any judge):** the **provenance / no-ungrounded-number
   gate** (every number/verdict resolves to a real fact id — also the runtime guardrail) and the
   **false-"pay it" never-event gate** (recall on "something's off"; any false-OK on a known-bad case fails
   CI). Plus **tool-trajectory** (right tool/args; didn't self-compute a verdict) and **lever-legality +
@@ -211,11 +211,10 @@ gates first**, then a simulated-user population.
   calls — use a transport seam / recorded outputs).
 
 ## 10. Safety, PHI & guardrails
-The bright line (§1, §5) + the testing gates (§9) are the core. Plus: **PHI** — owner-only RLS, the guarded
+The Provenance principle (§1, §5) + the testing gates (§9) are the core. Plus: **PHI** — owner-only RLS, the guarded
 client + ledger, minimize/redact PHI in prompts, retention/deletion, the activity log as audit trail.
 **Prompt injection (OWASP LLM01)** — treat all ingested content as untrusted; the engine can't be moved by
-document text (a re-created invariant + eval); ingested text never escalates tool use past the HITL/bright-
-line gates; allowlist URL schemes. **Action confirmation** for anything outbound. **Not legal/medical
+document text (a re-created invariant + eval); ingested text never escalates tool use past the HITL/provenance gates; allowlist URL schemes. **Action confirmation** for anything outbound. **Not legal/medical
 advice** (light disclaimer; recommend professionals on high-stakes/ambiguous calls). **Honest expectations**
 (odds, not promises; "won on paper ≠ made whole").
 
@@ -239,7 +238,7 @@ countdown.)
 - **Phase 0 — Foundations + safety gates (~2).** Scaffold the chat app (Next 16 / React 19 / AI SDK v5 /
   shadcn, mobile-first); the **one guarded LLM client** + agent loop spike (exit criterion: a streamed Next
   16 route-handler response renders a typed tool-part card); the **fresh schema + RLS**; and the
-  **deterministic bright-line + false-OK eval gates** (build these *before* the features they protect).
+  **deterministic provenance + false-OK eval gates** (build these *before* the features they protect).
 - **Phase 1 — Intake, parse, store + the thin path (~2).** `parseDocument` + `caseStore` + composer upload;
   the first verdict end-to-end: **upload a statement → "don't pay yet"** (VerdictCard + DocChip + activity
   entry). Proves the whole architecture.
@@ -264,7 +263,7 @@ regression signal + N−1 replay on real-style transcripts.
 **Cut-line (trim in order):** drop the ACA appeal (keep the engine flag → "something's off" + the dispute
 letter); then drop the engine flag (verdicts on doc-type + reconciliation only); **floor = the common
 triage path** (statement→don't-pay-yet, clean→looks-fine, charged→dispute) with VerdictCard + AmountsPanel +
-DocChip + one confirm-gated letter. **Always green:** the bright-line + false-OK gates.
+DocChip + one confirm-gated letter. **Always green:** the provenance + false-OK gates.
 
 ## 14. Stack & open decisions
 **Stack:** mobile-first responsive web; Next.js 16 / React 19; Supabase (Postgres/RLS/Storage/Auth); Vercel

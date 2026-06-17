@@ -91,7 +91,7 @@ were charged and you're surprised") — pattern 5, which a doc-type→verdict lo
 patterns are priors to recognize, not a menu to force.
 
 Each verdict's **numbers come from a deterministic source** (parsed line items, engine finding,
-KB reference) — the agent narrates, it doesn't originate (the bright line). The *advice/framing* is
+KB reference) — the agent narrates, it doesn't originate (the Provenance principle). The *advice/framing* is
 open-ended expert reasoning; the *numbers* are not. That split is what keeps open-ended triage safe.
 
 ## The dangerous error (design asymmetry)

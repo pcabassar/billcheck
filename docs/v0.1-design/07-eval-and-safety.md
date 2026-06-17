@@ -4,14 +4,14 @@
 > Grounded in [../v0.1-cases/SYNTHESIS.md](../v0.1-cases/SYNTHESIS.md). _2026-06-17._
 
 ## The two properties that matter most
-1. **The bright line holds:** the agent never originates a dollar amount or a verdict — every number/
+1. **The Provenance principle holds:** the agent never originates a dollar amount or a verdict — every number/
    verdict traces to a deterministic source. This is the product's trust foundation.
 2. **No false "pay it":** the worst user-facing error is telling someone a bad bill is fine. Its cost is
    asymmetric, so eval and guardrails weight it heavily.
 
 Everything below serves these two.
 
-## Enforcing the bright line
+## Enforcing the Provenance principle
 - **Structural:** tools return typed, id'd facts; asserted numbers/verdicts must cite a source id
   (`finding:…`, `line:…`, `rule:…`, `doc-diff:…`). A **validator** between the agent and the user
   scans output for figures/verdicts and **flags/blocks any not backed by a source id**.
@@ -55,7 +55,7 @@ _Greenfield: rebuild these, but keep the principles V0 proved._
   or provider text, could try to redirect the agent. Mitigations: treat all parsed/ingested content as
   **untrusted**; the engine's **injection-resilience** posture already applies (adversarial text in a line
   description must not change findings — keep that eval); never let ingested text escalate tool use without
-  the bright-line/confirmation gates.
+  the provenance/confirmation gates.
 - **Untrusted UI surface:** since cards render from tool output, **don't auto-load remote images**
   (markdown-image exfiltration vector for PHI), **allowlist URL schemes**, and render from our **owned
   component catalog** (not model-authored markup) — which also fixes the accessibility risk (Q4).
@@ -83,7 +83,7 @@ workstream. Full brief: [../research/2026-06-17-testing-and-user-simulation.md](
   **non-assertion default user** (just pays), **already-tried-and-failed**, **confused/low-numeracy**,
   **adversarial/non-collaborative**, and **prompt-injection / "just estimate what I owe"** personas.
   **Oversample the dangerous "looks-fine-but-isn't" and "statement-mistaken-for-final-bill" cells.**
-- **Deterministic gates first, judge last.** Blocking, code-based: the **bright-line / no-ungrounded-number
+- **Deterministic gates first, judge last.** Blocking, code-based: the **provenance / no-ungrounded-number
   gate** (Proof-Carrying-Numbers style — also the runtime guardrail), the **false-"pay it" never-event
   gate** (recall on "something's off"), **tool-trajectory**, **lever-legality + clocks**. The **LLM-judge**
   (free-text quality) is **non-blocking until κ-calibrated** against human labels (binary pass/fail +

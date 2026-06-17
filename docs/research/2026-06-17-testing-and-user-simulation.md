@@ -11,7 +11,7 @@
 Build a small in-house **simulated-user harness** — the **"three-agent triangle"**: our agent ↔ an LLM
 **user-simulator** (persona + goal) ↔ a **grader** — run it as a **batch over a persona population** swept
 across billcheck's real routing dimensions, gated in CI. Keep **numeric/verdict checks as deterministic
-assertions** (the bright line is enforced in code, *not* judged); reserve **LLM-as-judge for free-text
+assertions** (the Provenance principle is enforced in code, *not* judged); reserve **LLM-as-judge for free-text
 quality** only. Run **offline on synthetic data** (no real PHI), self-hosted, against a BAA-covered model
 endpoint. **Buy** a thin observability/dataset layer (self-hostable **Langfuse** or **Arize Phoenix**)
 rather than building dashboards. ~100 multi-turn sims ≈ **single-digit minutes, ~$5–$50** a run.
@@ -60,7 +60,7 @@ air-gap), **Inspect (UK AISI)** (rigorous, sandboxed, Eval Sets retry/resume —
   code assertions where possible.
 - **Groundedness / "no originated number":** the literature now has the exact construct — **Proof-Carrying
   Numbers (PCN)** (tie every numeric span to a structured claim, verify each against a source, **fail
-  closed** on unverified). _This **is** our bright line, generalized._ (arXiv 2509.06902 — verify.)
+  closed** on unverified). _This **is** our Provenance principle, generalized._ (arXiv 2509.06902 — verify.)
 
 ## The "100 simulated users" workflow
 Each sim conversation = one **example** in a versioned **dataset**; the population = one **experiment**;
@@ -84,7 +84,7 @@ fact-specific — get counsel/Expert-Determination sign-off.)_ **Build** the sim
    **already-tried-and-failed**, **confused/low-numeracy**, **adversarial/non-collaborative**, and
    **prompt-injection / "just estimate what I owe"** personas. ~100 = a Latin-square sweep, **oversampling
    the dangerous "looks-fine-but-isn't" and "statement-mistaken-for-final-bill" cells.**
-3. **Scorers — DETERMINISTIC GATES + a thin judge:** (a) **bright-line / no-ungrounded-number gate**
+3. **Scorers — DETERMINISTIC GATES + a thin judge:** (a) **provenance / no-ungrounded-number gate**
    (PCN-style, BLOCKING — also the runtime guardrail); (b) **false-"pay it" gate** (recall on
    "something's off"; any false-OK on a known-bad case = never-event = CI fail; reward the conservative
    default); (c) **tool-trajectory** (right tool/args; didn't self-compute a verdict); (d) **lever-legality
@@ -97,10 +97,10 @@ fact-specific — get counsel/Expert-Determination sign-off.)_ **Build** the sim
 6. **Acceptance bar (greenfield):** the engine golden fixtures' *properties* (anti-circular, injection-
    resilience, reproducibility) become the bar the **rebuilt** engine must pass, re-expressed for the new
    design. Use **N−1 replay** on the deep seed cases (01–03).
-7. **Sequence:** (1) write the **deterministic bright-line + false-OK gates first** (highest safety value,
+7. **Sequence:** (1) write the **deterministic provenance + false-OK gates first** (highest safety value,
    no judge needed); (2) harness + ~30 personas from the 31 cases; (3) expand to ~100 via Synthea sweep;
    (4) add the **calibrated** free-text judge last. One command (`pnpm eval:sim`) runs the population
-   concurrently, writes transcripts+scores to Langfuse/Phoenix, and **fails the build** on any bright-line
+   concurrently, writes transcripts+scores to Langfuse/Phoenix, and **fails the build** on any provenance
    violation, any false-OK never-event, or a regression in "something's off" recall.
 
 ## Sources

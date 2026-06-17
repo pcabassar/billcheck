@@ -12,7 +12,7 @@
   things nobody explicitly designed. **The folder is the agent** (knowledge as versioned files any new
   model inherits). A static **`SOUL.md`** defines persona + **hard limits**. Skills bundle **Instructions
   (flexible) + Code (deterministic) + Resources (lookup)** — the discipline is *deciding what is Code vs.
-  Agent*. → **Our bright line is a specific instance: dollar amounts & verdicts are Code, never Instructions.**
+  Agent*. → **Our Provenance principle is a specific instance: dollar amounts & verdicts are Code, never Instructions.**
 - **Anthropic — Building Effective Agents:** *workflows* (LLM+tools on predefined paths) vs *agents* (LLM
   dynamically directs itself). **"Find the simplest solution; add complexity only when needed."** Patterns:
   prompt-chaining, **routing** (deterministic dispatch), parallelization, **orchestrator-workers**,
@@ -45,12 +45,11 @@
   calibrate against humans; build a failure→annotation→regression loop.
 
 ## Recommendations for billcheck — keep / change / watch
-**KEEP:** single conversational orchestrator (correct for stateful/decision/coherence work); the bright
-line as a **Code/Instruction boundary**; KB/engine/parse/drafting/store as **discrete high-leverage
+**KEEP:** single conversational orchestrator (correct for stateful/decision/coherence work); the Provenance principle as a **Code/Instruction boundary**; KB/engine/parse/drafting/store as **discrete high-leverage
 tools**; persistent advocate over one-shot.
 
 **CHANGE (these update Q3/Q7):**
-1. **Enforce the bright line structurally, not by prompt.** Tools return **ID-bearing fact objects**
+1. **Enforce the Provenance principle structurally, not by prompt.** Tools return **ID-bearing fact objects**
    (`{claim_id, cpt, billed, allowed, overcharge, rule_id, source_doc_id, confidence}`); **validate at the
    artifact boundary** — any dollar/verdict in a letter or summary must reference a `fact_id` from this
    case's tool outputs, else reject/flag. The model **narrates** facts; it never computes them. *(Confirms
@@ -65,10 +64,10 @@ tools**; persistent advocate over one-shot.
 4. **Package domain procedures as Agent Skills** ("how to appeal a denial," "how to read an EOB") —
    versioned, testable, progressive-disclosure.
 5. **HITL via tool calls** for irreversible/outbound actions (send a letter, file a complaint).
-6. **Trajectory + bright-line evals from day one** (did it parse before auditing? does every number trace
+6. **Trajectory + provenance evals from day one** (did it parse before auditing? does every number trace
    to a fact?), plus the failure→regression loop.
 
-**WATCH (anti-patterns we're exposed to):** the **bright line as prose** (biggest risk — enforce at the
+**WATCH (anti-patterns we're exposed to):** the **Provenance principle as prose** (biggest risk — enforce at the
 boundary); **premature multi-agent** (keep specialists as tools/Skills under one orchestrator, not
 parallel deciders); **context rot** over weeks (compact aggressively); **opaque tools** (raw IDs tempt the
 model to invent); **skipping verify**.
