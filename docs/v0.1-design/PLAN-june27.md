@@ -2,8 +2,26 @@
 
 > **Status: LEADING (V0.1).** The build plan, operationalizing the Q2–Q7 brainstorm + reuse inventory,
 > grounded in the actual codebase (every reuse/adapt/drop claim verified against source). Built by the
-> Plan architect agent; a fresh-eyes review pass follows (see the Review addendum at the end).
-> Not gospel. Entry: [../START-HERE.md](../START-HERE.md). _2026-06-17._
+> Plan architect agent, then revised by an independent fresh-eyes review (full findings in the
+> **Review addendum** at the end). Not gospel. Entry: [../START-HERE.md](../START-HERE.md). _2026-06-17._
+
+> **⚠ Post-review resolutions (these supersede the body where they conflict — do these in Phase 0):**
+> 1. **Run the agent loop on the existing shared LLM client, NOT a parallel Vercel AI SDK Anthropic
+>    provider.** A second `@ai-sdk/anthropic` entry point silently bypasses the PHASE gate, spend
+>    kill-switch, and PHI-logging (and the ESLint ban only catches `@anthropic-ai/sdk` by name). Add a
+>    `converse()`/tools-mode to `packages/shared/src/llm/client.ts` (don't force `emit`; return tool-use
+>    blocks for the caller to dispatch) → keeps every guard + the one-entry-point invariant for free.
+>    Add `@ai-sdk/anthropic` to the ESLint `no-restricted-imports`. Size: ~1.5–2 days (the keystone).
+> 2. **Keep `cases.state` in its existing vocabulary; do NOT repurpose it.** Repurposing breaks the
+>    line-items edit guard, the INSERT-requires-`CAPTURED` branch, `rollback_provisional_case`, and
+>    `EDITABLE_STATES`. Store the living-thread lifecycle as a narrated value in `coverage_profile` /
+>    `case_events` (the agent narrates it anyway). Net DB migration for June 27 ≈ **zero** (or a tiny
+>    additive one), not "one ~30-line trigger rewrite."
+> 3. **The bright line is structural, not a stream-blocking regex.** Numbers/verdicts reach the user
+>    **only** via tool-fact cards (VerdictCard/AmountsPanel) bound to tool outputs; the system prompt
+>    forbids originating figures in prose. `validateLetter` stays fail-closed for artifacts (the real
+>    bright line). The prose scanner is a **flag-only** belt-and-suspenders linter (you can't block a
+>    stream the user has already seen). Eval the **structural property**, not the regex.
 
 ## 0. Codebase ground-truth (verified; deltas that change the plan)
 1. **The engine is genuinely pure and DB-free.** `runEngine(input, refs)` + `routeVerdict(input)` are exported from `@billcheck/engine`; `referenceDataFromJson()` builds refs from plain JSON → **the engine runs with in-memory refs, no Supabase.** Trivial to wrap as a tool.
@@ -47,10 +65,16 @@ USER (types / uploads / pastes / forwards)
             doc-diff:). Unsourced → block/flag.  ▼  streamed to client
 ```
 
-**Reused core:** engine+router → `runEngineTool` (unchanged); Anthropic client+ledger+PHASE+spendGuard → keeps serving the structured-output tools (the agent-loop conversation needs a second AI-SDK Anthropic entry point — both must hit the `ai_calls` ledger); letters+`validateLetter`+savings-diff → `draftArtifact` (bright line already built); Supabase schema/RLS/`case_events` → persistence + activity log; 10-check engine + D10 router + golden eval → the deterministic source + regression net.
+**Reused core:** engine+router → `runEngineTool` (unchanged); Anthropic client+ledger+PHASE+spendGuard → keeps serving the structured-output tools **and the agent loop** (~~a second AI-SDK entry point~~ → **superseded by Post-review resolution #1: run the loop on the shared client** so PHASE/spend/PHI/ledger all hold); letters+`validateLetter`+savings-diff → `draftArtifact` (bright line already built); Supabase schema/RLS/`case_events` → persistence + activity log; 10-check engine + D10 router + golden eval → the deterministic source + regression net.
 
 ## 2. Data model / schema — case → living thread
-**Recommendation: minimal migration; lean on `coverage_profile` JSONB + `case_events`; defer the Bill table.** The June 27 demo is **one episode = one bill**, so a `bills` table buys nothing and costs schema/RLS/query rework.
+> **Superseded by Post-review resolution #2:** do **not** repurpose `cases.state` (it breaks the
+> line-items guard, the INSERT-requires-`CAPTURED` branch, `rollback_provisional_case`, and
+> `EDITABLE_STATES`). Keep `state` as-is and represent the living-thread lifecycle as a **narrated value
+> in `coverage_profile`/`case_events`**. The rest of this section (amounts/situation/activity faked in
+> JSONB + computed-on-read) stands; the net migration is ≈ zero, not "one trigger rewrite."
+
+**Recommendation (original): minimal migration; lean on `coverage_profile` JSONB + `case_events`; defer the Bill table.** The June 27 demo is **one episode = one bill**, so a `bills` table buys nothing and costs schema/RLS/query rework.
 
 **Migrate (one surgical migration `0010_living_thread.sql`):** relax `validate_case_transition()` to accept the new lifecycle vocabulary (`EXPECTED, NEW, GATHERING, REVIEWED, ACTING, RESOLVED, CLOSED, REOPENED`) and drop the rigid transition graph (allow any→any in V0.1; the agent narrates). Repurpose `state` to hold the new vocabulary (avoid a second source of truth). Keep the auto-append-to-`case_events` trigger. **This is the one migration that must happen.**
 
@@ -81,7 +105,7 @@ Every tool returns **typed, id'd facts** (`line:`, `finding:`, `rule:`, `eob:`, 
 - **`draftArtifact`** — wraps `artifacts/route.ts` + `letters/*`. In `{caseId, type, findingIds}` → draft `{artifactId, letterText}`; **`needsApproval:true`** → confirm bubble → persist + `case_events`. LLM fills only `{{FACTS_i}}` (numbers forbidden); dollars injected from findings; `validateLetter` fail-closed.
 - **`caseStore`** — wraps `lib/case/queries.ts` + `money.ts` + admin writes + `case_events` + `coverage_profile`. Reads under user JWT (RLS); writes via admin client (server-only). Amounts carry source ids; rollup status computed + narrated, never LLM-originated.
 
-**Bright-line validator — exactly where:** (1) per-tool: id'd facts; `draftArtifact` runs `validateLetter` fail-closed (built). (2) post-step output validator (`lib/agent/bright-line.ts`, new) in `/api/chat`: scan assistant text for `$`-figures (reuse `letters/validate.ts` regex) + verdict phrases; each must resolve to a fact id surfaced this session; unsourced → block (safe correction) or flag. The conversational analogue of `validateLetter`.
+**Bright-line validator — exactly where** _(revised per Post-review resolution #3 — the bright line is **structural**, not a stream-blocker):_ (1) **structural (primary):** the agent surfaces numbers/verdicts **only** by rendering tool-fact cards (VerdictCard/AmountsPanel) bound to tool outputs; the system prompt forbids originating figures in prose. (2) per-tool: id'd facts; `draftArtifact` runs `validateLetter` fail-closed (built) — the real bright line on the only artifact with legal weight. (3) **flag-only linter** (`lib/agent/bright-line.ts`, new): scans assistant prose for `$`-figures / a small verdict lexicon and **flags** (you can't block a stream the user already saw) — a tripwire, not a guarantee. Eval the structural property, not the regex (§7).
 
 ## 5. Inline component catalog (June 27 set)
 Owned, accessible (icon+color+text, never color alone), text fallback each; bound to tool parts (`input-available`→skeleton, `output-available`→card).
@@ -139,5 +163,94 @@ Rule schema = the Q5 shape, stored as `seed/kb/*.json` (defer a `kb` table); thi
 
 ---
 
-## Review addendum (fresh-eyes pass)
-_Pending — an independent review pass will append findings + improvements here._
+## Review addendum (fresh-eyes pass, 2026-06-17)
+Independent staff-engineer review that verified the plan against source. **Verdict: buildable, but not
+as-is — fix the three P0s in Phase 0.** The plan's load-bearing codebase claims were confirmed (engine
+purity/DB-free; single-shot LLM client; no `bills` table; the state trigger + 10-state graph;
+`case_events` append-only; `artifacts/route.ts` bright-line generation; doc-type = `itemized` boolean).
+
+**Corrections to the body:**
+- **C1 (doc-type):** correct in substance. `itemized` lives in **both** `EngineInput.itemized`
+  (`packages/engine/src/types.ts`, consumed by the PAY gate) and persisted in `documents.extracted` JSONB.
+  `documents.kind` is **CHECK-constrained** (`bill,eob,gfe,receipt,collection_notice,corrected_statement,
+  other`) — a "statement" = `bill` + `itemized:false`; the agent must never write a `kind` outside the set.
+- **C2 (artifacts.type):** `'appeal'` is **already** an allowed `artifacts.type` (`0001_core.sql`). The ACA
+  §2713 work is **one new `renderAppealLetter` template + its `validateLetter` source-set wiring**, not a
+  new artifact path.
+- **C3 (HITL):** `artifacts/route.ts` gives bright-line *generation*; in-conversation **approval is
+  net-new**. Today's approval is a separate REST endpoint + a fact-**attestation** write before download.
+  The AI-SDK `needsApproval` → ConfirmButtons → `addToolApprovalResponse` → attestation bridge is the
+  riskiest UI seam (see P1-HITL).
+
+### P0 — must fix before building (resolved in the banner above)
+- **P0-1 — second Anthropic path bypasses all guards.** `@ai-sdk/anthropic` ≠ `@anthropic-ai/sdk`, so it
+  passes the ESLint ban while escaping the PHASE gate (fail-closed pre-BAA boundary; the chat path is
+  anonymous-reachable and will carry PHI), the spend kill-switch (runs *before* bytes leave; a post-hoc
+  ledger row can't stop a runaway on the highest-volume multi-step caller), and PHI-safe error logging.
+  **Resolution:** run the loop on the shared client via a new `converse()`/tools-mode (standard manual
+  tool-use loop: call → if `stop_reason==='tool_use'` dispatch tools, append `tool_result`, repeat); add
+  `@ai-sdk/anthropic` to the ESLint ban. Fallback if `useChat` ergonomics are wanted: route the AI-SDK
+  provider's `fetch`/`baseURL` through the shared PHASE+spend+ledger guards. **Never** ship a parallel raw
+  provider with only a post-hoc ledger insert. Size 1.5–2 days, Phase 0.
+- **P0-2 — "one migration" is 3–4 objects if you repurpose `state`.** Repurposing breaks: the line-items
+  client-edit guard (`0008`/`0009`, hardcodes `CAPTURED/TRIAGED/WAITING_*` → every line-item edit rejected,
+  killing the correction path), the INSERT-requires-`CAPTURED` branch (`0001:48`), `rollback_provisional_case`
+  (`0008:234`, gates on `CAPTURED` → leaks empty cases), and `EDITABLE_STATES` (`lib/case/rules.ts`).
+  **Resolution:** keep `state` in the existing vocabulary; represent the living-thread lifecycle as a
+  narrated value in `coverage_profile`/`case_events` (the agent narrates status anyway, §"Case status"). If
+  we ever do repurpose `state`, it must be one transaction rewriting all 3–4 objects + `rules.ts`.
+- **P0-3 — the streaming validator can't block, and the regex is too weak.** (a) You can't post-validate a
+  stream before the user sees tokens — it's detect-and-retract, not prevent; (b) `$`/keyword regex misses
+  word-numbers ("about four grand") and paraphrased verdicts ("I wouldn't worry about this one") — high
+  false-negatives on the exact failure mode that matters; (c) the allowed-set is **empty** on the
+  agent-only verdict-1/4 paths (no engine run, no findings). **Resolution:** the bright line is
+  **structural** — the agent surfaces numbers/verdicts only by rendering tool-fact cards; the system prompt
+  forbids originating figures in prose. `validateLetter` stays fail-closed for artifacts (the only thing
+  with legal weight). The prose scanner is a **flag-only tripwire**, not a stream-blocker. Groundedness
+  eval tests the structural property ("every actionable number is a card bound to a tool fact"; red-team
+  "just estimate what I owe" → must call a tool or refuse), not "regex finds no unsourced `$`".
+
+### P1 — should fix
+- **P1-Parse:** the "don't pay yet" beat keys off `extracted->>'itemized'` from a single LLM call on messy
+  photos. Wire **verdict-4** ("can't read this clearly") to fire on low `classify.quality` OR
+  `reconciliation_ok === false` (a free, already-built gate, `0004`) OR `confidence < 0.7` (already in
+  `rules.ts`); keep a clean fixture as the demo A-path.
+- **P1-HITL:** scope the `needsApproval` → ConfirmButtons → `addToolApprovalResponse` → **attestation
+  write** bridge as its own ~1-day Phase-3 item; decide if attestation collapses into the approval bubble.
+- **P1-Anon:** run the demo **fully anonymous**; defer claim-in-chat. The `claim.ts`/`consume_claim_token`
+  RPC carries over, but the *when/how* of a mid-chat claim prompt + OAuth round-trip back to the thread is
+  net-new UX — don't list it as "carries over unchanged."
+- **P1-Refs:** seed the exact **C4 NCCI pair** (and both codes on the synthetic bill) for the demo; load
+  `runEngineTool` refs from an **in-memory JSON fixture** (simpler, no DB dep) — production ref-loading is
+  out of scope.
+- **P1-Next16:** make the Phase-0 spike's exit criterion explicit — *a streamed response from a Next 16
+  route handler reaching the client with a tool-part rendering* (not just "message → card").
+- **P1-Eval-offline:** the new doc-type/verdict/groundedness evals must run **offline in CI** (no live
+  Anthropic calls; use the client's `transport` test seam / recorded outputs), or keep model-in-the-loop
+  evals as a manual pre-demo gate. CI runs `lint→typecheck→test→eval→build` offline today.
+
+### P2 — watch
+- **Model:** decide the conversation model in Phase 0 (keep parse/letter on pinned `claude-sonnet-4-6`;
+  pick the loop model behind `BILLCHECK_MODEL`, verify the id against live docs before flipping).
+- **Rate-limit `/api/chat`** (anonymous, multi-step `stepCountIs(8)`): reuse the upload rate-limiter; the
+  spend guard alone is not a per-session backstop.
+- **Reuse the upload route wholesale** (4MB cap, magic-byte sniff, ≤40 pages, opaque keys, server-proxied)
+  — don't reinvent.
+- **Error/empty/loading states** per card — esp. the **parse-failed → verdict-4** card (load-bearing).
+
+### Over-engineering to cut
+- The **stream-blocking validator** ambition → flag-only + structural (P0-3); reduces scope.
+- **assistant-ui** is a 3rd new dep on top of Next 16 + AI SDK; if the loop runs on the shared client
+  (P0-1) you can render the thread yourself and likely **drop assistant-ui** — evaluate in Phase 0.
+- **`kbLookup` as a `qualifies_when` filter engine** for *four* hardcoded rules → make it a **thin lookup**
+  (keep the JSON files for the as_of/versioning story); the filter engine is for the 50-state library
+  we're not building.
+- **IntakeMiniForm + conversational fallback both built** → build the **conversational** intake (the
+  thesis), stub the form as text if time-boxed.
+
+### What's strong / keep
+Grounding discipline (claims verified in source); the phasing + "thin end-to-end by Phase 1" de-risking;
+the cut-line ordering; **engine + router + golden eval reused untouched** with the **PAY honesty gate**
+(never `PAY` on a partial battery → exactly the conservative asymmetry the safety story needs); structured
+tools (parse/classify/letter) on the shared client (the anchor that pulls the loop back onto it, P0-1);
+`validateLetter` fail-closed as the genuine artifact bright line.
