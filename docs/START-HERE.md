@@ -2,7 +2,7 @@
 
 > The single entry point to the repo's docs: what's **leading** (current V0.1
 > thinking), **operational** (the running system), and **historical** (V0).
-> _Last updated 2026-06-16._
+> _Last updated 2026-06-17._
 >
 > **Naming:** the build we're about to do is **V0.1** — an increment on V0 (the
 > chat-first agentic advisor). Earlier docs (RETHINK, the research brief) say
@@ -18,13 +18,25 @@ medical-bill advisor** — an agent that gives the most useful advice, backed by
 knowledge and many tools. The deterministic engine is *one* of those tools (used when
 a number or verdict must be trustworthy — the bright line below), not the spine.
 
-## 🧭 LEADING — current V0.1 thinking & inputs
+## 🧭 LEADING — V0.1 design & plan (brainstorm complete 2026-06-17)
+**Start with the build plan, then the design docs it rests on:**
+| Doc | What |
+|---|---|
+| [v0.1-design/PLAN-june27](v0.1-design/PLAN-june27.md) | **The implementation plan** for the June 27 V0.1 — codebase-grounded, reuse/adapt/drop, 4 phases, open-Qs resolved (+ fresh-eyes review addendum) |
+| [v0.1-design/00-v0-reuse-inventory](v0.1-design/00-v0-reuse-inventory.md) | What we **keep / adapt / drop** from V0 (verified file map) |
+| [v0.1-design/](v0.1-design/) | The Q2–Q7 brainstorm: 02 intake & triage · 03 agent loop + tools · 04 chat UX · 05 knowledge base · 06 June 27 scope cut · 07 eval & safety |
+| [v0.1-design-notes](v0.1-design-notes.md) | Living decisions: framing, data model, vocabulary, lifecycle, status rollup, **triage-first** |
+| [v0.1-cases/SYNTHESIS](v0.1-cases/SYNTHESIS.md) | Cross-case synthesis (31 cases): situation × lever × outcome → build implications |
+| [v0.1-cases.md](v0.1-cases.md) + [v0.1-cases/](v0.1-cases/) | The 31 real, cited case files — the design's evidence base |
+| [research/…competitive-and-inline-ui-landscape](research/2026-06-17-competitive-and-inline-ui-landscape.md) | Mid-2026 competitive + inline-UI scan: **bill triage is greenfield**; Granted is closest; the quantified problem |
+
+**Earlier inputs (still useful, not gospel):**
 | Doc | What | Note |
 |---|---|---|
-| [RETHINK-2026-06-15](RETHINK-2026-06-15-agentic-architecture.md) | The thesis: agentic shell + deterministic core | Foundational, **not gospel** (says "v2" = V0.1) |
-| [research/…taxonomy](research/2026-06-16-medical-bill-problem-taxonomy.md) | The medical-bill problem space (RETHINK §6 research pass) | Input |
-| [v0-archive/…competitive-brief](v0-archive/medical-bill-dispute-competitive-brief-2026-06-11.md) | Market/competitor facts (Granted, Sheer, the EOB-API gap) | Still holds |
-| [granted-insurance-connection-brief](granted-insurance-connection-brief-2026-06-16.md) | How "connect your insurance" works (credential vs. FHIR; password-custody trade-off) | Input — integrations are accelerants, not dependencies |
+| [RETHINK-2026-06-15](RETHINK-2026-06-15-agentic-architecture.md) | The originating thesis | **Superseded framing** ("shell around the core" → now "advisor + tools, engine is *one* tool"); says "v2" = V0.1 |
+| [research/…taxonomy](research/2026-06-16-medical-bill-problem-taxonomy.md) | The medical-bill problem space | Input (the cases + synthesis now lead) |
+| [granted-insurance-connection-brief](granted-insurance-connection-brief-2026-06-16.md) | "connect your insurance" mechanics (credential vs. FHIR) | Integrations are accelerants, not dependencies |
+| [v0-archive/…competitive-brief](v0-archive/medical-bill-dispute-competitive-brief-2026-06-11.md) | V0-era market facts | Superseded by the 2026-06-17 scan |
 
 ## ⚙️ OPERATIONAL — the running system (current)
 - [HANDOFF.md](HANDOFF.md) — live infra/deploy state (Supabase, Vercel, what's deployed)
@@ -74,12 +86,18 @@ a number or verdict must be trustworthy — the bright line below), not the spin
    assets — not constraints. The V0 click-through shell is not preserved as a fallback.
 6. **Voice:** chat-first for the V0.1 cut; voice is a fast-follow.
 
-## In active brainstorm (2026-06-16)
-Decisions are captured in **[v0.1-design-notes.md](v0.1-design-notes.md)** (framing,
-data model, vocabulary, bill lifecycle, status roll-up). Remaining agenda: intake &
-triage · the agent loop + tool contracts · chat UX & surfaced views · the knowledge
-base · eval/PHI guards · the scope cut for June 27.
+## Status (2026-06-17): brainstorm complete → plan built
+The Q2–Q7 brainstorm is done (see [v0.1-design/](v0.1-design/)), grounded in 31 real
+cases ([synthesis](v0.1-cases/SYNTHESIS.md)) and a mid-2026 UX/competitive research run.
+The **[June 27 implementation plan](v0.1-design/PLAN-june27.md)** is written, with an
+independent fresh-eyes review folded into its addendum. **No code yet** — building starts
+on Pedro's go-ahead.
+
+Headline: **triage is the spine** (the common path is "don't pay yet, that's a statement"
+and "this looks fine, pay it"); the **engine is one tool** behind a chat-first advisor;
+the **bright line** holds (no agent-originated numbers/verdicts); **chat-first bill triage
+is greenfield** in the market.
 
 ## Next action
-**"brainstorm billcheck V0.1."** Inputs staged: RETHINK + the problem taxonomy + the
-competitive/Granted briefs. Repo dev server: `pnpm dev`.
+Review the **[plan](v0.1-design/PLAN-june27.md)**. On approval, build per its phases —
+start fresh on the shell, reuse the validated core. Repo dev server: `pnpm dev`.
