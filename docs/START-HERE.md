@@ -71,10 +71,12 @@ every number and verdict — the bright line below.
 5. **Start fresh on the shell.** Brainstorm the product greenfield; keep the
    validated *core* (deterministic engine, data model, PHI discipline) as reusable
    assets — not constraints. The V0 click-through shell is not preserved as a fallback.
+6. **Voice:** chat-first for the V0.1 cut; voice is a fast-follow.
 
-## Still open for the brainstorm
-1. **Voice — in the first V0.1 cut, or a fast-follow?** (Ship V0.1 with spoken
-   input/interaction, or chat-typed first and add voice shortly after.)
+## In active brainstorm (2026-06-16)
+The V0.1 architecture & product design: mental model / central object · intake &
+triage · the agent loop + tool contracts (bright-line enforcement) · chat UX &
+agent-surfaced views · the knowledge base · eval/PHI guards · the scope cut for June 27.
 
 ## Next action
 **"brainstorm billcheck V0.1."** Inputs staged: RETHINK + the problem taxonomy + the
