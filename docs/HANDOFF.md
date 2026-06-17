@@ -1,6 +1,6 @@
 # billcheck — session handoff / live state (2026-06-12)
 
-> **Status: OPERATIONAL (current).** Live infra/deploy state of the running system — still accurate. · Map: [V2-START-HERE.md](V2-START-HERE.md) · _classified 2026-06-16_
+> **Status: OPERATIONAL (current).** Live infra/deploy state of the running system — still accurate. · Map: [START-HERE.md](START-HERE.md) · _classified 2026-06-16_
 
 Durable record of everything that lives outside the code. Update on every significant session.
 Plan of record: `docs/plans/2026-06-12-001-feat-billcheck-v0-plan.md` · Conventions: `AGENTS.md` · Product: `docs/PRODUCT.md` · Roadmap/deferred: `docs/ROADMAP.md`.

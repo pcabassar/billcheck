@@ -5,7 +5,7 @@ background only — do NOT treat as the current spec or plan.**
 
 The product is pivoting to a chat/voice-first, agentic architecture. The
 current direction lives in [`../RETHINK-2026-06-15-agentic-architecture.md`](../RETHINK-2026-06-15-agentic-architecture.md)
-and [`../V2-START-HERE.md`](../V2-START-HERE.md).
+and [`../START-HERE.md`](../START-HERE.md).
 
 | File | What it was | Status |
 |------|-------------|--------|

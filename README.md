@@ -1,6 +1,6 @@
 # billcheck
 
-> **Current direction (v2):** see [docs/V2-START-HERE.md](docs/V2-START-HERE.md) (doc map) and [docs/RETHINK-2026-06-15-agentic-architecture.md](docs/RETHINK-2026-06-15-agentic-architecture.md) (north star). This README describes the **V0** build. _(2026-06-16)_
+> **Current direction (V0.1):** see [docs/START-HERE.md](docs/START-HERE.md) (doc map) and [docs/RETHINK-2026-06-15-agentic-architecture.md](docs/RETHINK-2026-06-15-agentic-architecture.md) (thesis). This README describes the **V0** build. _(2026-06-16)_
 
 Consumer medical-bill audit: decide **pay vs. contest**, then help contest — with evidence, not vibes.
 

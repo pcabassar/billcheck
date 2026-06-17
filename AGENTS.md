@@ -1,6 +1,6 @@
 # billcheck — agent conventions
 
-> **Status: OPERATIONAL (current).** Engineering invariants — still in force. The §5 bright line in [RETHINK](docs/RETHINK-2026-06-15-agentic-architecture.md) becomes a new invariant here for v2. · _classified 2026-06-16_
+> **Status: OPERATIONAL (current).** Engineering invariants — still in force. The §5 bright line in [RETHINK](docs/RETHINK-2026-06-15-agentic-architecture.md) becomes a new invariant here for V0.1. · _classified 2026-06-16_
 
 Consumer medical-bill audit app: decide pay-vs-contest, then help contest.
 Plan of record: `docs/plans/2026-06-12-001-feat-billcheck-v0-plan.md` (units U1–U18).

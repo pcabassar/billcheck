@@ -1,6 +1,6 @@
-# US Medical-Bill Problem Taxonomy — research pass for billcheck v2
+# US Medical-Bill Problem Taxonomy — research pass for billcheck V0.1
 
-> **Status: INPUT (v2).** Problem-space research feeding the v2 brainstorm — fulfills the knowledge-base research pass in [RETHINK §6](../RETHINK-2026-06-15-agentic-architecture.md). · _classified 2026-06-16_
+> **Status: INPUT (V0.1).** Problem-space research feeding the V0.1 brainstorm — fulfills the knowledge-base research pass in [RETHINK §6](../RETHINK-2026-06-15-agentic-architecture.md). · _classified 2026-06-16_
 
 **Date:** 2026-06-16 · **Purpose:** map the landscape of medical-bill problems a US
 patient can face, to fuel the v2 brainstorm. **Scope:** US only, patient/consumer
