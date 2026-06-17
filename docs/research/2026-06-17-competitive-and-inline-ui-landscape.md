@@ -16,6 +16,22 @@ problem (EOB-vs-bill, "this is not a bill") that our #1 verdict targets. **This 
 it lines up precisely with Pedro's hypothesis that our top two jobs are "don't pay yet, that's a
 statement" and "this looks fine, pay it."
 
+## The problem, quantified (the thesis's evidence base)
+- **~30% of consumers can't tell whether their EOB is a bill — even with "THIS IS NOT A BILL" on it**
+  (Vitals, 2018); 55% say the EOB isn't clear; ~1 in 10 routinely throw it away.
+- **30% of insured adults find EOBs hard to understand — rising to 52% among those whose claim was
+  denied** (KFF Survey of Consumer Experiences, 2023, n=3,605).
+- **Fewer than half can distinguish a "claim" from an "EOB"** (Corporate Insight); **only ~4% of insured
+  Americans can define all of deductible/coinsurance/copay/OOP-max** (Policygenius); only ~27% of Gen Z
+  can define "deductible" (NAIC, 2024). **Cedar: 72% of patients need clarification on their bills.**
+- **Root cause:** there is **no federal standard for EOB layout**, so every insurer's looks different; the
+  "this is not a bill" stamp exists precisely because EOBs look like bills. The **Advanced EOB (AEOB)** the
+  No Surprises Act promised is **still not implemented for insured patients** (rulemaking delayed) — so the
+  confusion has no regulatory fix in sight. This is durable white space, not a gap about to close.
+- The universal **4-step mental model** every insurer/decoder uses: **billed → plan discount/allowed →
+  plan paid → your responsibility.** Our job isn't to reinvent it — it's to (1) triage the document type
+  first, then (2) collapse the four numbers into one plain sentence + a clear "what to do."
+
 ## Competitors — medical bill space
 **Appeal / claim-denial (upload → AI appeal letter):**
 - **Counterforce Health** — leading, **free** (grant-funded), AI appeal-letter generation + a voice agent
@@ -38,6 +54,27 @@ statement" and "this looks fine, pay it."
 - **OrbDoc** (free, client-side, review codes before analysis), **BillSight** ("dispute letter in 60s" +
   25%-savings human follow-up), **BillMeLess**, **Reassure Health** (notably ingests **bill + policy + EOB**
   → bill-vs-policy analysis + appeal drafts). Existence search-confirmed; longevity unverified.
+
+**Closest chat-first analogs (watch these most):**
+- **Granted** ([grantedhealth.com](https://grantedhealth.com/), formerly Medbill AI; the competitor from
+  our V0-era brief) — **the most chat-first consumer analog and our closest competitor.** Chat-style
+  "**case chat**" ("ask anything," thumbs up/down feedback), ingests **bills AND EOBs**, "**Smart Bill
+  Detection**," and **creates cases directly from an EOB with pre-flagged concerns** (EOB as a distinct
+  ingest type — the closest thing in market to document-type awareness). Disputes/appeals/negotiates.
+  ~$16M raised. **Even Granted doesn't lead with an "is this a bill?" triage front door** — it jumps to
+  error-finding. _(Note: distinct from granted.health, an unrelated clinical tool.)_
+- **Sheer Health** — snap/upload a **bill *or* EOB** (or connect insurance) → AI+human check; **ask
+  questions in plain English** ("explain why I'm getting a $1,500 bill"). Free tier + ~$40/mo. App
+  reviews dated May 2026. The nearest thing to a chat-first consumer bill advisor today. [sheerhealth.com](https://www.sheerhealth.com/)
+- **August AI** — multimodal health companion **on WhatsApp + web + mobile**; "Bill Analyser" compares
+  lines vs 300M+ negotiated prices and **reviews the EOB alongside the itemized bill → finds mismatches →
+  drafts an appeal.** 6M users. [meetaugust.ai](https://www.meetaugust.ai/tool/bill-analyser)
+- **BillBusted** — most on-brief for triage: reads a **bill, EOB, GFE, or pasted notes**, flags
+  **bill-vs-EOB mismatches**, and returns a triage output = **"top concerns, missing documents, one next
+  step, one starter message."** (Essentially a triage card — but still not a clean "is this a bill?" front door.) [billbusted.com](https://www.billbusted.com/)
+
+_Even these three — the closest to us — don't lead with document-type triage; they jump to analysis/
+error-finding. The triage-first front door remains unclaimed._
 
 **Charity / financial aid:** **Dollar For** — best **guided-flow** UX: 6-question screener vs 8,630+
 hospital policies → auto-fills the application; case-tracking portal; free; ~$151M relieved. [dollarfor.org](https://dollarfor.org/what-we-do/)
@@ -82,6 +119,16 @@ plain-language EOB/billed-vs-owe breakdown** + **code-level itemization verdict*
 + **cost benchmarking** (FAIR-Health-style) + **one-tap appeal/dispute-letter + phone-script** generation —
 all in **one chat-first advisor that works for anyone with no integration**. No one ships the *triage-first*
 front door; that, plus the persistent-advocate campaign engine, is the wedge.
+
+**Three concrete, unclaimed openings** (each a demoable differentiator):
+1. **The "is this an EOB or a bill?" triage front door** — unowned; Granted is closest but starts at
+   error-finding. Borrow the **Center for Plain Language** template literally headlined *"THIS IS NOT A
+   BILL. So what is it?"* ([PDF](https://centerforplainlanguage.org/wp-content/uploads/IMG_Enterprise_EOB_Non-CDHP_Template.pdf)) for triage language.
+2. **A clean four-column "billed → allowed → plan paid → you owe" verdict card** — *no competitor centers
+   this as a consumer artifact* (most collapse to a sentence or a table); our amounts panel can own it.
+3. **"Snap your EOB → we explain each line and tell you whether you owe anything"** as the *headline
+   output* — largely unbuilt (Fight Health Insurance does on-device OCR → plain-English denial; Sheer/
+   Granted ingest but don't lead with per-line decode).
 
 ## Follow-ups
 - A dedicated competitive deep-dive (pricing, distribution, moats) — this is a scan, not the full study.
