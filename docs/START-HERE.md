@@ -5,7 +5,7 @@
 > _Last updated 2026-06-16._
 >
 > **Naming:** the build we're about to do is **V0.1** — an increment on V0 (the
-> agentic, chat/voice-first shell). Earlier docs (RETHINK, the research brief) say
+> chat-first agentic advisor). Earlier docs (RETHINK, the research brief) say
 > "v2" — same build, now called V0.1.
 >
 > **Nothing under "leading" is gospel** — current thinking and inputs, revised as
@@ -13,9 +13,10 @@
 > We're brainstorming V0.1 **as if from scratch.**
 
 ## Where we are
-V0 is built, tested, and merged. We're building **V0.1: an agentic, chat/voice-first
-shell around the deterministic core.** The engine stays the source of truth for
-every number and verdict — the bright line below.
+V0 is built, tested, and merged. We're building **V0.1: a helpful, chat-first
+medical-bill advisor** — an agent that gives the most useful advice, backed by broad
+knowledge and many tools. The deterministic engine is *one* of those tools (used when
+a number or verdict must be trustworthy — the bright line below), not the spine.
 
 ## 🧭 LEADING — current V0.1 thinking & inputs
 | Doc | What | Note |
@@ -74,9 +75,10 @@ every number and verdict — the bright line below.
 6. **Voice:** chat-first for the V0.1 cut; voice is a fast-follow.
 
 ## In active brainstorm (2026-06-16)
-The V0.1 architecture & product design: mental model / central object · intake &
-triage · the agent loop + tool contracts (bright-line enforcement) · chat UX &
-agent-surfaced views · the knowledge base · eval/PHI guards · the scope cut for June 27.
+Decisions are captured in **[v0.1-design-notes.md](v0.1-design-notes.md)** (framing,
+data model, vocabulary, bill lifecycle, status roll-up). Remaining agenda: intake &
+triage · the agent loop + tool contracts · chat UX & surfaced views · the knowledge
+base · eval/PHI guards · the scope cut for June 27.
 
 ## Next action
 **"brainstorm billcheck V0.1."** Inputs staged: RETHINK + the problem taxonomy + the
