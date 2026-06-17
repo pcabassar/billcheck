@@ -41,18 +41,15 @@ AI SDK's **`needsApproval`** flow (tool pauses → `approval-requested` → Appr
 `addToolApprovalResponse`). This keeps the **bright line** intact: a card only displays values the tool
 returned (parsed line items, engine findings, KB rules) — the model picks the card, not the numbers.
 
-**MCP — the answer to "why not just use ChatGPT?" (strategic; fast-follow, not a V0.1 dependency).**
-The worry: a general model is *right there*, so why come to billcheck? The answer: our value is **the
-tools + the data / system-of-record + durable case state + the bright line** — none of which a
-general model has. But making users *leave* their AI to get it is friction. **MCP removes that friction**
-by letting billcheck work **inside ChatGPT/Claude**: expose our tools as an MCP server, and/or render our
-cards via **MCP Apps** (Jan 2026; `ui://` resource → sandboxed iframe, JSON-RPC over postMessage,
-co-authored by Anthropic/OpenAI/etc.). **Load-bearing design consequence:** because a *general host model*
-may orchestrate our tools, the **bright line + guards must live in the tools themselves** (ID-bearing
-facts, `validateLetter`, HITL gates) — not only in our system prompt (see [03-agent-loop-and-tools](03-agent-loop-and-tools.md)).
-**Build our own chat-first (mobile-first) app as the primary surface** — we keep control of the
-experience, the persistent-advocate behavior, and the bright line — and **offer MCP as a distribution
-channel fast-follow.**
+**Build our own chat-first (mobile-first) app — full stop.** We keep control of the experience, the
+persistent-advocate behavior, and the bright line.
+
+> _MCP (out of V0.1, Pedro 2026-06-17):_ someday, exposing billcheck inside ChatGPT/Claude via MCP could
+> answer "why not just use a general model?" (our moat = the tools + data/system-of-record + durable state
+> + bright line, which general models lack). **But it's explicitly out of scope now** — "get the app right,
+> don't build for a future that may never come." It must not add any V0.1 complexity. _Note: the one
+> principle it had motivated — **keep the bright line + guards inside the tools** — stays, because it's the
+> right call for our own app's safety/testing anyway (see [03](03-agent-loop-and-tools.md)), not because of MCP._
 
 ## The inline component catalog (mapped to our model + verdicts)
 Each component is owned, accessible, and has a **text-equivalent fallback** (for chat-only/voice/SMS).

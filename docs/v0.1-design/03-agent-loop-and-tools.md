@@ -88,14 +88,11 @@ open-ended part safe.
    differentiator, not the default play (see selection-bias caveat in the synthesis).
 8. **Integrations (accelerants only)** — insurer-portal/FHIR document retrieval, etc. Never a dependency.
 
-**MCP (distribution, not a V0.1 dependency):** exposing billcheck's tools over **MCP** lets the advisor
-work **inside ChatGPT/Claude** — the answer to "why wouldn't users just use a general model?" Our moat is
-the **tools + data/system-of-record + durable case state + the bright line**, which general models lack;
-MCP removes the friction of making users leave their AI to get it. **Design implication (load-bearing):**
-the **bright line and guards must live *in the tools themselves*** (ID-bearing facts, `validateLetter`,
-HITL gates) — not only in our system prompt — so the tools stay safe and valuable **even when a general
-host model orchestrates them.** Build our own chat-first app as the primary surface; offer MCP as a
-fast-follow channel. (See [04-chat-ux](04-chat-ux.md).)
+**Guards live in the tools, not only the prompt (load-bearing principle).** The bright line + guards —
+ID-bearing facts, a `validateLetter`-style gate, HITL gates — belong **in the tools themselves**, so
+correctness/safety holds regardless of how the orchestrator is prompted. Required for our own app's safety
++ testability (review P0-3 + the architecture research). _(MCP / exposing tools inside ChatGPT-Claude is
+**explicitly out of V0.1** — see [04-chat-ux](04-chat-ux.md); must not add any complexity now.)_
 
 ## Situation → tool/lever routing (condensed)
 From [../v0.1-cases/SYNTHESIS.md](../v0.1-cases/SYNTHESIS.md) §2. The agent picks levers by situation:
