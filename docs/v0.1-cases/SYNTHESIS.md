@@ -10,6 +10,19 @@
 
 ## 1. Headline findings (the few things that should drive the build)
 
+> **⚠ Read this first — selection bias.** This corpus is drawn from *journalism* (KFF Bill of the
+> Month, ProPublica, STAT) and enforcement actions. That frame over-samples **egregious bills that
+> were newsworthy and often resolved *via* the press coverage itself** — so any "press is the most
+> decisive lever" reading below is an **artifact of where the cases came from, not a population
+> statistic.** Nobody writes a story about a correct bill. In the real distribution, the
+> **highest-frequency, highest-value jobs are mundane triage**, and Pedro's hypothesis for the true
+> top two is almost certainly right:
+> 1. **"Don't pay that yet — it's a *statement*, not the final bill."** (wait for the itemized bill / EOB)
+> 2. **"This looks correct, here's why — you're fine to pay it."** (reassurance + permission)
+>
+> The dispute machinery below is the *long tail* — high-stakes, high-differentiation, but rare. The
+> build should optimize for the common path first and treat the arsenal as depth behind it.
+
 1. **The engine is a minority tool — confirmed at scale.** It is the *central* lever in only
    ~8 of 31 cases, all clustered in **commercial-in-network coding** (preventive-vs-diagnostic,
    modifier/unbundling, re-adjudication) and **uninsured benchmarking** (GFE-vs-actual,
@@ -25,11 +38,13 @@
    leverage and your venue (state DOI vs DOL/ERISA appeal) — and **dual/QMB status** — flips a
    bill to a near-automatic $0.
 
-3. **Press/public pressure is the single most frequently-decisive lever in the corpus** —
-   it resolved or broke the logjam in well over a third of cases (Dula, Barrett, Birch, Reynolds,
-   Wirt, Tuszynski, Panozzo-systemic, the air ambulance, the late-filing collections). It is also
-   the one big differentiator and the one needing the most guardrails. **It is a real product
-   capability, not a footnote** — but it can arrive *too late*, and a win may not make the user whole.
+3. **Press/public pressure broke the logjam in many of these *journalism-sourced* cases** (Dula,
+   Barrett, Birch, Reynolds, Wirt, Tuszynski, Panozzo-systemic, the air ambulance, the late-filing
+   collections) — **but see the selection-bias caveat above: this is the long tail, not the common
+   case, and its prevalence here is partly circular** (these cases are in the dataset *because* a
+   reporter took them). Treat press as a real, differentiated capability for egregious + documented
+   + sympathetic cases, with the most guardrails — not as the default play. It can arrive too late,
+   and a win may not make the user whole.
 
 4. **Internal appeals frequently FAIL; escalation wins.** Internal appeals lost outright in a
    large share of denial cases; **external independent review, regulator complaints, and press are
@@ -88,7 +103,17 @@ Cross-cutting levers, ordered by observed decisiveness in this corpus:
 - **Tools (in rough priority):** (1) **document upload + parse** — the universal floor that works for anyone regardless of integrations (per the Granted brief); (2) **artifact drafting** — appeal / external-review / PPDR / FDCPA / dispute / regulator-complaint / chargeback letters (the single highest-leverage capability, used in nearly every case); (3) **deadline + cadence scheduler** — because speed and clocks decide outcomes; (4) the **engine** — coding/duplicate/unbundling/benchmark, on its commercial-in-network + uninsured home turf; (5) **provider/price research**; (6) **press/outreach**; (7) integrations (insurer portal, FHIR) only as *accelerants*, never dependencies.
 - **Knowledge base is core, not peripheral.** A versioned, cited rules library: NSA + loopholes, ACA §2713, 501(r)/charity, GFE/PPDR, FDCPA, QMB/Medicaid balance-billing + out-of-state emergency, Medicare FFS & MA appeal ladders + every clock, state surprise laws, ERISA distinction, retroactive-Medicaid timing. The agent's quality is bounded by this KB's accuracy and freshness.
 - **The campaign engine is the differentiator.** A durable, multi-week, multi-channel advocate with deadlines + auto-cadence + a verbatim paper trail — the Two Chairs shape, validated by the Medicare/collections cases where timing was everything.
-- **Scope signal for June 27 (input to Q6, not a decision):** the highest-frequency, highest-tractability surface is **recognition + assertion + artifact-drafting across the situation→lever map**, with **document parse** as the floor and the **engine on its narrow home turf**. Press and full durable-campaign automation are differentiators that can be staged. (Decide the actual cut when we resume the agenda.)
+- **Triage is the center of gravity — not dispute.** Correcting for selection bias, the
+  highest-frequency value is the mundane call: **"this is a *statement*, don't pay yet"** and
+  **"this looks correct, you're fine to pay."** The dangerous error here is a false "pay it," so
+  triage accuracy (esp. document-type detection: statement vs itemized bill vs EOB) is the first
+  thing to get right and to eval. The dispute arsenal is depth *behind* this common path.
+- **Scope signal for June 27 (input to Q6, not a decision):** build the **common triage path first**
+  (any-shape input → coverage situation + document-type → one of the few common verdicts incl.
+  "don't pay yet" / "looks fine"), with **document parse** as the floor and **recognition +
+  assertion + artifact-drafting across the situation→lever map** as the next layer, and the
+  **engine on its narrow home turf**. Press and full durable-campaign automation are differentiators
+  that can be staged. (Decide the actual cut when we resume the agenda.)
 
 ## 6. Open questions surfaced by the corpus
 - One consolidated GFE or separate per provider? (1.2) — affects PPDR mechanics.
