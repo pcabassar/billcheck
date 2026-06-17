@@ -108,7 +108,7 @@ Cross-cutting levers, ordered by observed decisiveness in this corpus:
   **"this looks correct, you're fine to pay."** The dangerous error here is a false "pay it," so
   triage accuracy (esp. document-type detection: statement vs itemized bill vs EOB) is the first
   thing to get right and to eval. The dispute arsenal is depth *behind* this common path.
-- **Scope signal for June 27 (input to Q6, not a decision):** build the **common triage path first**
+- **Scope signal for V0.1 (input to Q6, not a decision):** build the **common triage path first**
   (any-shape input → coverage situation + document-type → one of the few common verdicts incl.
   "don't pay yet" / "looks fine"), with **document parse** as the floor and **recognition +
   assertion + artifact-drafting across the situation→lever map** as the next layer, and the

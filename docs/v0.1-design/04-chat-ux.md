@@ -41,10 +41,18 @@ AI SDK's **`needsApproval`** flow (tool pauses → `approval-requested` → Appr
 `addToolApprovalResponse`). This keeps the **bright line** intact: a card only displays values the tool
 returned (parsed line items, engine findings, KB rules) — the model picks the card, not the numbers.
 
-**Future embedding (defer):** if we ever surface the advisor *inside* ChatGPT/Claude, the now-standard
-path is **MCP Apps** (Jan 2026; `ui://` resource → sandboxed iframe, JSON-RPC over postMessage,
-co-authored by Anthropic/OpenAI/etc.). Our **owned mobile/web app is the priority surface**; MCP Apps is a
-later distribution channel, not a V0.1 dependency.
+**MCP — the answer to "why not just use ChatGPT?" (strategic; fast-follow, not a V0.1 dependency).**
+The worry: a general model is *right there*, so why come to billcheck? The answer: our value is **the
+tools + the data / system-of-record + durable case state + the bright line** — none of which a
+general model has. But making users *leave* their AI to get it is friction. **MCP removes that friction**
+by letting billcheck work **inside ChatGPT/Claude**: expose our tools as an MCP server, and/or render our
+cards via **MCP Apps** (Jan 2026; `ui://` resource → sandboxed iframe, JSON-RPC over postMessage,
+co-authored by Anthropic/OpenAI/etc.). **Load-bearing design consequence:** because a *general host model*
+may orchestrate our tools, the **bright line + guards must live in the tools themselves** (ID-bearing
+facts, `validateLetter`, HITL gates) — not only in our system prompt (see [03-agent-loop-and-tools](03-agent-loop-and-tools.md)).
+**Build our own chat-first (mobile-first) app as the primary surface** — we keep control of the
+experience, the persistent-advocate behavior, and the bright line — and **offer MCP as a distribution
+channel fast-follow.**
 
 ## The inline component catalog (mapped to our model + verdicts)
 Each component is owned, accessible, and has a **text-equivalent fallback** (for chat-only/voice/SMS).
@@ -159,6 +167,6 @@ Artifacts), NotebookLM (cite→source 3-panel), Typeform (conversational forms),
 were 403-limited; treat single-snippet specifics as verify-before-citing._
 
 ## Open questions
-- How much of the catalog do we build for June 27 vs. stub as text? (→ scope cut, Q6)
+- How much of the catalog do we build first vs. stub as text? (→ the 80/20 card cut, Q6) — build only the most-expected cards (VerdictCard + AmountsPanel), grow from there.
 - Side-panel (web) vs full-screen (mobile) document viewer — one responsive component or two?
 - Do we adopt the AI SDK generative-UI pattern directly, or a thin in-house tool→component renderer?

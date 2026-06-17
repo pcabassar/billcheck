@@ -1,9 +1,13 @@
-# billcheck V0.1 — Implementation Plan (June 27 2026 hackathon milestone)
+# billcheck V0.1 — Implementation Plan
 
 > **Status: LEADING (V0.1).** The build plan, operationalizing the Q2–Q7 brainstorm + reuse inventory,
 > grounded in the actual codebase (every reuse/adapt/drop claim verified against source). Built by the
 > Plan architect agent, then revised by an independent fresh-eyes review (full findings in the
 > **Review addendum** at the end). Not gospel. Entry: [../START-HERE.md](../START-HERE.md). _2026-06-17._
+>
+> **Framing:** build **V0.1 now**; the June 27 hackathon is a checkpoint to cherry-pick from, not the
+> target. With current coding models the build is fast — **testing is the pacing constraint** (§7), so
+> invest in eval + user-simulation early. (Phase sizes below are relative weights, not a date countdown.)
 
 > **⚠ Post-review resolutions (these supersede the body where they conflict — do these in Phase 0):**
 > 1. **Run the agent loop on the existing shared LLM client, NOT a parallel Vercel AI SDK Anthropic
@@ -67,6 +71,18 @@ USER (types / uploads / pastes / forwards)
 
 **Reused core:** engine+router → `runEngineTool` (unchanged); Anthropic client+ledger+PHASE+spendGuard → keeps serving the structured-output tools **and the agent loop** (~~a second AI-SDK entry point~~ → **superseded by Post-review resolution #1: run the loop on the shared client** so PHASE/spend/PHI/ledger all hold); letters+`validateLetter`+savings-diff → `draftArtifact` (bright line already built); Supabase schema/RLS/`case_events` → persistence + activity log; 10-check engine + D10 router + golden eval → the deterministic source + regression net.
 
+### Architecture refinements (2026 agent best-practice — [research](../research/2026-06-17-agent-architecture-best-practices.md))
+Apply across the build: **(a)** single orchestrator (not multi-agent — wrong trade for stateful/decision
+work); **(b)** the bright line is **structural at the artifact boundary** (ID-bearing fact objects +
+`validateLetter`), and the high-stakes **parse→audit→fact-generation path is a fixed pipeline**, while the
+*conversation* is open-ended expert reasoning (Pedro's round-3 principle); **(c)** **external,
+path-addressable, compaction-stable case memory** — reload a compact case summary just-in-time, never
+carry weeks of transcript; **(d)** the loop is **gather → act → verify** (add a verify pass on outbound
+artifacts); **(e)** package domain procedures ("how to appeal," "how to read an EOB") as **Agent Skills**
+(progressive disclosure) — keeps context lean and procedures versioned/testable; **(f)** **minimal-viable
+tools** returning **human-readable** facts (opaque IDs tempt the model to invent); **(g)** **trajectory +
+bright-line evals** from day one (did it parse before auditing? does every number trace to a fact?).
+
 ## 2. Data model / schema — case → living thread
 > **Superseded by Post-review resolution #2:** do **not** repurpose `cases.state` (it breaks the
 > line-items guard, the INSERT-requires-`CAPTURED` branch, `rollback_provisional_case`, and
@@ -107,7 +123,7 @@ Every tool returns **typed, id'd facts** (`line:`, `finding:`, `rule:`, `eob:`, 
 
 **Bright-line validator — exactly where** _(revised per Post-review resolution #3 — the bright line is **structural**, not a stream-blocker):_ (1) **structural (primary):** the agent surfaces numbers/verdicts **only** by rendering tool-fact cards (VerdictCard/AmountsPanel) bound to tool outputs; the system prompt forbids originating figures in prose. (2) per-tool: id'd facts; `draftArtifact` runs `validateLetter` fail-closed (built) — the real bright line on the only artifact with legal weight. (3) **flag-only linter** (`lib/agent/bright-line.ts`, new): scans assistant prose for `$`-figures / a small verdict lexicon and **flags** (you can't block a stream the user already saw) — a tripwire, not a guarantee. Eval the structural property, not the regex (§7).
 
-## 5. Inline component catalog (June 27 set)
+## 5. Inline component catalog (V0.1 set — 80/20: build the hero cards first)
 Owned, accessible (icon+color+text, never color alone), text fallback each; bound to tool parts (`input-available`→skeleton, `output-available`→card).
 
 | Component | Binds to | Notes |

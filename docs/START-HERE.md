@@ -22,9 +22,9 @@ a number or verdict must be trustworthy — the bright line below), not the spin
 **Start with the build plan, then the design docs it rests on:**
 | Doc | What |
 |---|---|
-| [v0.1-design/PLAN-june27](v0.1-design/PLAN-june27.md) | **The implementation plan** for the June 27 V0.1 — codebase-grounded, reuse/adapt/drop, 4 phases, open-Qs resolved (+ fresh-eyes review addendum) |
+| [v0.1-design/PLAN](v0.1-design/PLAN.md) | **The implementation plan** for V0.1 — codebase-grounded, reuse/adapt/drop, 4 phases, open-Qs resolved (+ fresh-eyes review addendum) |
 | [v0.1-design/00-v0-reuse-inventory](v0.1-design/00-v0-reuse-inventory.md) | What we **keep / adapt / drop** from V0 (verified file map) |
-| [v0.1-design/](v0.1-design/) | The Q2–Q7 brainstorm: 02 intake & triage · 03 agent loop + tools · 04 chat UX · 05 knowledge base · 06 June 27 scope cut · 07 eval & safety |
+| [v0.1-design/](v0.1-design/) | The Q2–Q7 brainstorm: 02 intake & triage · 03 agent loop + tools · 04 chat UX · 05 knowledge base · 06 V0.1 scope · 07 eval & safety |
 | [v0.1-design-notes](v0.1-design-notes.md) | Living decisions: framing, data model, vocabulary, lifecycle, status rollup, **triage-first** |
 | [v0.1-cases/SYNTHESIS](v0.1-cases/SYNTHESIS.md) | Cross-case synthesis (31 cases): situation × lever × outcome → build implications |
 | [v0.1-cases.md](v0.1-cases.md) + [v0.1-cases/](v0.1-cases/) | The 31 real, cited case files — the design's evidence base |
@@ -75,7 +75,9 @@ a number or verdict must be trustworthy — the bright line below), not the spin
    isn't important yet.
 2. **Chat + UI, but chat-complete** — everything doable via chat alone, elegantly.
    UI = views the agent surfaces, not a required corridor.
-3. **June 27 = a full V0.1**, not a thin demo slice.
+3. **Build V0.1 now.** The June 27 hackathon is a downstream checkpoint we'll cherry-pick
+   from — not the organizing target. (Coding is fast with current models; **testing is the bottleneck**
+   — invest there.)
 4. **Integrations:** ship V0.1 upload-first with **no integration dependency**;
    build "fetch the EOB / get itemized" as a tool *seam* with a manual
    implementation now. First optional accelerant (later) = FHIR for top payers
@@ -89,7 +91,7 @@ a number or verdict must be trustworthy — the bright line below), not the spin
 ## Status (2026-06-17): brainstorm complete → plan built
 The Q2–Q7 brainstorm is done (see [v0.1-design/](v0.1-design/)), grounded in 31 real
 cases ([synthesis](v0.1-cases/SYNTHESIS.md)) and a mid-2026 UX/competitive research run.
-The **[June 27 implementation plan](v0.1-design/PLAN-june27.md)** is written, with an
+The **[V0.1 implementation plan](v0.1-design/PLAN.md)** is written, with an
 independent fresh-eyes review folded into its addendum. **No code yet** — building starts
 on Pedro's go-ahead.
 
@@ -99,5 +101,5 @@ the **bright line** holds (no agent-originated numbers/verdicts); **chat-first b
 is greenfield** in the market.
 
 ## Next action
-Review the **[plan](v0.1-design/PLAN-june27.md)**. On approval, build per its phases —
+Review the **[plan](v0.1-design/PLAN.md)**. On approval, build per its phases —
 start fresh on the shell, reuse the validated core. Repo dev server: `pnpm dev`.

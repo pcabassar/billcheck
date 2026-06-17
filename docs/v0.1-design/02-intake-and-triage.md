@@ -62,8 +62,12 @@ and **dual/QMB** (flips a bill to a near-automatic $0). Ask for these explicitly
 - Set the **lifecycle state** (Expected → New → Gathering → Reviewed → Acting → Resolved/Closed) and
   the **amounts** (billed / allowed / paid / owed / in-collections / disputed) from parsed values.
 
-## Step 4 — The triage verdict (the common-verdict taxonomy)
-Most sessions end in one of a **small set** of verdicts. Lead with the common ones:
+## Step 4 — The triage verdict (common patterns, **not a closed set**)
+The agent **reasons like a human expert** about what it would actually say, then uses one of these
+**recognized patterns *only if it genuinely fits*** — otherwise **"other → tailored advice" is valid**
+(don't force a fit). It is **confidence-aware**: high confidence → a direct answer; a real fork or low
+confidence → **offer 2 options with pros/cons** (or surface the uncertainty and ask). And it **leads with
+the user's actual situation, not a reflex.** The common patterns (overlapping, non-exhaustive):
 
 1. **"Don't pay yet — it's a statement / not final."** Document type = statement, or an EOB with no
    corresponding bill, or charges still in adjudication. Tell them *what to wait for* (the itemized
@@ -76,9 +80,19 @@ Most sessions end in one of a **small set** of verdicts. Lead with the common on
    service dispute. Present a **ranked options menu + real odds**, never "nothing." → **Acting.**
 4. **"I need one more thing to tell you."** Can't verdict yet: request the **itemized bill**, the
    **EOB**, or a **coverage detail**. → **Gathering** with a follow-up scheduled.
+5. **"You were charged and you're surprised / want to dispute this."** Already paid/charged — often with
+   **no itemized invoice** — or a charge the user actively disputes. The play is **dispute / chargeback /
+   appeal / negotiate**, not "wait for the itemized bill." → **Acting.**
+
+⚠ **Why this isn't a switch statement (the Two Chairs lesson):** Two Chairs charged the card $179 with no
+detailed invoice. Reflexively saying *"don't pay yet — it's a statement"* is **wrong** (already charged),
+and *"ask for the itemized bill"* alone is unhelpful. The expert opening **names the predicament** ("you
+were charged and you're surprised") — pattern 5, which a doc-type→verdict lookup would have missed. The
+patterns are priors to recognize, not a menu to force.
 
 Each verdict's **numbers come from a deterministic source** (parsed line items, engine finding,
-KB reference) — the agent narrates, it doesn't originate (the bright line).
+KB reference) — the agent narrates, it doesn't originate (the bright line). The *advice/framing* is
+open-ended expert reasoning; the *numbers* are not. That split is what keeps open-ended triage safe.
 
 ## The dangerous error (design asymmetry)
 The costly mistake is a **false "pay it"** — telling a user a bad/erroneous bill is fine. Its cost is
