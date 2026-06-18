@@ -7,8 +7,10 @@
 > Entry: [../START-HERE.md](../START-HERE.md). _2026-06-17._
 >
 > **Framing:** build **V0.1 now**; the June 27 hackathon is a checkpoint to cherry-pick from, not the
-> target. With current coding models **coding is fast and testing is the pacing constraint** — so the
-> safety/eval harness is a first-class workstream, built first.
+> target. With current coding models **coding is fast and testing is the pacing constraint** — so
+> testing/eval is a first-class workstream. (The formal provenance/false-OK *enforcement gates* are added
+> once the fact-shapes stabilize; meanwhile provenance holds **by construction** — cards render tool
+> outputs, not model prose.)
 
 ## 1. What we're building
 A **chat-first, mobile-first medical-bill advisor**: one **durable orchestrator agent** that converses,
@@ -44,8 +46,9 @@ so triage is conservative and we weight the **false-OK rate** as the headline sa
   (per the architecture research; multi-agent's wins are read-heavy parallel work at ~15× cost).
 - **Pure greenfield.** Build every part anew; V0 is reference only; never adapt-to-fit. What carries over is
   the **acceptance bar** (the 31 cases + the golden-fixture *properties*), not the code (§9).
-- **Testing is the pacing constraint** → build the deterministic safety gates first, then simulate users to
-  learn 100-at-a-time (§9).
+- **Testing is the pacing constraint** → provenance holds **by construction** early (numbers come from
+  tools, not model prose); add the deterministic *enforcement* gates as a one-time **ratchet** once the
+  fact-shapes stabilize (before real users/PHI); then simulate users to learn 100-at-a-time (§9).
 
 ## 3. Architecture
 ```
@@ -235,10 +238,13 @@ KB; heavy multi-biller UX; desktop polish.
 Ordered so **safety gates exist early** and a **thin end-to-end path** lights up fast; each phase is
 demoable, so the cut-line (§13) can fire anytime and leave a coherent product. (Relative weights, not a date
 countdown.)
-- **Phase 0 — Foundations + safety gates (~2).** Scaffold the chat app (Next 16 / React 19 / AI SDK v5 /
-  shadcn, mobile-first); the **one guarded LLM client** + agent loop spike (exit criterion: a streamed Next
-  16 route-handler response renders a typed tool-part card); the **fresh schema + RLS**; and the
-  **deterministic provenance + false-OK eval gates** (build these *before* the features they protect).
+- **Phase 0 — Foundations (~2).** Scaffold the chat app (Next 16 / React 19 / AI SDK v5 / shadcn,
+  mobile-first); the **one guarded LLM client** (keep a spend cap; everything else light) + agent loop
+  spike (exit criterion: a streamed Next 16 route-handler response renders a typed tool-part card **whose
+  number comes from the tool**); the **fresh schema + RLS**. **Provenance by construction** (cards render
+  tool outputs, not model prose — a free data-flow habit, not a gate). _Deferred (Pedro 2026-06-17): the
+  deterministic provenance + false-OK **enforcement gates** — added as a one-time **ratchet** once the
+  fact-object shapes stabilize, before real users/PHI; don't hardcode them now._
 - **Phase 1 — Intake, parse, store + the thin path (~2).** `parseDocument` + `caseStore` + composer upload;
   the first verdict end-to-end: **upload a statement → "don't pay yet"** (VerdictCard + DocChip + activity
   entry). Proves the whole architecture.

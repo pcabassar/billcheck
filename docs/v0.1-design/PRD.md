@@ -199,11 +199,12 @@ default user*, *confused/low-numeracy*, *already-tried-and-failed*, and *adversa
 owe"* personas; **oversample the "looks-fine-but-isn't" and "statement-mistaken-for-final-bill" cells**) and
 the **deterministic gates** (provenance, false-OK, trajectory, lever-legality).
 
-- **Phase 0 — Foundations + safety gates.** *Must work:* chat app scaffolded (Next 16 / React 19 / AI SDK
-  v5 / shadcn, mobile-first); the one guarded LLM client + agent-loop spike — **exit criterion: a streamed
-  route-handler response renders a typed tool-part card**; fresh schema + RLS. *Gates:* the **provenance /
-  no-ungrounded-number gate** and the **false-OK never-event gate** exist and run **offline in CI**; always
-  green from here on.
+- **Phase 0 — Foundations.** *Must work:* chat app scaffolded (Next 16 / React 19 / AI SDK
+  v5 / shadcn, mobile-first); the one guarded LLM client (spend cap; rest light) + agent-loop spike —
+  **exit criterion: a streamed route-handler response renders a typed tool-part card whose number comes
+  from the tool**; fresh schema + RLS. **Provenance by construction** (cards render tool outputs, not model
+  prose). *Deferred (Pedro 2026-06-17):* the formal provenance / false-OK **enforcement gates** — added as
+  a one-time ratchet once fact-shapes stabilize, before real users/PHI; not hardcoded now.
 - **Phase 1 — Intake, parse, store + the thin path.** *Must work:* `parseDocument` + `caseStore` + composer
   upload; the first verdict end-to-end — **upload a statement → "don't pay yet"** (VerdictCard ⏸ + DocChip +
   ActivityLog); bill → *Gathering*. *Gates:* document-type classification on statement fixtures; provenance
