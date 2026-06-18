@@ -8,7 +8,7 @@
 > (anti-circular, injection-resilience, reproducibility), re-expressed for the rebuilt design — not the code.
 > See [../v0.1-design-notes.md](../v0.1-design-notes.md) → "DECISION — pure greenfield." Entry:
 > [../START-HERE.md](../START-HERE.md). _The "keep/adapt/drop" recommendations below are SUPERSEDED:
-> read every row as "what V0 did," not "what to reuse."_
+> read every row as "what V0 did," not "what to reuse." Paths below are now under `archive/v0/`._
 
 ## Stack (confirmed)
 pnpm + turbo monorepo (`pnpm@10.34.3`). `apps/web` = Next.js **16.2.9** / React **19.2.4** (App Router).
