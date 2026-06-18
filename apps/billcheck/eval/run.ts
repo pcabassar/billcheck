@@ -3,10 +3,10 @@
 // prints a report. Exit code 1 if any never-event fails (false-OK or provenance),
 // so this becomes a CI gate later — for now it just reports.
 
-import { GuardedClient, mockTransport } from "../src/core/model.ts";
-import { respond } from "../src/core/agent.ts";
-import { PERSONAS } from "./personas.ts";
-import { scoreTurn, type Score } from "./scorers.ts";
+import { GuardedClient, mockTransport } from "../src/core/model";
+import { respond } from "../src/core/agent";
+import { PERSONAS } from "./personas";
+import { scoreTurn, type Score } from "./scorers";
 
 const pad = (s: string, n: number) => (s + " ".repeat(n)).slice(0, n);
 

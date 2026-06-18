@@ -10,7 +10,7 @@ import type {
   FactBook,
   DocumentKind,
   Money,
-} from "./types.ts";
+} from "./types";
 
 export interface DocInput {
   id: string;

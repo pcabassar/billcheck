@@ -8,7 +8,7 @@
     "test": "turbo run test",
     "eval": "turbo run eval",
     "lint": "turbo run lint",
-    "harness": "node --experimental-strip-types apps/billcheck/eval/run.ts"
+    "harness": "pnpm --filter @billcheck/v01 eval"
   },
   "devDependencies": {
     "turbo": "^2",

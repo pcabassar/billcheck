@@ -12,9 +12,9 @@ import type {
   ParsedDocument,
   Finding,
   FactBook,
-} from "./types.ts";
-import { parseDocument, runAudit, buildFactBook, eobFieldId, fmt, type DocInput } from "./tools.ts";
-import { GuardedClient } from "./model.ts";
+} from "./types";
+import { parseDocument, runAudit, buildFactBook, eobFieldId, fmt, type DocInput } from "./tools";
+import { GuardedClient } from "./model";
 
 export const SYSTEM_PROMPT = `You are billcheck — a sharp, concise medical-bill advisor.
 PRINCIPLES

@@ -4,18 +4,22 @@ on:
     branches: [main]
   pull_request:
 
-# Greenfield V0.1 CI. The simulation harness runs offline via Node's TS type-stripping
-# (no install, no key, no DB) — it's the provenance + false-OK gate as a report (exit 1
-# on a never-event). App typecheck/build steps get added once the Next.js app + deps land.
-# (V0's CI — lint/typecheck/test/engine-eval/build over the old workspace — is archived
-# under archive/v0/ along with the code it gated.)
+# Greenfield V0.1 CI: install, run the simulation harness (the provenance + false-OK
+# gates, as a report — exits non-zero on a never-event), typecheck, and build the app.
 jobs:
-  harness:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: V0.1 simulation harness (provenance + false-OK, offline)
-        run: node --experimental-strip-types apps/billcheck/eval/run.ts
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Simulation harness (provenance + false-OK)
+        run: pnpm --filter @billcheck/v01 eval
+      - run: pnpm --filter @billcheck/v01 typecheck
+      - run: pnpm --filter @billcheck/v01 build

@@ -2,8 +2,8 @@
 // behavioral), NOT free-form. Oversamples the dangerous cells:
 // "statement-mistaken-for-final-bill" and "looks-fine-but-isn't (hidden duplicate)".
 
-import type { CaseInput } from "../src/core/agent.ts";
-import type { VerdictKind } from "../src/core/types.ts";
+import type { CaseInput } from "../src/core/agent";
+import type { VerdictKind } from "../src/core/types";
 
 export interface Persona {
   id: string;

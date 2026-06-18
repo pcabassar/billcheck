@@ -2,10 +2,10 @@
 // rendering its actual output. Proof that the cards (and their numbers) come from
 // the pipeline (parseDocument → runAudit → facts → cards), not from hardcoded HTML.
 
-import { GuardedClient, mockTransport } from "../src/core/model.ts";
-import { respond, draftDispute } from "../src/core/agent.ts";
-import { renderGallery } from "../src/ui/render.ts";
-import type { Part } from "../src/core/types.ts";
+import { GuardedClient, mockTransport } from "../src/core/model";
+import { respond, draftDispute } from "../src/core/agent";
+import { renderGallery } from "../src/ui/render";
+import type { Part } from "../src/core/types";
 import { writeFileSync, mkdirSync } from "node:fs";
 
 const mk = () => new GuardedClient({ transport: mockTransport, model: "mock", spendCapCents: 1000, phaseOk: true });

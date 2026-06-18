@@ -2,8 +2,8 @@
 // as a report. Two are "never-events": a false-OK ("pay it" when it isn't) and a
 // provenance violation (a number not traceable to a fact).
 
-import type { AgentTurn, VerdictCard, VerdictKind, Sourced } from "../src/core/types.ts";
-import type { Persona } from "./personas.ts";
+import type { AgentTurn, VerdictCard, VerdictKind, Sourced } from "../src/core/types";
+import type { Persona } from "./personas";
 
 export interface Score {
   id: string;

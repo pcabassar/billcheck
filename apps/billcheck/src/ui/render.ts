@@ -3,8 +3,8 @@
 // eval/demo.ts to render REAL core output (proving the pipeline + provenance), and
 // reusable as the spec for the React port.
 
-import type { AgentTurn, Part, Card, VerdictKind, Sourced } from "../core/types.ts";
-import { fmt } from "../core/tools.ts";
+import type { AgentTurn, Part, Card, VerdictKind, Sourced } from "../core/types";
+import { fmt } from "../core/tools";
 
 const V: Record<VerdictKind, { bg: string; c: string; ic: string; label: string }> = {
   hold: { bg: "#e6f4fb", c: "#0284c7", ic: "⏳", label: "Hold — don’t pay yet" },
