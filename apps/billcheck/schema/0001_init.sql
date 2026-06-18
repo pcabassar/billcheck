@@ -97,8 +97,9 @@ create table if not exists ai_calls (
 );
 
 -- append-only guard for case_events.
-create or replace function block_mutation() returns trigger language plpgsql as $$
-begin raise exception 'append-only'; end $$;
+create or replace function block_mutation() returns trigger
+  language plpgsql set search_path = ''   -- hardened (no mutable search_path)
+as $$ begin raise exception 'append-only'; end $$;
 drop trigger if exists case_events_no_update on case_events;
 create trigger case_events_no_update before update or delete on case_events
   for each row execute function block_mutation();
@@ -113,6 +114,9 @@ begin
 end $$;
 
 -- owner = auth.uid() policies (profiles keyed on id).
+-- NOTE: policies apply to the anon role too (gated by auth.uid()). This is INTENTIONAL —
+-- we plan anonymous sessions (Supabase anonymous sign-ins give a uid). With no JWT, auth.uid()
+-- is null so no rows match. To exclude anon entirely later, add `to authenticated`.
 create policy profiles_owner on profiles using (id = auth.uid()) with check (id = auth.uid());
 create policy cases_owner on cases using (owner = auth.uid()) with check (owner = auth.uid());
 create policy bills_owner on bills using (owner = auth.uid()) with check (owner = auth.uid());
