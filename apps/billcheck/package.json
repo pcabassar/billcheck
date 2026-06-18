@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "eval": "node --experimental-strip-types eval/run.ts"
+    "eval": "node --experimental-strip-types eval/run.ts",
+    "demo": "node --experimental-strip-types eval/demo.ts"
   }
 }
