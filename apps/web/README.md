@@ -1,7 +1,8 @@
-# billcheck V0.1 — `apps/billcheck` (greenfield)
+# billcheck V0.1 — `apps/web` (greenfield)
 
-Fresh, greenfield V0.1. **V0 (`apps/web`) is reference only — not reused.** Built offline /
-mock-first (no API key, no DB needed); real Anthropic + Supabase wire in behind seams.
+Fresh, greenfield V0.1. **V0 (now under `archive/v0/`) is reference only — not reused.** Built
+offline / mock-first (the core + harness run with no API key and no DB); real Anthropic + Supabase
+wire in behind seams.
 
 ## What's here & what's verified
 
@@ -16,40 +17,50 @@ mock-first (no API key, no DB needed); real Anthropic + Supabase wire in behind 
 - `agent.ts` — `SYSTEM_PROMPT` (the principles), `decide()` (rule-based stand-in for the model's
   situation-recognition; LLM tool-calling later), `respond()` (builds cards from facts).
 
+**App (`app/`, `components/`) — the chat-first, mobile-first Next.js 16 surface:**
+- `app/api/chat/route.ts` — POST → `respond()` on the one guarded client via `transportFromEnv()`
+  (real Anthropic when `ANTHROPIC_API_KEY` is set, else the offline mock). Returns the turn's typed
+  parts (cards carry values + source ids).
+- `app/page.tsx` — hand-rolled chat client (demo scenarios + free text → `/api/chat` → rendered
+  parts; status chip; typing).
+- `components/Cards.tsx` — React VerdictCard / AmountsPanel / DocChip / Confirm / Activity, mirroring
+  `src/ui/render.ts` (numbers only from sourced fields).
+
 **Testing harness (`eval/`) — the "learn N-at-a-time" loop:**
 - `personas.ts` — 12 personas from our taxonomy, oversampling the dangerous cells.
 - `scorers.ts` — deterministic: provenance + false-OK (never-events) + verdict + doc-type.
-- `run.ts` — batch runner → report; exit code 1 on a never-event (a CI gate later).
+- `run.ts` — batch runner → report; exit code 1 on a never-event (a CI gate).
 
-✅ **Verified headless:** `pnpm --filter @billcheck/v01 eval` →
-**12/12 verdicts, 0 false-OK, all numbers sourced.** (Run via `node --experimental-strip-types`,
-no install / no key / no browser.)
+✅ **Verified:** `pnpm --filter @billcheck/v01 eval` → **12/12 verdicts, 0 false-OK, all numbers
+sourced**; `tsc --noEmit` clean; `next build` ✓ (`/` static, `/api/chat` dynamic).
 
-**UI:**
+**UI spec & demo:**
 - `src/ui/render.ts` — framework-less `Part[] → HTML` renderer (shared visual language; the spec the
-  React components will mirror).
-- `eval/demo.ts` → `demo/index.html` — the three cases **rendered from the real core** (proof the
-  cards + numbers come from the pipeline, not hardcoded). Open `demo/index.html` in a browser.
+  React components mirror).
+- `eval/demo.ts` → `demo/index.html` — cases **rendered from the real core** (proof the cards +
+  numbers come from the pipeline, not hardcoded).
 
 **Schema (`schema/0001_init.sql`)** — the fresh living-thread schema (Case → Bill(s) → Documents +
 findings + append-only `case_events` + the `ai_calls` ledger; owner-only RLS; money as bigint cents).
-**Authored, not applied** (no Supabase this session).
+Applied to the V0.1 Supabase project (private `documents` bucket created).
 
 ## Run it
 ```bash
-node --experimental-strip-types apps/billcheck/eval/run.ts    # the simulation harness (report)
-node --experimental-strip-types apps/billcheck/eval/demo.ts   # regenerate demo/index.html
+pnpm install
+pnpm --filter @billcheck/v01 dev        # the app (http://localhost:3000)
+pnpm --filter @billcheck/v01 eval       # the simulation harness (report)
+pnpm --filter @billcheck/v01 build      # production build
+pnpm --filter @billcheck/v01 demo       # regenerate demo/index.html
 ```
+Locally the app uses the **offline mock** unless `ANTHROPIC_API_KEY` is set; on Vercel the key is in
+the project env, so the deployed app uses the real model. Optional: `BILLCHECK_MODEL` to pin a model.
 
 ## Status & next steps
-- **Done + verified:** the guarded-client + agent-loop + tools + provenance-by-construction core, and
-  the offline simulation harness (the deterministic gates, as a report).
-- **Deferred by decision (Pedro):** the *formal* provenance/false-OK enforcement gates are a one-time
-  ratchet to add once fact-shapes stabilize (provenance already holds by construction). See PLAN §9/§12.
-- **Next (needs a browser + `pnpm install` + the latest-Claude id):** scaffold the **Next.js 16 app**
-  (mobile-first) on this core — a `/api/chat` route calling `respond()`, a client thread rendering typed
-  tool-parts into React components ported from `src/ui/render.ts` and the prototype. ⚠ Next 16 has
-  breaking changes (see `apps/web/AGENTS.md`) — read its docs before scaffolding. (Decide AI-SDK-v5 vs a
-  thin in-house renderer at that point — open question in PLAN §14.)
-- **Then:** wire the real Anthropic transport (set `ANTHROPIC_API_KEY` + `BILLCHECK_MODEL`), apply the
-  schema to a Supabase project, and swap the in-memory store for it.
+- **Done + verified:** the guarded-client + agent-loop + tools + provenance-by-construction core; the
+  offline simulation harness (the deterministic gates, as a report); the mobile-first Next.js chat app
+  on that core (builds clean); deployed to Vercel (git integration, Root Directory `apps/web`).
+- **Deferred by decision (Pedro):** the *formal* provenance/false-OK enforcement gates — a one-time
+  ratchet to add once fact-shapes stabilize, before real users/PHI (provenance already holds by
+  construction). See PLAN §9/§12.
+- **Next:** real file upload + AI parse (replace the scripted demo docs); Supabase persistence +
+  anonymous sessions wired to the live project; then the durable multi-week campaign layer.

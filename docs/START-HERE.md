@@ -25,7 +25,7 @@ a number or verdict must be trustworthy — the Provenance principle below), not
 | [v0.1-design/PLAN](v0.1-design/PLAN.md) | **The implementation plan** for V0.1 — greenfield (see its banner), 4 phases, open-Qs resolved (+ fresh-eyes review addendum) |
 | [v0.1-design/PRD](v0.1-design/PRD.md) | **The product requirements** (user/JTBD/journeys/requirements/metrics + per-phase acceptance criteria that double as the test spec) |
 | [v0.1-design/prototype](v0.1-design/prototype/billcheck-prototype.html) | **Clickable prototype** (self-contained HTML, mobile-first) — 3 scripted cases: hold→OK · dispute · charged-and-surprised |
-| [apps/billcheck](../apps/billcheck/) | **Phase 0 build (greenfield)** — guarded-client + agent-loop + tools core, the offline **testing harness** (verified 12/12, 0 false-OK, all sourced), a demo rendered from the real core, and the fresh schema. See `apps/billcheck/README.md` |
+| [apps/web](../apps/web/) | **The greenfield build** — guarded-client + agent-loop + tools core, the offline **testing harness** (verified 12/12, 0 false-OK, all sourced), the mobile-first Next.js chat app on that core (builds clean; deployed to Vercel), a demo rendered from the real core, and the fresh schema. See `apps/web/README.md` |
 | [v0.1-design/00-v0-reuse-inventory](v0.1-design/00-v0-reuse-inventory.md) | ⚠ **Historical reference only** — V0.1 is **pure greenfield** (do not reuse/adapt V0 code) |
 | [v0.1-design/](v0.1-design/) | The Q2–Q7 brainstorm: 02 intake & triage · 03 agent loop + tools · 04 chat UX · 05 knowledge base · 06 V0.1 scope · 07 eval & safety |
 | [v0.1-design-notes](v0.1-design-notes.md) | Living decisions: framing, data model, vocabulary, lifecycle, status rollup, **triage-first** |
