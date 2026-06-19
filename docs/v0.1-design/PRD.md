@@ -6,6 +6,14 @@
 > [SYNTHESIS](../v0.1-cases/SYNTHESIS.md), [02-intake-and-triage](02-intake-and-triage.md),
 > [06-v0.1-scope](06-v0.1-scope.md), [PLAN](PLAN.md), and the [31-case corpus](../v0.1-cases.md).
 > Locked decisions honored, not relitigated. Not gospel. _2026-06-17._
+>
+> **UPDATE — 2026-06-19 (Pedro)** (detail in [PLAN.md](PLAN.md)'s 2026-06-19 update): (1) **adopt the Vercel
+> AI SDK v6** for the chat transport (`useChat` + streaming); the model call stays on the official Anthropic
+> SDK. (2) **The prototype is model-driven with loose provenance, by choice:** the model owns the card
+> (numbers included), with the `run_audit` tool available, a *fix-or-explain* prompt, and a **passive
+> divergence log** (model# vs tool#). The strict, blocking Provenance requirement (NFR-3, §6) is the target
+> for **before at-risk users**, not the prototype (we test it before any at-risk user). Built: the deployed
+> greenfield app + the verified model-driven loop.
 
 ## 1. Product in one line + the problem
 
@@ -141,13 +149,16 @@ clear verdict + a one-line "why" + a provenance line, and offers a **"say more"*
   alone**, with a **text-equivalent fallback** so it works chat-only (voice/SMS-ready). The thread is a
   single persistent `role="log"` `aria-live="polite"` region; `role="alert"` on something's-off; reserve
   min-height + append for streaming stability.
-- **NFR-3 The Provenance principle — an enforced invariant (HARD requirement).** The agent **never
-  originates a dollar amount or a verdict**; every number/verdict a user sees or a letter contains traces to
-  a deterministic tool output. Enforced **structurally, not by prompting**: (1) tools emit typed, ID-bearing
-  fact objects; (2) `validateLetter` is fail-closed; (3) a **verify pass at the artifact boundary** — any
-  number/verdict in an outbound card or letter must resolve to a fact id surfaced that turn, else block/flag.
-  A prose scanner is a flag-only tripwire, never the primary control. *This is exactly what makes open-ended
-  expert reasoning safe.*
+- **NFR-3 The Provenance principle — TARGET invariant; prototype uses a passive divergence log (2026-06-19).**
+  *Prototype posture:* the model is allowed to own the card and its numbers, with the `run_audit` tool always
+  available, a *fix-or-explain* prompt, and a **model#-vs-tool# divergence log** every turn (non-blocking).
+  *Target (before at-risk users — the strict version below):* the agent **never originates a dollar amount or
+  a verdict**; every number/verdict a user sees or a letter contains traces to a deterministic tool output,
+  enforced **structurally, not by prompting**: (1) tools emit typed, ID-bearing fact objects; (2)
+  `validateLetter` is fail-closed; (3) a **verify pass at the artifact boundary** — any number/verdict in an
+  outbound card or letter must resolve to a fact id surfaced that turn, else block/flag. A prose scanner is a
+  flag-only tripwire, never the primary control. *The strict version is what ultimately makes open-ended
+  expert reasoning safe; the log is how we learn our way to it.*
 - **NFR-4 PHI & safety.** Owner-only RLS everywhere; one guarded LLM client (PHASE-style gate, spend
   kill-switch checked before bytes leave, PHI-safe logging with a hard field allowlist, an `ai_calls`-style
   ledger); money as integer cents; private server-proxied document storage (opaque keys; never auto-load
@@ -171,9 +182,9 @@ looks-fine), and **any false-OK on a known-bad case fails CI.**
 
 | Metric | Target / gate |
 |---|---|
-| **False-OK ("pay it") rate** | **Near-zero never-event** — recall on "something's-off" cases; any false-OK on a known-bad fixture **fails CI** (BLOCKING) |
+| **False-OK ("pay it") rate** | **Near-zero never-event.** Deterministic path: any false-OK on a known-bad fixture **fails CI** (BLOCKING). Model-driven prototype: tracked via the divergence log; CI-blocking returns before at-risk users |
 | **Document-type accuracy** | High accuracy on statement-vs-itemized-vs-EOB (oversample the "statement-mistaken-for-final-bill" cell) |
-| **Groundedness (Provenance)** | **100% — zero un-sourced numbers/verdicts** (BLOCKING deterministic gate + runtime guardrail) |
+| **Groundedness (Provenance)** | **Prototype:** passive divergence log (model# vs tool#), non-blocking. **Before at-risk users:** 100% — zero un-sourced numbers/verdicts (BLOCKING gate + runtime guardrail) |
 | **Tool-trajectory correctness** | Right tool/args; agent did **not** self-compute a verdict or figure |
 | **Lever-legality + clocks** | No state-law lever on a self-funded plan; QMB→$0; correct deadlines |
 | **Resolution rate (product)** | % of cases reaching a clear verdict / next step |
@@ -199,7 +210,9 @@ default user*, *confused/low-numeracy*, *already-tried-and-failed*, and *adversa
 owe"* personas; **oversample the "looks-fine-but-isn't" and "statement-mistaken-for-final-bill" cells**) and
 the **deterministic gates** (provenance, false-OK, trajectory, lever-legality).
 
-- **Phase 0 — Foundations.** *Must work:* chat app scaffolded (Next 16 / React 19 / AI SDK
+- **Phase 0 — Foundations.** *(DONE 2026-06-19 — greenfield app deployed on Vercel; model-driven loop
+  verified against the live model; provenance is a passive divergence log per the 2026-06-19 update.)*
+  *Must work:* chat app scaffolded (Next 16 / React 19 / AI SDK
   v5 / shadcn, mobile-first); the one guarded LLM client (spend cap; rest light) + agent-loop spike —
   **exit criterion: a streamed route-handler response renders a typed tool-part card whose number comes
   from the tool**; fresh schema + RLS. **Provenance by construction** (cards render tool outputs, not model

@@ -11,6 +11,24 @@
 > testing/eval is a first-class workstream. (The formal provenance/false-OK *enforcement gates* are added
 > once the fact-shapes stabilize; meanwhile provenance holds **by construction** — cards render tool
 > outputs, not model prose.)
+>
+> **UPDATE — 2026-06-19 (Pedro). Read the plan below through this lens:**
+> 1. **Adopt the Vercel AI SDK** for the chat transport/UI — it's a non-core layer, so rent the
+>    well-maintained plumbing. The **model call stays on the official Anthropic SDK** inside our client
+>    (keeps the spend/PHI guards + the offline mock); the AI SDK owns streaming + `useChat`. SDK is now **v6**
+>    (read every "AI SDK v5" below as v6).
+> 2. **Loose provenance for the prototype, by deliberate choice.** The prototype is **model-driven**: the
+>    model orchestrates, calls the `run_audit` tool (our deterministic engine), and **owns the card —
+>    including the numbers.** We do NOT hard-gate it. Instead the audit tool is always available, the prompt
+>    says *run it, and fix-or-explain on mismatch*, and every turn writes a **passive divergence log** (model#
+>    vs tool#) so divergence becomes data. The **strict Provenance principle below — cards-only numbers, the
+>    fail-closed gate — is the target for "before at-risk users / real PHI,"** the same deferral line as the
+>    enforcement gate; it is NOT the prototype. A **divergence-inspector** (an eval grader) is the fast-follow
+>    that turns the log into the decision of *when* to tighten. (We test the prototype before any at-risk user.)
+>
+> **Built so far:** the greenfield app (`apps/web`, deployed on Vercel) — deterministic core + offline
+> harness (12/12) + the **model-driven loop** (`src/core/agentModel.ts`, verified against the live model:
+> numbers match the tool, no fabrication, myth-claims forbidden).
 
 ## 1. What we're building
 A **chat-first, mobile-first medical-bill advisor**: one **durable orchestrator agent** that converses,
@@ -19,7 +37,7 @@ audit engine, artifact/letter drafting, a case store). It recognizes the user's 
 useful advice, and runs the play — from the common "*don't pay yet, that's a statement*" / "*this looks
 fine, pay it*" all the way to a drafted appeal.
 
-**The Provenance principle (non-negotiable):** the agent **never originates a dollar amount or a verdict.** Every
+**The Provenance principle (the TARGET invariant — prototype posture is the 2026-06-19 update above):** the agent **never originates a dollar amount or a verdict.** Every
 number and judgment the user sees traces to a **deterministic source** (a parsed line item, an engine
 finding, a KB rule, a verified diff). The agent talks and decides; **the tools own the numbers and
 verdicts.** This is the trust foundation and is enforced *structurally* (§5, §6), not by prompting.
@@ -189,6 +207,11 @@ surfaces "as-of" dates for time-sensitive law. Freshness/versioning is a hard re
 ## 9. Testing & simulation (the pacing constraint — build first)
 Full plan: [testing research](../research/2026-06-17-testing-and-user-simulation.md). Sequence: **safety
 gates first**, then a simulated-user population.
+- **Prototype provenance = a passive divergence log + an inspector, not a blocking gate (2026-06-19).** The
+  model-driven loop logs **model# vs tool#** every turn (verdict, you-owe, delta, did-it-run-audit, the
+  model's reason). A **divergence-inspector** grader (fast-follow) classifies the log — misread / arithmetic
+  slip / a genuine engine-gap the model caught — to decide *when* to re-impose the strict gates. The
+  blocking gates below remain the bar for **before at-risk users**; the prototype runs on the log.
 - **Deterministic gates (code, BLOCKING, before any judge):** the **provenance / no-ungrounded-number
   gate** (every number/verdict resolves to a real fact id — also the runtime guardrail) and the
   **false-"pay it" never-event gate** (recall on "something's off"; any false-OK on a known-bad case fails
@@ -235,6 +258,12 @@ outreach; **integrations** (insurer portal, FHIR); **MCP** (someday-maybe, must 
 KB; heavy multi-biller UX; desktop polish.
 
 ## 12. Phased build sequence
+**Status (2026-06-19):** Phase 0 is built and deployed; the **model-driven loop** (model orchestrates →
+`run_audit` → model-owned card → divergence log) is in and verified against the live model. The sub-steps
+below are now reordered in practice: provenance is a **passive log** for the prototype (not the Phase-0/2
+blocking gate); next up is **real upload + parse (Phase 1)**, the **AI SDK streaming/`useChat` client**, and
+the **divergence-inspector** (§9).
+
 Ordered so **safety gates exist early** and a **thin end-to-end path** lights up fast; each phase is
 demoable, so the cut-line (§13) can fire anytime and leave a coherent product. (Relative weights, not a date
 countdown.)
