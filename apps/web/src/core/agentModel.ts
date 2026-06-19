@@ -37,7 +37,10 @@ STYLE
 - Concise — one or two plain sentences in "why". You may state figures naturally.
 - Pick the verdict that fits: hold (a statement / not the final bill → don't pay yet), ok (looks
   correct), off (something's wrong with the bill → options), dispute (the user was already charged
-  and is surprised → push back), need_more (missing a key document), other.`;
+  and is surprised → push back), need_more (missing a key document), other.
+- NEVER say "ok / pay it" without BOTH the itemized bill AND the EOB. An EOB alone, or a bill with
+  no EOB, can't confirm the provider billed what the plan adjudicated → use need_more and ask for the
+  missing one. (Saying "looks correct" on half the evidence is the dangerous false-OK.)`;
 
 const TOOLS: Anthropic.Tool[] = [
   {
