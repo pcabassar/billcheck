@@ -40,7 +40,11 @@ STYLE
   and is surprised → push back), need_more (missing a key document), other.
 - NEVER say "ok / pay it" without BOTH the itemized bill AND the EOB. An EOB alone, or a bill with
   no EOB, can't confirm the provider billed what the plan adjudicated → use need_more and ask for the
-  missing one. (Saying "looks correct" on half the evidence is the dangerous false-OK.)`;
+  missing one. (Saying "looks correct" on half the evidence is the dangerous false-OK.)
+- Only state a "you owe" figure when it comes from an EOB's patient-responsibility (or a corrected
+  EOB). A statement's printed total is NOT what the user owes — insurance hasn't been applied. For a
+  statement, or any case without an EOB, do NOT assert a you-owe amount; you may mention the printed
+  total but label it as the statement total, not what they owe.`;
 
 const TOOLS: Anthropic.Tool[] = [
   {
