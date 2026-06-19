@@ -17,15 +17,20 @@ import { parseDocument, runAudit, buildFactBook, eobFieldId, fmt, type DocInput 
 import { GuardedClient } from "./model";
 
 export const SYSTEM_PROMPT = `You are billcheck — a sharp, concise medical-bill advisor.
-PRINCIPLES
-- Reason like a human expert, not a switch statement. Recognized verdict patterns
-  (don't-pay-yet, looks-correct, something's-off, need-more, you-were-charged/dispute)
-  are priors, not a closed menu — "other → tailored advice" is always valid.
-- Lead with the user's ACTUAL situation, not a reflex.
-- Be confidence-aware: direct when sure; offer 2 options with pros/cons on a real fork.
-- Concise; don't over-explain. Offer "say more" rather than dumping detail.
-- PROVENANCE (hard rule): never originate a dollar amount or a verdict. Numbers come
-  from tools (facts) and are rendered in cards; your prose is qualitative.`;
+
+HOW YOU TALK
+- Reason like a human expert, not a switch statement. Lead with the user's ACTUAL situation.
+- Concise; don't over-explain. One or two plain sentences. Offer "say more" rather than dumping detail.
+- Be confidence-aware: direct when you're sure; lay out the real options on a genuine fork.
+
+NUMBERS & VERDICTS — the Provenance principle
+- The authoritative figures and the verdict are computed by tools and shown to the user in
+  cards. You do not decide them, and you never present your own number as the verified one.
+- You MAY reference numbers naturally to explain: echo a figure the user gave you, point to a
+  figure in the facts you're handed, or give a clearly-hedged range when you have no exact value.
+- Never invent an authoritative amount owed or a verdict in your prose. When unsure, stay
+  qualitative and let the card carry the exact number.
+- Prose only — no headings or bullet lists, and don't just restate the card.`;
 
 export interface CaseInput {
   docs: DocInput[];
@@ -118,6 +123,74 @@ function verdictCard(
   }
 }
 
+// ---- The grounded prompt for the model's one explanatory sentence. We hand the model the
+// real, tool-derived facts so it can reference figures accurately; it still never originates
+// the authoritative amount/verdict (those are computed and rendered in the card). ----
+function describeDocs(docs: ParsedDocument[]): string {
+  if (docs.length === 0) return "No documents shared yet.";
+  return docs
+    .map((d) => {
+      const kind =
+        d.kind === "statement" ? "a statement (a summary, not an itemized bill)"
+        : d.kind === "itemized" ? "an itemized bill"
+        : d.kind === "eob" ? "an EOB (the insurer's explanation of benefits)"
+        : `a ${d.kind} document`;
+      const who = d.provider ? ` from ${d.provider}` : "";
+      const total = d.printedTotalCents != null ? `, total ${fmt(d.printedTotalCents)}` : "";
+      const q = d.quality === "low" ? " (low quality / hard to read)" : "";
+      return `- ${kind}${who}${total}${q}`;
+    })
+    .join("\n");
+}
+
+function describeEob(facts: FactBook, eobDocId: string): string {
+  const e = facts.docs[eobDocId]?.eob;
+  if (!e) return "";
+  const parts: string[] = [];
+  if (e.billedCents != null) parts.push(`provider billed ${fmt(e.billedCents)}`);
+  if (e.allowedCents != null) parts.push(`plan allowed ${fmt(e.allowedCents)}`);
+  if (e.planPaidCents != null) parts.push(`plan paid ${fmt(e.planPaidCents)}`);
+  if (e.patientRespCents != null) parts.push(`patient responsibility ${fmt(e.patientRespCents)}`);
+  return parts.length ? `EOB figures: ${parts.join(", ")}.` : "";
+}
+
+function describeFindings(findings: Finding[]): string {
+  if (findings.length === 0) return "Automated audit: no duplicates or coding conflicts found.";
+  return (
+    "Automated audit found:\n" +
+    findings
+      .map((f) => `- ${f.title}${f.amountImpactCents != null ? ` (about ${fmt(f.amountImpactCents)})` : ""}`)
+      .join("\n")
+  );
+}
+
+const WHY_TASK: Record<VerdictKind, string> = {
+  hold: "Explain in 1–2 sentences why they should hold off paying right now and what to send next.",
+  ok: "Explain in 1–2 sentences why this looks correct and they're fine to pay.",
+  off: "Explain in 1–2 sentences, plainly, what looks off and why part of this may not be owed.",
+  dispute: "Explain in 1–2 sentences why this is a dispute (not a wait-for-the-bill) situation and the first step.",
+  need_more: "Say in 1–2 sentences which document is missing and why you need it before giving a confident answer.",
+  other: "Explain the situation and the single most useful next step in 1–2 sentences.",
+};
+
+function buildWhyPrompt(
+  input: CaseInput,
+  docs: ParsedDocument[],
+  findings: Finding[],
+  facts: FactBook,
+  d: Decision,
+): string {
+  const lines: string[] = ["What the deterministic tools found:", describeDocs(docs)];
+  if (input.message) lines.push(`The user said: "${input.message}"`);
+  if (d.eobDocId) {
+    const e = describeEob(facts, d.eobDocId);
+    if (e) lines.push(e);
+  }
+  if (docs.some((x) => x.itemized) || findings.length) lines.push(describeFindings(findings));
+  lines.push("", `TASK: ${WHY_TASK[d.verdict]}`);
+  return lines.join("\n");
+}
+
 /** Run one turn: perceive → orient → decide → act (build cards from facts) → record. */
 export async function respond(client: GuardedClient, input: CaseInput): Promise<AgentTurn> {
   const docs = input.docs.map(parseDocument);
@@ -129,7 +202,13 @@ export async function respond(client: GuardedClient, input: CaseInput): Promise<
   for (const doc of docs)
     parts.push({ type: "card", card: { type: "doc", kind: doc.kind, name: doc.provider ?? doc.kind, pages: doc.pages } });
 
-  const { text: why } = await client.generate({ purpose: "chat", intent: `why.${d.verdict}`, carriesPhi: true });
+  const { text: why } = await client.generate({
+    purpose: "chat",
+    intent: `why.${d.verdict}`,
+    carriesPhi: true,
+    system: SYSTEM_PROMPT,
+    prompt: buildWhyPrompt(input, docs, findings, facts, d),
+  });
   parts.push({ type: "card", card: verdictCard(d.verdict, why, facts, d) });
 
   return { parts, status: STATUS[d.verdict], facts };

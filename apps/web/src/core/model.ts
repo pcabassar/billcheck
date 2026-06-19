@@ -9,7 +9,8 @@ export interface ModelRequest {
   intent: string; // e.g. "why.hold" — the mock keys off this; the real model gets it as guidance
   vars?: Record<string, string>; // non-numeric substitutions only
   carriesPhi?: boolean; // does this call include document/PHI content?
-  /** real-model only: the assembled prompt (ignored by the mock) */
+  /** real-model only: the system prompt + assembled user prompt (both ignored by the mock) */
+  system?: string;
   prompt?: string;
 }
 
@@ -118,7 +119,9 @@ export const mockTransport: Transport = async (req) => {
 };
 
 /** Real Anthropic transport — only constructed when a key exists; dynamically imported so
- *  the dependency is optional. Instructed to produce PROSE ONLY (never numbers). */
+ *  the dependency is optional. The model writes PROSE: it may reference figures from the facts
+ *  it's handed or numbers the user stated, but it never originates the authoritative amount or
+ *  verdict — those are computed by tools and rendered in cards (the Provenance principle). */
 export function makeAnthropicTransport(apiKey: string): Transport {
   return async (req, model) => {
     let Anthropic: any;
@@ -129,9 +132,10 @@ export function makeAnthropicTransport(apiKey: string): Transport {
     }
     const client = new Anthropic({ apiKey });
     const system =
-      "You are billcheck, a concise medical-bill advisor. Produce PROSE ONLY. " +
-      "Never state a dollar amount or a numeric verdict in your text — those are rendered separately " +
-      "from verified data. Explain the situation in plain language, qualitatively.";
+      req.system ??
+      "You are billcheck, a concise medical-bill advisor. Write one or two plain sentences. " +
+        "You may reference figures from the facts you're given or numbers the user stated; do not " +
+        "invent an authoritative amount owed or a verdict — those are computed and shown separately.";
     const msg = await client.messages.create({
       model,
       max_tokens: 300,
