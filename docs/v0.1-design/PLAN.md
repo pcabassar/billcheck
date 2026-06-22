@@ -258,11 +258,13 @@ outreach; **integrations** (insurer portal, FHIR); **MCP** (someday-maybe, must 
 KB; heavy multi-biller UX; desktop polish.
 
 ## 12. Phased build sequence
-**Status (2026-06-19):** Phase 0 is built and deployed; the **model-driven loop** (model orchestrates →
-`run_audit` → model-owned card → divergence log) is in and verified against the live model. The sub-steps
-below are now reordered in practice: provenance is a **passive log** for the prototype (not the Phase-0/2
-blocking gate); next up is **real upload + parse (Phase 1)**, the **AI SDK streaming/`useChat` client**, and
-the **divergence-inspector** (§9).
+**Status (2026-06-19):** the V0.1 triage spine is built, **merged to `main`, and live in production**
+(`billcheck-ruddy.vercel.app`). Done: the **model-driven loop** (model → `run_audit` → model-owned card →
+divergence log, verified on the live model); the **Vercel AI SDK** chat client (`useChat` + a
+UI-message-stream route, browser-confirmed); and the **divergence-inspector** (§9). Provenance runs as a
+**passive log** for the prototype (not the Phase-0/2 blocking gate). **Next:** real upload + parse
+(Phase 1), the knowledge base (§8 — move obvious-case rules out of the prompt into cited rules), and
+Supabase persistence.
 
 Ordered so **safety gates exist early** and a **thin end-to-end path** lights up fast; each phase is
 demoable, so the cut-line (§13) can fire anytime and leave a coherent product. (Relative weights, not a date

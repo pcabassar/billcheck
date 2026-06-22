@@ -4,6 +4,12 @@ Fresh, greenfield V0.1. **V0 (now under `archive/v0/`) is reference only — not
 offline / mock-first (the core + harness run with no API key and no DB); real Anthropic + Supabase
 wire in behind seams.
 
+> **Current (2026-06-19):** built, merged to `main`, and **live in production** (`billcheck-ruddy.vercel.app`).
+> The chat runs on the **Vercel AI SDK** (`useChat`); the live agent is a **model-driven loop**
+> (`src/core/agentModel.ts`) that calls the deterministic engine and owns the card; provenance is a
+> **passive divergence log** + inspector (`eval/inspect-divergence.ts`). The "Status & next steps" at the
+> bottom predates the loop/SDK — see **[../../docs/HANDOFF.md](../../docs/HANDOFF.md)** for the current picture.
+
 ## What's here & what's verified
 
 **Core (`src/core/`) — the brain, framework-agnostic TypeScript:**

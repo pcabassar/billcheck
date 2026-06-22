@@ -94,18 +94,28 @@ a number or verdict must be trustworthy — the Provenance principle below), not
    "keep the validated core as reusable assets" framing.)_
 6. **Voice:** chat-first for the V0.1 cut; voice is a fast-follow.
 
-## Status (2026-06-17): brainstorm complete → plan built
-The Q2–Q7 brainstorm is done (see [v0.1-design/](v0.1-design/)), grounded in 31 real
-cases ([synthesis](v0.1-cases/SYNTHESIS.md)) and a mid-2026 UX/competitive research run.
-The **[V0.1 implementation plan](v0.1-design/PLAN.md)** is written, with an
-independent fresh-eyes review folded into its addendum. **No code yet** — building starts
-on Pedro's go-ahead.
+## Status (2026-06-19): V0.1 triage spine BUILT and IN PRODUCTION
+The greenfield app (`apps/web`) is built, **merged to `main`**, and **live in production** on Vercel
+(`https://billcheck-ruddy.vercel.app`). What's working:
+- **Model-driven loop** (`apps/web/src/core/agentModel.ts`): the model calls `run_audit` (the
+  deterministic engine), owns the verdict card, and fix-or-explains on mismatch — verified against the
+  live model across all 12 personas.
+- **Chat runs on the Vercel AI SDK** (`useChat` + a UI-message-stream `/api/chat` route) — browser-confirmed.
+- **Provenance = a passive divergence log** (model# vs tool#) + a **divergence-inspector**
+  (`apps/web/eval/inspect-divergence.ts`); latest run 0 number-mismatches, audit-run 100%, 0 high-severity.
+  The strict enforcement gate is deferred to *before at-risk users* (see the PLAN/PRD 2026-06-19 updates).
+- **Offline harness** (`apps/web/eval/run.ts`): 12/12 verdicts, 0 false-OK, all sourced — the CI gate on `main`.
 
-Headline: **triage is the spine** (the common path is "don't pay yet, that's a statement"
-and "this looks fine, pay it"); the **engine is one tool** behind a chat-first advisor;
-the **Provenance principle** holds (no agent-originated numbers/verdicts); **chat-first bill triage
-is greenfield** in the market.
+Headline: **triage is the spine**; the **engine is one tool** behind a chat-first advisor; the
+**Provenance principle** is the target (the prototype runs on the log); chat-first bill triage is greenfield.
 
-## Next action
-Review the **[plan](v0.1-design/PLAN.md)**. On approval, build per its phases —
-**pure greenfield** (V0 is reference only), testing-first. Repo dev server: `pnpm dev`.
+## Next action (what a fresh session should pick up)
+The spine works on scripted demo inputs. Open threads, biggest first:
+1. **Real upload + parse** — photo/PDF → the model extracts line items / EOB fields → into the loop
+   (the last big product gap; today the demo pills feed scripted docs).
+2. **Knowledge base** — move the "obvious case" rules (statement≠owed, EOB-alone-can't-confirm, …) out of
+   the system prompt into the cited rule library ([PLAN §8](v0.1-design/PLAN.md)), keeping the prompt lean.
+3. **Supabase persistence** — wire the fresh schema (`apps/web/schema/0001_init.sql`, already applied) so
+   cases are resumable.
+
+Live infra/deploy state: [HANDOFF.md](HANDOFF.md). Build/run: `pnpm --filter @billcheck/v01 dev`.

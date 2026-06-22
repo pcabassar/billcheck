@@ -1,9 +1,32 @@
-# billcheck — session handoff / live state (2026-06-12)
+# billcheck — live state / handoff
 
-> **Status: OPERATIONAL (current).** Live infra/deploy state of the running system — still accurate. · Map: [START-HERE.md](START-HERE.md) · _classified 2026-06-16_
+> **Status: CURRENT for V0.1 (2026-06-19).** The greenfield V0.1 is built, merged to `main`, and live in
+> production. Everything **below the divider** is the **historical V0** record — that system is archived
+> under `archive/v0/` and is NOT what runs now. Map: [START-HERE.md](START-HERE.md) · Conventions: `AGENTS.md`.
 
-Durable record of everything that lives outside the code. Update on every significant session.
-Plan of record: `docs/plans/2026-06-12-001-feat-billcheck-v0-plan.md` · Conventions: `AGENTS.md` · Product: `docs/PRODUCT.md` · Roadmap/deferred: `docs/ROADMAP.md`.
+## V0.1 live state (2026-06-19)
+
+| What | State |
+|---|---|
+| Code | greenfield `apps/web`, **merged to `main`** at `b73c3a2` (clean 51-commit fast-forward) |
+| Production (Vercel) | **LIVE** — `https://billcheck-ruddy.vercel.app` · project `prj_hYWF2qxNoDxRgcbZZTCowJNiUbDX`, team `team_qMEIrSgGqUAFRA5JsyYmAL2Y`, rootDirectory `apps/web`. Deployment-protection/SSO gates it to Pedro's account. The agent's sandbox can't reach `*.vercel.app` (egress allowlist) → Pedro browser-tests. |
+| Model | real Anthropic via the **official SDK in the guarded client** (`src/core/model.ts`); `BILLCHECK_MODEL` (default `claude-sonnet-4-6`). `ANTHROPIC_API_KEY` set in Vercel + this env. |
+| Chat transport | **Vercel AI SDK** (`ai`@6 + `@ai-sdk/react`@3): client `useChat` + a UI-message-stream `/api/chat` route emitting one `data-turn` part. |
+| Agent | **model-driven loop** (`src/core/agentModel.ts`): model calls `run_audit` (deterministic engine `src/core/tools.ts`) → owns the verdict card → fix-or-explain on mismatch. Offline/mock path is `respond()` in `src/core/agent.ts` (the harness path). |
+| Provenance | **passive divergence log** (model# vs tool#) every turn + `eval/inspect-divergence.ts` (grader classifies divergences). Strict gate deferred to before at-risk users. |
+| Supabase | project `billcheck`, ref `etakonvmsfkyjnwksydi`. **Fresh V0.1 schema** `apps/web/schema/0001_init.sql` applied (8 tables, owner-only RLS, private `documents` bucket). **NOT yet wired to the app** — persistence is a next step. |
+| Tests / CI | `pnpm --filter @billcheck/v01 eval` → 12/12, 0 false-OK, all sourced. CI on `main`: install → harness → typecheck → build. |
+| Plugins | EveryInc `compound-engineering` + `coding-tutor` are NOT installed (agent is blocked from writing `.claude/settings.json` — supply-chain). Config to commit is in the chat log. |
+
+**Next (biggest first):** real upload + parse (photo/PDF → model extraction) · knowledge base (move obvious-case rules out of the prompt, PLAN §8) · Supabase persistence. **On Pedro:** browser-test prod; optionally enable plugins / disable deployment-protection for sharing.
+
+---
+
+# HISTORICAL — V0 system (2026-06-12/13) · archived under `archive/v0/`
+
+> The record below describes the **V0** linear audit funnel (units U1–U18, the old engine, PR #1, the
+> `feat/phase-b5-c` branch). V0.1 is a pure-greenfield rebuild that does NOT run this. Kept for reference.
+> Plan of record (V0): `docs/plans/2026-06-12-001-feat-billcheck-v0-plan.md`.
 
 ## Live infrastructure
 
