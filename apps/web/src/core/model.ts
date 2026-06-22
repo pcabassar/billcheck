@@ -134,8 +134,8 @@ export function makeAnthropicTransport(apiKey: string): Transport {
     const system =
       req.system ??
       "You are billcheck, a concise medical-bill advisor. Write one or two plain sentences. " +
-        "You may reference figures from the facts you're given or numbers the user stated; do not " +
-        "invent an authoritative amount owed or a verdict — those are computed and shown separately.";
+        "Reference figures from the facts you're given or numbers the user stated; the verdict and " +
+        "the verified amount are computed and shown separately in the card.";
     const msg = await client.messages.create({
       model,
       max_tokens: 300,

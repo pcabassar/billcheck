@@ -6,6 +6,20 @@ Consumer medical-bill audit app: decide pay-vs-contest, then help contest.
 Plan of record: `docs/plans/2026-06-12-001-feat-billcheck-v0-plan.md` (units U1–U18).
 Origin spec + architecture sheet live in the gtm-pedro workspace (`working/`).
 
+## V0.1 working conventions (current — 2026-06-19)
+
+> V0.1 is a greenfield rebuild in `apps/web`; the path-specific rules in the V0-era sections below
+> are historical reference (greenfield equivalents differ — e.g. the one LLM entry point is now
+> `apps/web/src/core/model.ts`, not `packages/shared`). These conventions are current:
+
+- **Prompts: positive, clear, concise.** Tell the model what TO do, not a list of "don'ts" —
+  positive instructions read clearer and are followed better. Keep system prompts short: principles
+  and voice live in the prompt; detailed domain rules belong in the knowledge base, not the prompt.
+- **Decisions update the docs in the same change.** When a conversation changes a plan-level
+  decision (architecture, scope, a principle, the stack, the provenance posture), update the
+  affected docs — `docs/v0.1-design/PLAN.md`, `PRD.md`, `docs/v0.1-design-notes.md` — as part of
+  that work, each with a dated note. Don't let the docs trail reality.
+
 ## Commands
 
 - `pnpm typecheck` · `pnpm test` · `pnpm eval` (engine golden fixtures — CI gate) · `pnpm build` · `pnpm dev`
