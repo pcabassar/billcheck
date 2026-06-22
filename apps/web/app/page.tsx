@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { Part } from "../src/core/types";
-import type { CaseInput } from "../src/core/agent";
-import { PartView } from "../components/Cards";
+// Mobile-first chat client, now on the Vercel AI SDK (`useChat` + DefaultChatTransport).
+// Demo scenarios attach their structured CaseInput via prepareSendMessagesRequest (a ref the
+// transport closes over); free text sends as a plain message. The agent's reply arrives as a
+// "data-turn" part whose Part[] we render with the same owned card components.
 
-type Item = { role: "user"; text: string } | { role: "agent"; parts: Part[] };
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+import type { CaseInput } from "../src/core/agent";
+import type { BillcheckUIMessage } from "../src/ui/chat-types";
+import { PartView } from "../components/Cards";
 
 const SCENARIOS: { key: string; chip: string; user: string; input: CaseInput }[] = [
   {
@@ -51,34 +56,39 @@ const SCENARIOS: { key: string; chip: string; user: string; input: CaseInput }[]
 const GREETING = "Hi — I’m billcheck. Send me a bill, statement, or EOB (a photo or PDF later), or tell me what’s going on. For now, tap a demo below.";
 
 export default function Page() {
-  const [items, setItems] = useState<Item[]>([{ role: "agent", parts: [{ type: "text", text: GREETING }] }]);
-  const [status, setStatus] = useState("New");
-  const [busy, setBusy] = useState(false);
+  const pendingInput = useRef<CaseInput | null>(null);
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport<BillcheckUIMessage>({
+        api: "/api/chat",
+        prepareSendMessagesRequest: ({ messages }) => ({ body: { messages, input: pendingInput.current } }),
+      }),
+    [],
+  );
+  const { messages, sendMessage, status } = useChat<BillcheckUIMessage>({ transport });
   const [text, setText] = useState("");
   const threadRef = useRef<HTMLDivElement>(null);
+  const busy = status === "submitted" || status === "streaming";
 
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
-  }, [items, busy]);
+  }, [messages, busy]);
 
-  async function send(userText: string, input: CaseInput) {
-    if (busy) return;
-    setItems((x) => [...x, { role: "user", text: userText }]);
-    setBusy(true);
-    try {
-      const r = await fetch("/api/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ input }) });
-      const data = await r.json();
-      if (Array.isArray(data?.parts)) {
-        setItems((x) => [...x, { role: "agent", parts: data.parts as Part[] }]);
-        if (typeof data.status === "string") setStatus(data.status);
-      } else {
-        setItems((x) => [...x, { role: "agent", parts: [{ type: "text", text: "Something went wrong." }] }]);
+  // Case status to display: the most recent turn's status.
+  let caseStatus = "New";
+  outer: for (let i = messages.length - 1; i >= 0; i--) {
+    for (const p of messages[i].parts) {
+      if (p.type === "data-turn") {
+        caseStatus = p.data.status;
+        break outer;
       }
-    } catch {
-      setItems((x) => [...x, { role: "agent", parts: [{ type: "text", text: "Network error." }] }]);
-    } finally {
-      setBusy(false);
     }
+  }
+
+  function send(userText: string, input: CaseInput) {
+    if (busy) return;
+    pendingInput.current = input;
+    void sendMessage({ text: userText });
   }
 
   function onSubmit(e: React.FormEvent) {
@@ -86,34 +96,43 @@ export default function Page() {
     const t = text.trim();
     if (!t || busy) return;
     setText("");
-    void send(t, { docs: [], message: t });
+    send(t, { docs: [], message: t });
   }
 
   return (
     <div className="phone" role="application" aria-label="billcheck">
-      <div className="demolabel">V0.1 · mock model (real on deploy)</div>
+      <div className="demolabel">V0.1 · Vercel AI SDK · real model on deploy</div>
       <header className="top">
         <div className="brandrow">
           <div className="brand"><span className="dot" /> billcheck</div>
-          <div className="status">{status}</div>
+          <div className="status">{caseStatus}</div>
         </div>
       </header>
 
       <main className="thread" ref={threadRef} aria-live="polite">
-        {items.map((it, i) =>
-          it.role === "user" ? (
-            <div className="row user" key={i}><div className="bub">{it.text}</div></div>
-          ) : (
-            <div key={i}>{it.parts.map((p, j) => <PartView part={p} key={j} />)}</div>
-          ),
-        )}
+        <div className="row agent"><div className="bub">{GREETING}</div></div>
+        {messages.map((m) => (
+          <div key={m.id}>
+            {m.parts.map((part, i) => {
+              if (part.type === "text")
+                return (
+                  <div className={`row ${m.role === "user" ? "user" : "agent"}`} key={i}>
+                    <div className="bub">{part.text}</div>
+                  </div>
+                );
+              if (part.type === "data-turn")
+                return part.data.parts.map((p, j) => <PartView part={p} key={`${i}-${j}`} />);
+              return null;
+            })}
+          </div>
+        ))}
         {busy && <div className="row agent"><div className="bub typing"><i /><i /><i /></div></div>}
       </main>
 
       <footer className="composer">
         <div className="chips">
           {SCENARIOS.map((s) => (
-            <button className="chip" key={s.key} disabled={busy} onClick={() => void send(s.user, s.input)}>
+            <button className="chip" key={s.key} disabled={busy} onClick={() => send(s.user, s.input)}>
               {s.chip}
             </button>
           ))}
