@@ -1,10 +1,15 @@
 # billcheck — agent conventions
 
-> **Status: OPERATIONAL (current).** Engineering invariants — still in force. The §5 bright line in [RETHINK](docs/RETHINK-2026-06-15-agentic-architecture.md) becomes a new invariant here for V0.1. · _classified 2026-06-16_
+> **Status: CONVENTIONS (V0.1 greenfield, updated 2026-06-19).** The current conventions + invariants are in
+> **V0.1 working conventions** and **Current invariants (greenfield)** below. The detailed **Hard rules /
+> PHASE gate / Service-role map** sections further down are **V0-era reference** — their paths
+> (`packages/shared`, `apps/web/lib/supabase/admin.ts`, WDK workflows) describe the *archived* V0 system, not
+> greenfield (e.g. the one LLM entry point is now `apps/web/src/core/model.ts`). "Provenance principle"
+> (formerly "bright line") is the trust invariant — see [docs/v0.1-design/PLAN.md](docs/v0.1-design/PLAN.md).
 
-Consumer medical-bill audit app: decide pay-vs-contest, then help contest.
-Plan of record: `docs/plans/2026-06-12-001-feat-billcheck-v0-plan.md` (units U1–U18).
-Origin spec + architecture sheet live in the gtm-pedro workspace (`working/`).
+Chat-first medical-bill advisor: tell the user what a document is and what to do, backed by a deterministic
+audit. **Current build: greenfield V0.1 in `apps/web`.** Doc map: [docs/START-HERE.md](docs/START-HERE.md) ·
+Plan: [docs/v0.1-design/PLAN.md](docs/v0.1-design/PLAN.md) · Live state: [docs/HANDOFF.md](docs/HANDOFF.md).
 
 ## V0.1 working conventions (current — 2026-06-19)
 
@@ -17,8 +22,23 @@ Origin spec + architecture sheet live in the gtm-pedro workspace (`working/`).
   and voice live in the prompt; detailed domain rules belong in the knowledge base, not the prompt.
 - **Decisions update the docs in the same change.** When a conversation changes a plan-level
   decision (architecture, scope, a principle, the stack, the provenance posture), update the
-  affected docs — `docs/v0.1-design/PLAN.md`, `PRD.md`, `docs/v0.1-design-notes.md` — as part of
-  that work, each with a dated note. Don't let the docs trail reality.
+  affected docs — `docs/v0.1-design/PLAN.md`, `PRD.md`, `docs/v0.1-design-notes.md`, and (for status)
+  `docs/START-HERE.md` / `docs/HANDOFF.md` — as part of that work, each with a dated note.
+
+## Current invariants (greenfield V0.1)
+
+The live engineering invariants. The V0 "Hard rules" section below is the same ideas on the *archived*
+paths — use these:
+- **One guarded LLM client.** All Anthropic calls go through `apps/web/src/core/model.ts` (spend cap,
+  PHASE gate, PHI-safe metadata-only ledger). The chat route + the model-driven loop
+  (`src/core/agentModel.ts`) use it / the official SDK behind it — don't scatter raw `@anthropic-ai/sdk` calls.
+- **Numbers are integer cents** everywhere; cards render only sourced fields (`{ cents, src }`).
+- **The audit is deterministic** (`src/core/tools.ts`): parse/audit are pure functions; the model
+  orchestrates and narrates, the facts come from code. *Prototype posture:* the model owns the card and
+  provenance is a **passive divergence log** (model# vs tool#) — the strict gate returns before at-risk users.
+- **PHI:** owner-only RLS; no PHI in logs; document bytes go inline to the model, never to third-party storage.
+- **PHASE gate (pre-BAA):** the guarded client fails closed on PHI-bearing calls outside the allowed phase;
+  production stays pre-BAA until the BAA preconditions (see the V0 PHASE-gate section below) are met.
 
 ## Commands
 

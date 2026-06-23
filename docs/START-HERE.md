@@ -2,7 +2,7 @@
 
 > The single entry point to the repo's docs: what's **leading** (current V0.1
 > thinking), **operational** (the running system), and **historical** (V0).
-> _Last updated 2026-06-17._
+> _Last updated 2026-06-19._
 >
 > **Naming:** the build we're about to do is **V0.1** — an increment on V0 (the
 > chat-first agentic advisor). Earlier docs (RETHINK, the research brief) say
@@ -19,6 +19,13 @@ knowledge and many tools. The deterministic engine is *one* of those tools (used
 a number or verdict must be trustworthy — the Provenance principle below), not the spine.
 
 ## 🧭 LEADING — V0.1 design & plan (brainstorm complete 2026-06-17)
+> **Latest decisions (2026-06-19) override earlier specifics in the Q2–Q7 brainstorm docs below:** the chat
+> runs on the **Vercel AI SDK** (not hand-rolled); the agent is a **model-driven loop** that **owns the card**;
+> provenance for the prototype is a **passive divergence log** (the strict enforcement gate is deferred to
+> before at-risk users). The authoritative current view is the **2026-06-19 updates in PLAN / PRD /
+> design-notes** + [HANDOFF.md](HANDOFF.md). The brainstorm docs (02–07) are the reasoning behind the plan,
+> not the latest word.
+
 **Start with the build plan, then the design docs it rests on:**
 | Doc | What |
 |---|---|
