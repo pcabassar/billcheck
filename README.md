@@ -9,8 +9,11 @@ offline; their full history remains in this repo's git log.
 - `docs/initial-research/` — research, evidence, and early brainstorm notes, carried
   forward as **inputs, not plans**. The brainstorm docs (`design-notes`,
   `intake-and-triage`, `chat-ux`) are banner-marked half-baked ideas.
+- `docs/brainstorms/` — the requirements (what to build).
+- `docs/plans/` — the build plan, plus a clickable UX mockup (how to build it).
 
 ## Next
-Brainstorm → plan → build. The first build is a minimal chat (Next.js + Vercel AI SDK)
-with PDF/image upload and a simple orchestrator prompt; everything else gets added only
-when the prototype shows it's needed.
+Build the prototype per [the plan](docs/plans/2026-06-24-001-feat-billcheck-prototype-plan.md):
+a minimal chat (Next.js + Vercel AI SDK) with document upload (via Vercel Blob) and a simple
+orchestrator prompt, deployed to Vercel. Everything else gets added only when the prototype
+shows it's needed.

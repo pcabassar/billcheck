@@ -7,20 +7,20 @@ topic: billcheck-prototype
 
 ## Summary
 
-A from-scratch, chat-first medical-bill advisor built to establish the general-model baseline and expose where it falls short — its real output is an observed list of gaps that becomes the build roadmap. The minimal version is a single-conversation chat that reads the user's actual documents (PDF/image) and gives grounded, conservative triage from a simple orchestrator prompt.
+A from-scratch, chat-first medical-bill advisor built to establish the general-model baseline and expose where it falls short — its real output is an observed list of gaps that becomes the build roadmap. The minimal version is a single-conversation chat that reads the user's actual documents (PDF/image) and gives grounded triage from a simple orchestrator prompt.
 
 ---
 
 ## Problem Frame
 
-People routinely can't tell what a medical document is or what to do with it — whether a paper is a statement or a final bill, whether an EOB means they owe anything, whether a charge is worth questioning. Guessing wrong is asymmetric: paying a bill that wasn't owed (or wasn't final) loses real money, while the confusion itself drives people to ignore bills, overpay, or burn hours on hold. Today they cope by asking a general AI, calling the billing office, or doing nothing — and a general model, with no document in hand and no medical-billing posture, gives generic answers and will confidently mislead on the cases that matter most. We don't actually know how far a strong model gets at this when it can *see* the document; the prototype exists to find out honestly, and to show exactly where it stops being good enough.
+People routinely can't tell what a medical document is or what to do with it — whether a paper is a statement or a final bill, whether an EOB means they owe anything, whether a charge is worth questioning. Guessing wrong costs real money or hours on hold — so people ignore bills, overpay, or do nothing. Today they cope by asking a general AI, calling the billing office, or doing nothing — and a general model, with no document in hand and no medical-billing posture, gives generic answers and will confidently mislead on the cases that matter most. We don't actually know how far a strong model gets at this when it can *see* the document; the prototype exists to find out honestly, and to show exactly where it stops being good enough.
 
 ---
 
 ## Actors
 
 - A1. User: a person with a medical bill, statement, or EOB who wants to know what it is and what to do.
-- A2. Orchestrator: the AI advisor that reads the user's documents, reasons about the situation, and gives grounded, conservative guidance.
+- A2. Orchestrator: the AI advisor that reads the user's documents, reasons about the situation, and gives grounded guidance.
 
 ---
 
@@ -30,7 +30,7 @@ People routinely can't tell what a medical document is or what to do with it —
   - **Trigger:** the user shares a document or describes their situation, and may add more over the conversation.
   - **Actors:** A1, A2
   - **Steps:** the orchestrator helps — working from what the user actually shows, asking for whatever it needs, and giving its read plus a next step when it can. *How* it gets there is the model's to decide.
-  - **Outcome:** the user gets useful, safe guidance — or the most useful next question.
+  - **Outcome:** the user gets useful guidance — or the most useful next question.
   - **Covered by:** R1, R2
 
 ---
@@ -44,9 +44,8 @@ People routinely can't tell what a medical document is or what to do with it —
 
 ## Success Criteria
 
-- The prototype gives useful, safe triage at roughly general-model quality on real documents — verified hands-on against Pedro's own bills/EOBs plus the hardest documented cases (statement-mistaken-for-bill, looks-fine-but-isn't).
+- The prototype gives useful triage at roughly general-model quality on real documents — verified hands-on against Pedro's own bills/EOBs plus the hardest documented cases (statement-mistaken-for-bill, looks-fine-but-isn't).
 - It yields a concrete, observed list of failure modes across the four gaps (safety/conservatism, situation knowledge, memory across bills, effort/UX) — enough to justify and prioritize what to build next.
-- It does not produce a dangerous "pay it" on the known-bad safety-check cases.
 - A planner can build it from this doc without inventing product behavior, and treats the prototype as deliberately stateless.
 
 ---
@@ -73,7 +72,6 @@ People routinely can't tell what a medical document is or what to do with it —
 
 - **Prototype is a gap-discovery instrument, not a v1.** Success is a baseline + an honest gap list, explicitly not "good enough to ship." It's the cheapest way to learn what's worth building, and it grounds the roadmap in observation instead of guesses.
 - **Stateless, no database.** The single conversation holds everything in context. Zero schema commitment is the least-cornering choice; the real schema is designed when persistence is built. (If sessions are saved to study failures, that's a flat transcript log, not the case model.)
-- **Safety lives in the prompt, not a gate.** "Base help on what's shown; when unsure, say so and ask," plus the stakes-scaled bar — a careful posture beats hard machinery before there are real users.
 - **Tools and cards are optional, never mandated; no fixed verdict taxonomy.** A few cards won't cover every case, and forcing structure makes the model jam situations into shapes that don't fit.
 
 ---
@@ -92,5 +90,4 @@ People routinely can't tell what a medical document is or what to do with it —
 ### Deferred to Planning
 
 - [Affects R2][Technical] Exact latest Claude model id and how it's wired through the Vercel AI SDK (gateway vs. direct provider) — verify against live docs at plan time.
-- [Affects R2][User decision · low-stakes] How conservative the "pay it" bar should feel in practice — calibrate by watching the prototype, not up front.
 - [Affects R1][Technical] Upload handling — which file types/sizes the model accepts inline — confirm at plan time.
