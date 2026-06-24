@@ -236,6 +236,77 @@ header .sub {
   padding: 6px 10px 0;
 }
 
+.attach {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--accent);
+  font-size: 22px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.pending {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 0 2px 8px;
+}
+.chip-doc {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 6px 9px;
+  font-size: 12.5px;
+  max-width: 240px;
+}
+.chip-doc .ic {
+  width: 24px;
+  height: 28px;
+  border-radius: 5px;
+  background: #fde2e2;
+  color: #b42318;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  flex: none;
+}
+.chip-doc .ic.img {
+  background: #dceafd;
+  color: #1d4ed8;
+}
+.chip-doc .nm {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chip-doc .nm small {
+  color: var(--muted);
+}
+.chip-doc .rm {
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  flex: none;
+}
+.chip-doc.err {
+  border-color: #f0b9b9;
+}
+.chip-doc.sent {
+  box-shadow: var(--shadow);
+  margin-bottom: 4px;
+}
+
 .typing span {
   display: inline-block;
   width: 6px;
