@@ -109,6 +109,9 @@ header .sub {
   background: var(--bot);
   color: var(--ink);
   border-bottom-left-radius: 5px;
+  /* Markdown renders block elements; pre-wrap would turn the newlines between
+     them into visible blank lines. Spacing comes from the element margins below. */
+  white-space: normal;
 }
 /* markdown inside assistant bubbles */
 .bot .bubble :first-child {
