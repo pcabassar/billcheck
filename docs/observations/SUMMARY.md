@@ -42,6 +42,10 @@ The gaps that exist are **about execution, not reasoning** — the prototype can
 2. **Invest the next build in _execution_, not better triage.** Highest-value increments, in order: **(1)** artifact generation (draft the letter/appeal/complaint the model already offers), **(2)** persistence + a deadline/clock tracker (a case that survives across turns and sessions), **(3)** the curated lever KB (ranked arsenal + named forms/channels), **(4)** the calibration nudge.
 3. **Keep the chat surface as-is.** Recognition, document reading, tone, and "ask for the one thing that moves it forward" all work. No prompt overhaul needed.
 
+## Browser / integration pass
+
+A separate pass drove the **real UI** (uploads through the file picker; image + multi-file + multi-turn + stop + error/retry) — see [ui/SUMMARY.md](ui/SUMMARY.md). The full pipeline (file → private Blob → route fetch-inline → Opus → render) works end-to-end, including **image vision** and **re-inlining the prior blob on follow-ups**. It surfaced **two rendering bugs the text-only harness couldn't see**, both fixed: markdown whitespace (`white-space:pre-wrap` on bot bubbles) and GFM tables rendering as raw pipes (added `remark-gfm`).
+
 ## Method & caveats (honest limits)
 
 - **1–2 turns per case**, not full multi-turn campaigns — first-response triage is the highest-signal slice, but it under-tests the persistence gap (which is the point).

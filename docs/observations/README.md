@@ -13,10 +13,9 @@ what a great advocate would do that the prototype doesn't.
 - Each observation scores: **recognition · safety (no premature "pay it") · usefulness · levers · next-step**,
   then lists **gaps** vs. the case's ideal play.
 
-## Cases tested
-- Seed cases (deep, journalism-sourced):
-  - [seed-01 — duplicate facility fee](seed-01-duplicate-facility-fee.md)
-  - [seed-02 — OON ambulance balance bill](seed-02-oon-ambulance.md)
-  - [seed-03 — Two Chairs misrepresentation](seed-03-two-chairs-misrepresentation.md)
+## What was tested
+- **Seed cases** (deep, journalism-sourced): [seed-01 — duplicate facility fee](seed-01-duplicate-facility-fee.md) · [seed-02 — OON ambulance](seed-02-oon-ambulance.md) · [seed-03 — Two Chairs misrepresentation](seed-03-two-chairs-misrepresentation.md)
+- **Segment cases** (28, by insurance situation): `s01-*` … `s06-*` in this folder (5 per segment).
+- **Browser / integration pass** (real uploads through the UI, every distinct UI path, 2 render bugs fixed): [ui/SUMMARY.md](ui/SUMMARY.md).
 
-_See [SUMMARY.md](SUMMARY.md) (written after the run) for learnings + recommendations._
+_See [SUMMARY.md](SUMMARY.md) for the learnings + recommendations across the reasoning pass._
