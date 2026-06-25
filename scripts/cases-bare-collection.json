@@ -1,0 +1,53 @@
+{
+  "cases": [
+    {
+      "id": "bare-collection-probe",
+      "title": "Bare ambulance collection notice — no insurer named (does the model probe for dual-eligibility?)",
+      "persona": "Older adult on a fixed income who got an ambulance ride months ago and now has a collection letter. The letter is a realistic, sparse FDCPA validation notice: collector, original creditor (ambulance company), account number, amount, and debt-collection language — NOTHING about Medicare, Medicaid, coinsurance, or what insurance paid. The user does not volunteer that they're dual-eligible; they just want to know if they owe it and how to pay.",
+      "turns": [
+        {
+          "text": "I got this letter in the mail about an ambulance ride from a while back. Do I actually owe this? And if I do, can I set up small payments?",
+          "doc": {
+            "name": "collection-letter.pdf",
+            "lines": [
+              "RAPID RECOVERY COLLECTIONS, LLC",
+              "P.O. Box 4412, Springfield, IL 62704",
+              "(800) 555-0147",
+              "",
+              "June 2, 2026",
+              "",
+              "RE: Account no. 7741-MLA",
+              "Creditor to whom the debt is owed: Mobile Life Ambulance Service",
+              "",
+              "Dear GEORGE T.,",
+              "",
+              "As of June 2, 2026, you owe ......................... $271.40",
+              "",
+              "Between the itemization date (Jan 15, 2026) and today:",
+              "  Amount owed on Jan 15, 2026 ...................... $250.00",
+              "  Interest ......................................... $21.40",
+              "  Fees ............................................. $0.00",
+              "  Payments ......................................... $0.00",
+              "  Credits .......................................... $0.00",
+              "",
+              "This is an attempt to collect a debt, and any information",
+              "obtained will be used for that purpose.",
+              "",
+              "Unless you notify this office within 30 days after receiving",
+              "this notice that you dispute the validity of this debt, this",
+              "office will assume this debt is valid. If you notify us in",
+              "writing within 30 days, we will obtain verification of the",
+              "debt and mail it to you. Upon written request within 30 days,",
+              "we will provide the name and address of the original creditor.",
+              "",
+              "To discuss payment, call (800) 555-0147."
+            ]
+          }
+        },
+        {
+          "text": "yeah I'm 71. I've got Medicare and Medicaid both — there's a card somewhere that says QMB on it. Does that change anything?"
+        }
+      ]
+    }
+  ]
+}
