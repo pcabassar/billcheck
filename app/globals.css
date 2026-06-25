@@ -138,6 +138,24 @@ header .sub {
   padding: 0 4px;
   font-size: 13px;
 }
+.bot .bubble table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 13px;
+}
+.bot .bubble th,
+.bot .bubble td {
+  border: 1px solid var(--line);
+  padding: 5px 8px;
+  text-align: left;
+}
+.bot .bubble th {
+  background: #fff;
+  font-weight: 650;
+}
 
 .bubble.error {
   background: var(--warn-bg);

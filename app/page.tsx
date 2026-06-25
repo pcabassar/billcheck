@@ -5,6 +5,7 @@ import { DefaultChatTransport, type FileUIPart } from "ai";
 import { upload } from "@vercel/blob/client";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const STARTERS = [
   'I got a hospital "statement" — do I owe this?',
@@ -170,7 +171,11 @@ export default function Home() {
               if (part.type === "text") {
                 return (
                   <div key={i} className="bubble">
-                    {m.role === "user" ? part.text : <ReactMarkdown>{part.text}</ReactMarkdown>}
+                    {m.role === "user" ? (
+                      part.text
+                    ) : (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{part.text}</ReactMarkdown>
+                    )}
                   </div>
                 );
               }
