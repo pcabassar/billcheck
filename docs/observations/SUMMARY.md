@@ -46,6 +46,12 @@ The gaps that exist are **about execution, not reasoning** — the prototype can
 
 A separate pass drove the **real UI** (uploads through the file picker; image + multi-file + multi-turn + stop + error/retry) — see [ui/SUMMARY.md](ui/SUMMARY.md). The full pipeline (file → private Blob → route fetch-inline → Opus → render) works end-to-end, including **image vision** and **re-inlining the prior blob on follow-ups**. It surfaced **two rendering bugs the text-only harness couldn't see**, both fixed: markdown whitespace (`white-space:pre-wrap` on bot bubbles) and GFM tables rendering as raw pipes (added `remark-gfm`).
 
+## Addendum — first real-world case (Case 04, 2026-06-24)
+
+The first **non-synthetic** bill run against the deployed prototype — a real Labcorp/Aetna PCP-labs bill — was handled well across three turns: read the figures, flagged the **ACA preventive $0** angle, correctly **reassured** on a past-due-notice-before-the-EOB-posts timing mismatch, and **honestly calibrated** that a $67.30 balance may not be worth a long fight. → [Case 04](../initial-research/cases/index.md) · [transcript](../initial-research/cases/seed-04-pcp-labs-transcript.md).
+
+It both **validates the baseline on real input** and adds two patterns for the lever/knowledge layer (gap #2) to cover — neither is a "find-the-error" lever: **billing-timing anxiety** (reassurance about payer clocks that don't sync) and **small-dollar calibration** (name the honest cost/benefit instead of forcing a fight). Managing worry and proportionality, not just catching mistakes.
+
 ## Method & caveats (honest limits)
 
 - **1–2 turns per case**, not full multi-turn campaigns — first-response triage is the highest-signal slice, but it under-tests the persistence gap (which is the point).

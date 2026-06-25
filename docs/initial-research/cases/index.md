@@ -6,6 +6,10 @@
 > insurance-situation segments. **➜ Read the [cross-case SYNTHESIS](SYNTHESIS.md)** for
 > the patterns (insurance situation × lever × outcome) and what they imply for the build.
 >
+> **+ Case 04** (below) — a first-party case run **live against the built prototype** (added 2026-06-24).
+> It adds two patterns the original 31 underweight: **billing-timing anxiety** (a "past due" notice
+> arriving before the EOB even posts) and **small-dollar calibration** ("$67.30 may not be worth a fight").
+>
 > **Template v2 (locked):** 1) situation + who · 2) what they'd
 > already tried · 3) document/event timeline · 4) the money (amounts) · 5) their goal
 > (what "winning" means) · 6) what actually happened (faithful) · 7) ideal play / levers ·
@@ -21,7 +25,7 @@
 - [05 — Medicaid, dual-eligible (QMB) & coordination-of-benefits](05-medicaid-dual-cob.md) (5)
 - [06 — Collections, credit & legal + claim denials → appeals](06-collections-credit-denials.md) (5; 6.2 = 1.4)
 
-The 3 deeply-documented seed cases follow.
+The 3 deeply-documented seed cases (plus first-party Case 04, added 2026-06-24) follow.
 
 ---
 
@@ -61,6 +65,21 @@ The 3 deeply-documented seed cases follow.
 8. **Maps-to-our-model.** *Data shape:* one **case** → one **bill** ($179 charge) → **documents:** the charge/EOB, the **verbatim email thread**, the provider's policy + marketing language, public reviews, the staged complaint drafts. *Lifecycle:* New → Gathering → Reviewed (misrep + non-delivery diagnosis) → **Acting = a multi-week, multi-channel campaign (escalation ladder with sub-steps, deadlines, auto-cadence)** → Resolve/Reopen. *What the agent needs:* consumer-protection knowledge (chargeback rules, BBB, CA DFPI, FDCPA, the "compliance ≠ can't-refund" rebuttal); tools = **artifact drafting** (escalation emails, chargeback brief, regulator complaints), a **deadline/cadence scheduler**, **provider research** (pricing, terms, reviews), **paper-trail capture**. *Punchline:* the clearest **"persistent advocate / campaign-runner"** case — the agent runs a weeks-long campaign, not a one-shot audit.
 9. **Clocks.** Provider deadline 6/19; chargeback filing window (~60–120 days); BBB/regulator response timers; insurer appeal window.
 10. **Source.** Pedro's first-party documented case — "Two Chairs Refund Case Study," 6/17/2026 (verbatim Gmail thread + decision log). Open as of writing.
+
+---
+
+## Case 04 — "Routine PCP labs billed to my deductible — and a past-due notice before the EOB even posted" (preventive-vs-diagnostic miscoding + billing-timing anxiety · insured · first-party · live-prototype-validated) — *v2 template*
+
+1. **Situation + who.** Pedro C., **insured (Aetna, in-network)**. Saw his PCP (Mt. Sinai Primary Care) for a routine visit; on-site bloodwork drawn (CBC, metabolic panel, A1c, vitamin D, thyroid). **Labcorp** billed it; a small patient balance landed on his deductible, and a **"past due" notice arrived while the Aetna EOB still read "available soon."**
+2. **What they'd already tried.** Tried to view the EOB in the Aetna portal — not yet posted. Noticed the **past-due-vs-no-EOB timing mismatch** and worried it signaled something wrong.
+3. **Document/event timeline.** Routine PCP visit + on-site labs → Labcorp claim adjudicated by Aetna (network discount + small payment) → **Labcorp invoice + past-due notice** → Aetna member EOB still "available soon."
+4. **The money.** Labcorp billed **$1,331.40**; network/insurance discount **−$1,180.25**; **Aetna paid $83.85**; **patient balance $67.30** (deductible/coinsurance).
+5. **Their goal.** Understand whether the $67.30 is real and owed, whether any of it should have been **$0 preventive**, and whether the past-due-before-EOB timing is a problem.
+6. **What actually happened (live prototype, did well).** Over three turns the deployed prototype: read the Labcorp figures correctly; flagged the **preventive-care / ACA $0** angle (routine annual labs are often $0; miscoding to the deductible is common) and asked the gating question (annual physical vs. problem visit); on the timing worry, **correctly reassured** that Labcorp's and Aetna's clocks differ — a "past due" stamp with an unposted EOB is normal, not fraud, and a $67.30 past-due won't hit credit overnight; advised **don't pay yet**, call Aetna to confirm finalization + why $67.30, and call Labcorp (1-800-845-6167) to pause collection pressure while awaiting the EOB; and **honestly calibrated** that $67.30 may not be worth a long fight, while one non-routine lab landing on the deductible plausibly explains the amount.
+7. **Ideal play / levers.** Pull/confirm the EOB; **preventive-vs-diagnostic reprocessing** (ACA $0 for the wellness labs; only the problem-driven lab on the deductible); **billing-timing literacy** (past-due ≠ EOB-posted; the two payers don't sync) — *reassurance, not a lever*; call-Aetna + call-Labcorp scripts to pause pressure; **small-dollar calibration** (name the honest cost/benefit instead of forcing a fight).
+8. **Maps-to-our-model.** One **case** → one **bill** (Labcorp lab charge) → **documents:** the Labcorp bill, the (pending) Aetna EOB. *What the agent needs:* preventive-care/ACA coding knowledge, payer-timing literacy, reprocessing scripts, and the calibration to say "this may not be worth it." *New patterns this case adds:* **billing-timing anxiety** and **small-dollar honesty** — both about managing worry and proportionality, not just finding an error.
+9. **Clocks.** Labcorp past-due/collection cycle; Aetna EOB posting lag (days–weeks); preventive reprocessing/appeal window once the claim finalizes.
+10. **Source.** Pedro's first-party case, run live against the deployed billcheck prototype — verbatim transcript at [seed-04-pcp-labs-transcript.md](seed-04-pcp-labs-transcript.md). 2026-06-24.
 
 ---
 
