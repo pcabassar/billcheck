@@ -1,0 +1,158 @@
+{
+  "cases": [
+    {
+      "id": "s04-c1-medigap-timely-filing-collections",
+      "title": "Anesthesia group filed 17 months late, sent husband to collections for $3,000",
+      "persona": "Wife of an 82-year-old Medicare patient (Traditional Medicare Part B + Humana Medigap). Husband had surgery a year and a half ago; now a collections agency is demanding $3,000 for the anesthesia. Medicare and the Medigap both show paid $0. She's been on the phone for months and is exhausted and a little scared of the collections letters.",
+      "turns": [
+        {
+          "text": "I'm at my wit's end. My husband had a hip surgery back in the fall of 2024. We have regular Medicare and a Humana supplement plan. Out of nowhere a collection company is now sending us letters demanding $3,000 for the anesthesia, and they're threatening to report it. But when I look at the Medicare paperwork it says Medicare paid nothing and the reason is something about the bill being filed too late. The supplement also paid nothing. We never got a real bill from the anesthesia company until this collections notice. Do we actually have to pay this $3,000?",
+          "doc": {
+            "name": "medicare-summary-notice.pdf",
+            "lines": [
+              "MEDICARE SUMMARY NOTICE (Part B)",
+              "Your Medicare Number: ***-**-1842A",
+              "Beneficiary: Walter R.",
+              "This is not a bill.",
+              "",
+              "Provider: NORTH ATLANTIC ANESTHESIA ASSOC (NAPA)",
+              "Service: Anesthesia, hip arthroplasty",
+              "Date of service: 10/03/2024    Claim received: 03/12/2026",
+              "",
+              "Amount provider charged ............. $3,000.00",
+              "Medicare approved ................... $0.00",
+              "Medicare paid ....................... $0.00",
+              "Maximum you may be billed ........... $0.00",
+              "",
+              "Denial reason CO-29: The time limit for filing this claim has expired.",
+              "Note: The provider accepted assignment for this claim."
+            ]
+          }
+        },
+        { "text": "So if I call the collection company, what exactly do I say to them? I don't want to admit I owe it but I also don't want to make things worse." }
+      ]
+    },
+    {
+      "id": "s04-c2-observation-status-snf-9145",
+      "title": "Hospital switched inpatient to observation, $9,145 nursing-home bill (Alexander v. Azar)",
+      "persona": "Daughter of a 94-year-old on Traditional Medicare Part A+B. After a fall, her father spent three nights in the hospital, then went to a skilled nursing facility to recover. She assumed Medicare would cover the nursing home like it did for her mother years ago. Instead a $9,145 bill arrived because the hospital classified the stay as 'observation,' not 'inpatient.' She's confused about how a hospital stay can not count.",
+      "turns": [
+        {
+          "text": "My dad is 94. He fell and was in the hospital for three nights in March, then the doctors sent him to a skilled nursing facility for rehab. We just got a bill for $9,145 from the nursing facility. When I called, someone said Medicare won't pay because his hospital stay was 'observation' and not 'inpatient' so it doesn't count as a qualifying stay. But he was in a hospital bed for three nights! His own doctor wrote the order to admit him. How is this possible and is there anything we can do?",
+          "doc": {
+            "name": "hospital-snf-paperwork.pdf",
+            "lines": [
+              "ST. CATHERINE REGIONAL MEDICAL CENTER",
+              "Patient: George K.    Medicare Part A+B",
+              "",
+              "MEDICARE OUTPATIENT OBSERVATION NOTICE (MOON)",
+              "You are an OUTPATIENT receiving OBSERVATION services.",
+              "You are NOT an inpatient. This may affect what you pay and",
+              "whether Medicare will cover a later skilled nursing facility stay.",
+              "Admitting physician order: 03/04/2026 - INPATIENT admit",
+              "Utilization Review reclassification: 03/05/2026 - changed to OBSERVATION (Condition Code 44)",
+              "Hospital stay: 03/04/2026 - 03/07/2026 (3 nights)",
+              "",
+              "MEADOWBROOK SKILLED NURSING FACILITY - STATEMENT",
+              "Rehab stay: 03/07/2026 - 03/22/2026",
+              "Medicare Part A SNF benefit: NOT COVERED",
+              "Reason: No qualifying 3-day INPATIENT hospital stay",
+              "PATIENT RESPONSIBILITY .................... $9,145.00"
+            ]
+          }
+        },
+        { "text": "The hospital admission paperwork actually says his doctor ordered him admitted as an inpatient. Does that change anything for us?" }
+      ]
+    },
+    {
+      "id": "s04-c3-ma-navihealth-snf-denial-appeal",
+      "title": "Medicare Advantage algorithm cut SNF coverage at day 19 over the doctor's objection",
+      "persona": "Wife of a 74-year-old on Medicare Advantage (UnitedHealthcare). Her husband had a stroke and is in a skilled nursing facility doing rehab. At day 19 the plan sent a notice that coverage ends in two days, even though his physician and therapists say he is nowhere near ready to go home. She's panicking about a roughly $70,000 bill if he stays and they have to pay out of pocket. She doesn't know the stay is being reviewed by an algorithm.",
+      "turns": [
+        {
+          "text": "My husband is 74 and had a stroke six weeks ago. He's in a skilled nursing facility doing rehab and he still can't walk on his own or dress himself. We have a UnitedHealthcare Medicare Advantage plan. Yesterday we got a notice saying his coverage ends in two days, on day 21. His doctor and his physical therapist both told me he needs at least another three weeks. If we keep him there it'll be thousands a week out of our pocket. The notice has a phone number but I don't understand what they want. What do we do, and do we have to just bring him home?",
+          "doc": {
+            "name": "uhc-noticeofdenial.pdf",
+            "lines": [
+              "UNITEDHEALTHCARE MEDICARE ADVANTAGE",
+              "NOTICE OF MEDICARE NON-COVERAGE (NOMNC)",
+              "Member: Daniel P.    Plan: UHC Medicare Advantage (HMO)",
+              "Skilled nursing care reviewed by: naviHealth",
+              "",
+              "Your skilled nursing facility services will END on: 03/26/2026",
+              "Reason: Based on review, you no longer meet the criteria for",
+              "Medicare-covered skilled level of care. Goals substantially met.",
+              "",
+              "Current day of stay: 19",
+              "If you think your services are ending too soon, you have the right",
+              "to a FAST APPEAL. Contact the Quality Improvement Organization (QIO)",
+              "no later than noon the day before coverage ends: 1-888-XXX-XXXX.",
+              "Estimated cost if you stay without coverage: ~$70,000"
+            ]
+          }
+        },
+        { "text": "His neurologist actually told me in person she completely disagrees that he's ready. Would getting that from her in writing help, and who do I give it to?" }
+      ]
+    },
+    {
+      "id": "s04-c4-ma-vision-medical-network-directory-340",
+      "title": "Medicare Advantage directory error: clinic in-network for vision only, $340 glaucoma bill",
+      "persona": "70-year-old on Medicare Advantage (UnitedHealthcare). She checked the plan's online directory before going to an eye clinic for glaucoma monitoring and it showed a green 'in-network' check. The plan denied the claim saying the clinic is out of network and there are no out-of-network benefits, leaving her a $340 bill. She's frustrated because she did everything right and the website said it was covered.",
+      "turns": [
+        {
+          "text": "I'm 70 and on a UnitedHealthcare Medicare Advantage plan. I went to an eye clinic for a glaucoma check. Before I went, I looked the clinic up on the plan's own website and it had a green checkmark saying 'in-network.' Now they've denied the claim and say the clinic is out of network with no out-of-network benefits, and I owe $340. How can it be out of network when their website told me it was in-network? Is there anything I can do or am I just stuck with this?",
+          "doc": {
+            "name": "uhc-eob-denial.pdf",
+            "lines": [
+              "UNITEDHEALTHCARE MEDICARE ADVANTAGE - EXPLANATION OF BENEFITS",
+              "Member: Carol T.    Date of service: 02/11/2026",
+              "Provider: Lakeshore Eye Clinic",
+              "Service: Glaucoma evaluation & monitoring (medical eye care)",
+              "",
+              "Network status as adjudicated: OUT OF NETWORK (medical)",
+              "Note: Provider is in-network for the VISION (routine eyewear) network",
+              "      but NOT the MEDICAL network. Glaucoma care is a medical service.",
+              "",
+              "Billed amount ............ $340.00",
+              "Plan paid ................ $0.00",
+              "Out-of-network benefit ... NONE",
+              "MEMBER RESPONSIBILITY .... $340.00"
+            ]
+          }
+        },
+        { "text": "I didn't take a screenshot when I checked the website. Does that ruin my chances, and is it even worth fighting over $340?" }
+      ]
+    },
+    {
+      "id": "s04-c5-ma-navihealth-day17-nomnc-spenddown",
+      "title": "MA algorithm cut SNF on day 17; don't spend down savings (Frances Walter)",
+      "persona": "85-year-old widow on Medicare Advantage (Security Health Plan). She shattered her shoulder, can't dress, toilet, or walk without help, and is allergic to her pain medication. On day 17 of her nursing-facility stay the plan said coverage ends in two days. Days 1-20 should cost her nothing. She's terrified, lives alone, and a relative has suggested she just start spending her savings to keep paying the facility.",
+      "turns": [
+        {
+          "text": "I'm 85 and I live alone. I shattered my shoulder and I'm in a nursing facility because I can't dress or get to the bathroom or walk by myself, and I'm allergic to the pain medicine they'd normally give me. I have a Medicare Advantage plan through Security Health Plan. They just told me my coverage ends in two days and this is only day 17. My niece says I should just start paying out of my savings to stay safe. I have about $40,000 saved from my whole life and I'm scared. Should I just start paying?",
+          "doc": {
+            "name": "security-health-nomnc.pdf",
+            "lines": [
+              "SECURITY HEALTH PLAN - MEDICARE ADVANTAGE",
+              "NOTICE OF MEDICARE NON-COVERAGE (NOMNC)",
+              "Member: Frances W.    Skilled nursing facility stay",
+              "Continued-stay review performed by: naviHealth (predictive tool)",
+              "",
+              "Your covered services will END on: 03/30/2026",
+              "Current day of stay: 17",
+              "Reason: Member projected to have met rehabilitation goals.",
+              "",
+              "Note: Under Medicare, days 1-20 of a covered SNF stay normally",
+              "      carry $0 daily coinsurance.",
+              "",
+              "You have the right to a FAST (expedited) APPEAL. Call the QIO listed",
+              "below by noon the day before the end date to keep coverage during review.",
+              "Quality Improvement Organization: 1-800-XXX-XXXX"
+            ]
+          }
+        },
+        { "text": "If I appeal and it doesn't work, won't I owe even more for the extra days? My niece is afraid fighting it will just dig me a deeper hole." }
+      ]
+    }
+  ]
+}

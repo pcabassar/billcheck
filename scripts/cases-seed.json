@@ -1,0 +1,81 @@
+{
+  "cases": [
+    {
+      "id": "seed-01-duplicate-facility-fee",
+      "title": "One surgery, billed as two (duplicate facility fee)",
+      "persona": "Insured, in-network. Had one outpatient surgery, itemized bill shows two identical OR charges. Confused and upset; not a billing expert.",
+      "turns": [
+        {
+          "text": "I had a single outpatient surgery last month — I was only in the operating room once. But my itemized bill shows two charges that look exactly the same. Can you help me understand what's going on, and whether I actually owe all of this?",
+          "doc": {
+            "name": "itemized-statement.pdf",
+            "lines": [
+              "PACIFIC RIM OUTPATIENT SURGERY CENTER",
+              "ITEMIZED STATEMENT",
+              "Patient: Jamie H.    Date of service: 03/14/2026",
+              "Account: 884213",
+              "",
+              "Line 1  Facility fee - operating room (CPT 58670)   $4,810.00",
+              "Line 2  Facility fee - operating room (CPT 58670)   $4,810.00",
+              "",
+              "Total charges ............................... $9,620.00",
+              "Insurance payments + adjustments ............ -$7,015.00",
+              "PATIENT RESPONSIBILITY ...................... $2,605.00"
+            ]
+          }
+        },
+        { "text": "So what should I actually do next?" }
+      ]
+    },
+    {
+      "id": "seed-02-oon-ambulance",
+      "title": "Out-of-network ground ambulance balance bill after a crash",
+      "persona": "Insured. In a car crash, took an ambulance, hit with a surprise out-of-network balance bill ~3x what their siblings paid for the same ride. Feels it's unfair; had no choice.",
+      "turns": [
+        {
+          "text": "I was in a car accident and an ambulance took me to the ER. My insurance paid part of it but now I'm being billed $2,711 more. My two siblings were in the same crash, took different ambulances, and paid way less than me for basically the same thing. Is this even allowed? Do I have to pay it?",
+          "doc": {
+            "name": "ambulance-bill.pdf",
+            "lines": [
+              "VALLEY FIRE DISTRICT - AMBULANCE SERVICE",
+              "Patient: Peggy D.    Date: 09/21/2025",
+              "Service: ALS emergency transport, 12.0 miles @ $30.00/mi",
+              "Network status: OUT OF NETWORK",
+              "",
+              "Total charge .............................. $3,606.00",
+              "Insurance allowed (reasonable & customary)  $895.00",
+              "Insurance paid ............................ $895.00",
+              "BALANCE DUE FROM PATIENT .................. $2,711.00"
+            ]
+          }
+        },
+        { "text": "What are my options to actually fight this or bring the cost down?" }
+      ]
+    },
+    {
+      "id": "seed-03-two-chairs-misrepresentation",
+      "title": "Sold as a free matching call, billed as a clinical session ($179, never delivered)",
+      "persona": "Insured. A teletherapy 'matching/onboarding' call was billed to insurance as a clinical session against the deductible; no therapist ever delivered. Provider refuses to refund, claiming it's 'legally unable to.'",
+      "turns": [
+        {
+          "text": "I signed up with a teletherapy company. They had me do a 45-minute 'matching call' to pair me with a therapist — nobody told me it would cost anything. Three weeks later there's still no therapist, and now there's a $179 charge on my insurance for a 'clinical session.' They're refusing to refund me, saying they're 'legally unable to.' What can I do here?",
+          "doc": {
+            "name": "claim-detail.pdf",
+            "lines": [
+              "TWO CHAIRS - CLAIM DETAIL (from insurer portal)",
+              "Member: Pedro C.    Date of service: 05/12/2026",
+              "Provider: Two Chairs (in-network)",
+              "Service: Psychotherapy, 45 min (CPT 90834)",
+              "",
+              "Billed amount ............ $179.00",
+              "Plan allowed ............. $179.00",
+              "Applied to deductible .... $179.00",
+              "PATIENT RESPONSIBILITY ... $179.00"
+            ]
+          }
+        },
+        { "text": "They keep rotating me to different support reps and nobody gives me a straight answer. Is 'we're legally unable to refund' even a real thing?" }
+      ]
+    }
+  ]
+}
