@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>billcheck — prototype mockup</title>
+<style>
+  :root{
+    --bg:#f4f6f8; --card:#ffffff; --ink:#10242c; --muted:#5a6b72;
+    --line:#e3e8eb; --me:#0e7c66; --me-ink:#ffffff;
+    --bot:#eef2f4; --accent:#0e7c66; --warn:#b25e00; --warn-bg:#fff4e6;
+    --shadow:0 1px 2px rgba(16,36,44,.06),0 8px 24px rgba(16,36,44,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    display:flex; justify-content:center; align-items:stretch;
+  }
+  .phone{
+    width:100%; max-width:420px; background:var(--card);
+    display:flex; flex-direction:column; height:100vh; box-shadow:var(--shadow);
+  }
+  header{
+    padding:14px 16px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:10px; background:var(--card);
+  }
+  .logo{width:28px;height:28px;border-radius:8px;background:var(--accent);
+    display:grid;place-items:center;color:#fff;font-weight:700;font-size:15px}
+  header h1{font-size:16px;margin:0;font-weight:650;letter-spacing:-.2px}
+  header .sub{font-size:12px;color:var(--muted);margin-top:1px}
+  .thread{flex:1;overflow-y:auto;padding:16px 14px 8px;display:flex;flex-direction:column;gap:12px}
+  .row{display:flex;flex-direction:column;max-width:86%}
+  .row.me{align-self:flex-end;align-items:flex-end}
+  .row.bot{align-self:flex-start;align-items:flex-start}
+  .bubble{padding:10px 13px;border-radius:16px;white-space:pre-wrap;word-wrap:break-word}
+  .me .bubble{background:var(--me);color:var(--me-ink);border-bottom-right-radius:5px}
+  .bot .bubble{background:var(--bot);color:var(--ink);border-bottom-left-radius:5px}
+  .bot .bubble strong{color:var(--accent)}
+  .chip-doc{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);
+    border-radius:12px;padding:8px 11px;box-shadow:var(--shadow);font-size:13px}
+  .chip-doc .ic{width:26px;height:30px;border-radius:5px;background:#fde2e2;color:#b42318;
+    display:grid;place-items:center;font-size:10px;font-weight:700;flex:none}
+  .chip-doc .ic.img{background:#dceafd;color:#1d4ed8}
+  .chip-doc small{color:var(--muted);display:block}
+  .verdict{border-left:3px solid var(--warn);background:var(--warn-bg);border-radius:10px;
+    padding:10px 12px;font-size:14px}
+  .verdict .tag{font-weight:700;color:var(--warn);display:flex;align-items:center;gap:6px;margin-bottom:3px}
+  .why{font-size:13px;color:var(--muted);margin-top:6px}
+  .meta{font-size:11px;color:var(--muted);margin:3px 4px 0}
+  .empty{margin:auto;text-align:center;color:var(--muted);padding:24px;max-width:300px}
+  .empty .big{font-size:34px}
+  .starters{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+  .starters button{font:inherit;font-size:13px;background:#fff;border:1px solid var(--line);
+    color:var(--ink);border-radius:999px;padding:7px 12px;cursor:pointer}
+  .starters button:hover{border-color:var(--accent);color:var(--accent)}
+  /* composer */
+  .composer{border-top:1px solid var(--line);padding:10px;background:var(--card)}
+  .pending{display:flex;gap:8px;flex-wrap:wrap;padding:0 2px 8px}
+  .pending:empty{display:none}
+  .pending .chip-doc{font-size:12px}
+  .pending .chip-doc button{border:none;background:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1}
+  .inputbar{display:flex;align-items:flex-end;gap:8px}
+  .attach{width:42px;height:42px;flex:none;border-radius:12px;border:1px solid var(--line);
+    background:#fff;color:var(--accent);font-size:22px;cursor:pointer;display:grid;place-items:center}
+  .inputbar textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:14px;
+    padding:11px 13px;font:inherit;max-height:120px;outline:none}
+  .inputbar textarea:focus{border-color:var(--accent)}
+  .send{width:42px;height:42px;flex:none;border-radius:12px;border:none;background:var(--accent);
+    color:#fff;font-size:18px;cursor:pointer;display:grid;place-items:center}
+  .send:disabled{opacity:.4;cursor:default}
+  .disclaim{text-align:center;font-size:10.5px;color:var(--muted);padding:6px 10px 2px}
+  .typing span{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);
+    margin:0 1px;animation:bk 1s infinite}
+  .typing span:nth-child(2){animation-delay:.15s}.typing span:nth-child(3){animation-delay:.3s}
+  @keyframes bk{0%,60%,100%{opacity:.3}30%{opacity:1}}
+</style>
+</head>
+<body>
+<div class="phone">
+  <header>
+    <div class="logo">b</div>
+    <div><h1>billcheck</h1><div class="sub">your medical-bill advisor</div></div>
+  </header>
+
+  <div class="thread" id="thread">
+    <div class="empty" id="empty">
+      <div class="big">📄</div>
+      <p>Send a photo or PDF of a bill, statement, or EOB — or just describe what you got. I'll tell you what it is and what to do.</p>
+      <div class="starters">
+        <button onclick="demoStatement()">📎 I got a hospital "statement"</button>
+        <button onclick="quickAsk('I got a bill and I&apos;m confused')">I'm confused about a bill</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="composer">
+    <div class="pending" id="pending"></div>
+    <div class="inputbar">
+      <button class="attach" title="Attach a photo or PDF" onclick="fakeAttach()">＋</button>
+      <textarea id="input" rows="1" placeholder="Message billcheck…" oninput="grow(this);toggleSend()" onkeydown="enterSend(event)"></textarea>
+      <button class="send" id="send" disabled onclick="send()">➤</button>
+    </div>
+    <div class="disclaim">Information, not legal or medical advice.</div>
+  </div>
+</div>
+
+<script>
+  const thread=document.getElementById('thread'), input=document.getElementById('input'),
+        pendingEl=document.getElementById('pending'), sendBtn=document.getElementById('send');
+  let pending=[]; // attached files (mock)
+
+  function clearEmpty(){const e=document.getElementById('empty'); if(e) e.remove();}
+  function grow(t){t.style.height='auto';t.style.height=Math.min(t.scrollHeight,120)+'px';}
+  function toggleSend(){sendBtn.disabled = !(input.value.trim()||pending.length);}
+  function enterSend(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+  function scroll(){thread.scrollTop=thread.scrollHeight;}
+
+  function rowMe(html){const r=el('row me'); r.innerHTML=html; thread.appendChild(r); scroll(); return r;}
+  function rowBot(html){const r=el('row bot'); r.innerHTML='<div class="bubble">'+html+'</div>'; thread.appendChild(r); scroll(); return r;}
+  function el(cls){const d=document.createElement('div'); d.className=cls; return d;}
+  function docChip(name,kind){const isImg=kind==='img';
+    return '<span class="chip-doc"><span class="ic '+(isImg?'img':'')+'">'+(isImg?'IMG':'PDF')+'</span><span>'+name+'<small>'+(isImg?'photo':'document')+'</small></span></span>';}
+
+  function fakeAttach(){
+    clearEmpty();
+    const isImg = pending.length%2===1;
+    const name = isImg ? 'bill-photo.jpg' : 'hospital-statement.pdf';
+    pending.push({name,kind:isImg?'img':'pdf'});
+    renderPending(); toggleSend();
+  }
+  function renderPending(){
+    pendingEl.innerHTML = pending.map((f,i)=>
+      '<span class="chip-doc"><span class="ic '+(f.kind==='img'?'img':'')+'">'+(f.kind==='img'?'IMG':'PDF')+'</span><span>'+f.name+'</span><button onclick="rm('+i+')">✕</button></span>').join('');
+  }
+  function rm(i){pending.splice(i,1);renderPending();toggleSend();}
+
+  function typing(){const r=el('row bot'); r.innerHTML='<div class="bubble typing"><span></span><span></span><span></span></div>'; thread.appendChild(r); scroll(); return r;}
+
+  function send(){
+    const text=input.value.trim();
+    if(!text && !pending.length) return;
+    clearEmpty();
+    let html='';
+    if(pending.length) html+=pending.map(f=>docChip(f.name,f.kind)).join(' ');
+    if(text) html+=(html?'<div style="height:6px"></div>':'')+'<div class="bubble">'+escapeHtml(text)+'</div>';
+    rowMe(html);
+    const hadStatement = pending.some(f=>f.name.indexOf('statement')>-1);
+    pending=[]; renderPending(); input.value=''; grow(input); toggleSend();
+    const t=typing();
+    setTimeout(()=>{t.remove(); reply(hadStatement,text);}, 850);
+  }
+
+  function reply(hadStatement,text){
+    if(hadStatement){
+      rowBot('This is a <strong>statement</strong>, not your final bill — so there’s nothing to pay yet.'+
+        '<div class="verdict"><div class="tag">⏸ Don’t pay yet</div>A statement is an early summary with no itemized charges. Wait for the <em>itemized bill</em> and your insurer’s <em>EOB</em> before paying anything.'+
+        '<div class="why">Want me to explain how to tell them apart, or what to check when the EOB arrives?</div></div>');
+    } else if(text && /confus|don.t know|what.*do/i.test(text)){
+      rowBot('Happy to help. The fastest way for me to tell you what’s going on is to <strong>see it</strong> — can you snap a photo or upload the document you got? If you’d rather, tell me: does it list individual charges, or just a total?');
+    } else {
+      rowBot('Got it. So I can give you a grounded answer rather than a guess, can you share the actual document (photo or PDF), or tell me what it says at the top?');
+    }
+  }
+
+  function quickAsk(t){clearEmpty(); input.value=t.replace(/&apos;/g,"’"); send();}
+  function demoStatement(){clearEmpty(); fakeAttach(); /* pdf */ input.value='Do I need to pay this?'; toggleSend(); send();}
+  function escapeHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+</script>
+</body>
+</html>

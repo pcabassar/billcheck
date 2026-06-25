@@ -1,0 +1,159 @@
+{
+  "cases": [
+    {
+      "id": "s02-c1-prenatal-labs-diagnostic",
+      "title": "Prenatal screens coded diagnostic instead of preventive (ACA $0)",
+      "persona": "Pregnant, commercial Anthem BCBS-TX, in-network hospital lab. Routine prenatal blood screens she thought were free under her plan came back as a $2,390 bill. Already filed one appeal, got denied. Confused and frustrated; not a billing person.",
+      "turns": [
+        {
+          "text": "I'm pregnant and went in for routine prenatal blood work at my hospital — the standard stuff they make everyone do early on. I was told preventive pregnancy care was supposed to be free. Now I owe $2,390 and when I appealed, they denied it and said the labs were billed as 'diagnostic.' I don't even know what that means. Did I do something wrong? Why am I being charged for screenings everyone gets?",
+          "doc": {
+            "name": "lab-eob.pdf",
+            "lines": [
+              "ANTHEM BLUE CROSS BLUE SHIELD OF TEXAS",
+              "EXPLANATION OF BENEFITS - THIS IS NOT A BILL",
+              "Member: Maria T.    Group: Fully Insured PPO",
+              "Provider: Riverside Hospital Laboratory (IN-NETWORK)",
+              "Date of service: 02/03/2026   Claim #: TX5582019",
+              "",
+              "Service line detail:",
+              "  Rh factor / antibody screen   billed type: DIAGNOSTIC",
+              "  Hepatitis B surface antigen   billed type: DIAGNOSTIC",
+              "  Hepatitis C antibody          billed type: DIAGNOSTIC",
+              "  Syphilis (RPR) screen         billed type: DIAGNOSTIC",
+              "",
+              "Amount billed ............................ $9,520.00",
+              "Plan allowed amount ...................... $6,700.00",
+              "Plan paid ................................ $4,310.00",
+              "Applied to deductible / coinsurance ...... $2,390.00",
+              "MEMBER RESPONSIBILITY .................... $2,390.00",
+              "",
+              "Appeal status: INTERNAL APPEAL DENIED - billed as diagnostic per plan"
+            ]
+          }
+        },
+        { "text": "So what do I actually do next? My appeal already got denied once." }
+      ]
+    },
+    {
+      "id": "s02-c2-rebilled-after-death",
+      "title": "Re-billed $1,093 a year after settling and paying the EOB",
+      "persona": "Recent widow, commercial BCBS-IL, in-network hospital. Her late husband's hospital claim was settled and she paid her share over a year ago. Now a revised bill arrives demanding $1,093 more on a claim she thought was closed. Grieving, alarmed, has the old paperwork.",
+      "turns": [
+        {
+          "text": "My husband passed away over a year ago. His hospital bill was all sorted out back then — the insurance processed it and I paid my part, $823.15, and I have the receipt. Now, fourteen months later, I just got a NEW bill from the same hospital saying I owe another $1,093.16 on that same stay. How can they come back this long after and charge more? I already paid what they told me. Do I have to pay this?",
+          "doc": {
+            "name": "revised-bill.pdf",
+            "lines": [
+              "BARNES HEALTH SYSTEM - PATIENT STATEMENT",
+              "REVISED / ADJUSTED BILL",
+              "Guarantor: Eleanor R.   Patient: (deceased) Frank R.",
+              "Original date of service: 03/2025   Statement date: 05/2026",
+              "Insurer: Blue Cross Blue Shield of Illinois (IN-NETWORK)",
+              "",
+              "Total hospital charges ................... $110,666.00",
+              "Insurance allowed amount ................. $60,349.00",
+              "Original patient responsibility .......... $823.15  (PAID 03/2025)",
+              "",
+              "*** ACCOUNT ADJUSTED - additional balance now due ***",
+              "Revised patient responsibility ........... $1,916.31",
+              "Less prior payment ....................... -$823.15",
+              "NEW BALANCE DUE .......................... $1,093.16"
+            ]
+          }
+        },
+        { "text": "So what do I actually do? I don't want this going to collections but it feels wrong." }
+      ]
+    },
+    {
+      "id": "s02-c3-colonoscopy-billed-twice-modifier",
+      "title": "One colonoscopy billed as two via a modifier; $4,047 owed vs $2,381 estimate",
+      "persona": "Commercial Aetna, in-network at Northwestern. Got a pre-service estimate of $2,381 patient cost for one colonoscopy. The bill came back showing two near-identical $5,466 procedure lines and a $4,047 balance. Both appeals already denied. Angry, feels misled by the estimate.",
+      "turns": [
+        {
+          "text": "I had ONE colonoscopy. Before the procedure they gave me a written estimate saying my share would be about $2,381. The actual bill shows what looks like the same procedure listed twice and now they say I owe $4,047. I already appealed with both the hospital and Aetna and both said the bill is 'accurate.' How is one colonoscopy two procedures? And how did $2,381 turn into $4,047?",
+          "doc": {
+            "name": "colonoscopy-itemized.pdf",
+            "lines": [
+              "NORTHWESTERN MEMORIAL - ITEMIZED BILL",
+              "Patient: David L.   Insurer: Aetna (IN-NETWORK)",
+              "Date of service: 01/15/2026   Account: NM7741",
+              "Pre-service Good Faith / estimate (patient portion): $2,381.00",
+              "",
+              "Line 1  Colonoscopy w/ biopsy  CPT 45380          $5,466.00",
+              "Line 2  Colonoscopy w/ biopsy  CPT 45380 -59      $5,466.00",
+              "Other facility / pathology / anesthesia lines     $8,274.00",
+              "",
+              "Total charges ............................ $19,206.00",
+              "Plan allowed amount ...................... $5,816.00",
+              "Plan paid ................................ $1,979.00",
+              "PATIENT RESPONSIBILITY ................... $4,047.00",
+              "",
+              "Hospital appeal: DENIED ('paid accurately')",
+              "Insurer appeal: DENIED ('paid accurately')"
+            ]
+          }
+        },
+        { "text": "Both appeals already failed. So what do I actually do next that might work?" }
+      ]
+    },
+    {
+      "id": "s02-c4-preventive-colonoscopy-surgical-tray",
+      "title": "Surgical-tray add-on charged on a $0 preventive colonoscopy",
+      "persona": "Commercial ACA-marketplace BCBS-IL, in-network GI group. Went in for a routine screening colonoscopy he expected to be free. Got a bill for a $250 'surgical tray' supply charge applied to his deductible. Suspects it shouldn't be there but isn't sure.",
+      "turns": [
+        {
+          "text": "I went in for a routine screening colonoscopy — the preventive kind that's supposed to be 100% free under my plan. The colonoscopy itself was covered at $0 like I expected. But there's this extra $250 'surgical tray' charge they applied to my deductible. It's a screening I was told costs me nothing. Can they tack on a supply fee like that? It feels like a loophole.",
+          "doc": {
+            "name": "gi-statement.pdf",
+            "lines": [
+              "PRAIRIE GASTROENTEROLOGY GROUP - STATEMENT",
+              "Patient: Marcus W.   Plan: BCBS-IL Marketplace (IN-NETWORK)",
+              "Date of service: 02/20/2026",
+              "",
+              "Screening colonoscopy (preventive)  CPT 45378-33 ... $0.00 patient",
+              "Surgical tray / supplies            HCPCS A4550 .... $250.00",
+              "",
+              "Procedure billed as PREVENTIVE / ROUTINE SCREENING",
+              "Plan covered colonoscopy at 100% (ACA preventive)",
+              "Surgical tray applied to DEDUCTIBLE",
+              "PATIENT RESPONSIBILITY ........................... $250.00"
+            ]
+          }
+        },
+        { "text": "So what do I actually do to get this taken off?" }
+      ]
+    },
+    {
+      "id": "s02-c5-physical-labs-diagnostic-hospital-lab",
+      "title": "Annual-physical labs coded diagnostic and routed to a hospital lab; $1,223",
+      "persona": "Commercial ACA-marketplace BCBS-IL, in-network clinic, but labs sent to a hospital lab. Went in for a routine annual physical expecting free preventive labs. Got a $1,223 lab bill at 50% coinsurance. Appealed once; denied because the visit included medication monitoring. Confused about where the line is.",
+      "turns": [
+        {
+          "text": "I went in for my yearly physical, the routine checkup that's supposed to be free preventive care. They drew blood like always. But the labs got sent to a hospital lab and now I owe $1,223 because my plan only covered them at 50%. I appealed and got denied — they said because my doctor also checks my blood pressure meds during the visit, the labs count as 'monitoring,' not preventive. I don't get it. It was my annual physical. Why am I paying $1,223?",
+          "doc": {
+            "name": "physical-eob.pdf",
+            "lines": [
+              "BLUE CROSS BLUE SHIELD OF ILLINOIS",
+              "EXPLANATION OF BENEFITS - NOT A BILL",
+              "Member: Priya N.   Plan: Marketplace Silver",
+              "Visit: Annual physical (preventive)  Provider: UI Health Clinic (IN-NETWORK)",
+              "Labs processed at: UI HEALTH HOSPITAL LABORATORY",
+              "Date of service: 02/11/2026",
+              "",
+              "Office visit (annual physical) ........... $0.00 patient (preventive)",
+              "Lab panel - billed type: DIAGNOSTIC (medication monitoring)",
+              "  Lab charges billed .................... $2,446.44",
+              "  Plan allowed .......................... $2,446.44",
+              "  Coinsurance 50% (hospital outpatient) . $1,223.22",
+              "MEMBER RESPONSIBILITY .................... $1,223.22",
+              "",
+              "Appeal status: DENIED - visit included medication monitoring, labs not purely preventive"
+            ]
+          }
+        },
+        { "text": "So what do I actually do now? The appeal already got turned down." }
+      ]
+    }
+  ]
+}

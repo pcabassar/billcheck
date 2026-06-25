@@ -1,0 +1,136 @@
+{
+  "cases": [
+    {
+      "id": "s01-c1-charity-denied-overtime",
+      "title": "Uninsured, $80k for two appendix surgeries; charity care denied over one overtime month",
+      "persona": "Uninsured veteran, self-pay. Had an emergency appendectomy, then a second surgery for a complication. Hospital charity care and the state program both denied him because one month of overtime put his income ~$200 over the cutoff. Plain-spoken, stressed, doesn't know the system.",
+      "turns": [
+        {
+          "text": "I'm uninsured and I got hit with a huge hospital bill after my appendix burst. They did one surgery, then a few days later they had to go back in and do a second one because something went wrong with the first. Now I owe over $80,000. I tried to get their financial assistance and also a Colorado program but both said no — apparently I made about $200 too much last year, but that was only because I picked up a bunch of overtime one month. I don't have this kind of money. What do I even do?",
+          "doc": {
+            "name": "hospital-bill.pdf",
+            "lines": [
+              "MOUNTAIN RIDGE MEDICAL CENTER",
+              "PATIENT STATEMENT — SELF PAY (UNINSURED)",
+              "Patient: Daniel R.    Account: 5520148",
+              "Dates of service: 07/02/2025 - 07/11/2025",
+              "",
+              "Surgery 1 - laparoscopic appendectomy (07/02) ...... $35,906.00",
+              "Surgery 2 - exploratory laparotomy, complication (07/06) $44,326.00",
+              "",
+              "TOTAL CHARGES ...................................... $80,232.00",
+              "Financial assistance: DENIED (income over CICP/charity limit)",
+              "AMOUNT DUE ........................................ $80,232.00"
+            ]
+          }
+        },
+        { "text": "So what do I actually do first? I'm a veteran if that matters." }
+      ]
+    },
+    {
+      "id": "s01-c2-gfe-vs-bill-ppdr",
+      "title": "Uninsured: Good Faith Estimate $50,560, actual bill $97,998 (GFE to PPDR trigger)",
+      "persona": "Uninsured woman, self-pay. Got a written Good Faith Estimate before her procedure for about $50k, then the bill came in nearly double. Hospital says 'complications.' Doesn't know she has a federal dispute right. Confused, feels misled.",
+      "turns": [
+        {
+          "text": "Before my surgery the hospital gave me a written estimate that said it would be around $50,000 since I don't have insurance. The actual bill just came and it's almost $98,000 — basically double. When I called they just said there were 'complications' so it cost more. That doesn't seem right to me, the estimate was the whole reason I went ahead. Is there anything I can do or am I just stuck paying it?",
+          "doc": {
+            "name": "estimate-and-bill.pdf",
+            "lines": [
+              "RIVERSIDE GENERAL HOSPITAL — SELF-PAY (UNINSURED)",
+              "Patient: Maria L.    Account: 7741902",
+              "",
+              "GOOD FAITH ESTIMATE (issued 02/10/2026) ........... $50,560.00",
+              "",
+              "FINAL ITEMIZED BILL (date of service 03/04/2026):",
+              "  Surgical implants / supplies .................... $50,140.00",
+              "  Operating room + recovery ...................... $31,200.00",
+              "  Other charges .................................. $16,658.00",
+              "TOTAL BILLED ...................................... $97,998.00",
+              "Self-pay discount (20%) applied",
+              "AMOUNT DUE ........................................ $78,398.40"
+            ]
+          }
+        },
+        { "text": "OK so what's the actual first step — do I just call them again, or is there a real process?" }
+      ]
+    },
+    {
+      "id": "s01-c3-charity-loophole-physician-groups",
+      "title": "Hospital forgave 100%, but physician groups billed $5k+ (the 501(r) multi-biller loophole)",
+      "persona": "Uninsured student, self-pay. The hospital forgave her entire ~$100k facility bill under its charity policy, but separate bills from the ER doctors, anesthesia, and radiology keep arriving and total over $5,000. Confused why she's still getting bills after being told it was all forgiven.",
+      "turns": [
+        {
+          "text": "I went to the ER last year with no insurance. The hospital ended up forgiving the whole bill — like $100,000 — under their charity care program, which was a huge relief. But I keep getting these separate smaller bills from an ER doctors' group, an anesthesia group, and a radiology company, and together it's over $5,000. I thought everything was forgiven? Why am I still getting billed, and do I have to pay these?",
+          "doc": {
+            "name": "physician-bills.pdf",
+            "lines": [
+              "SUMMARY OF REMAINING BILLS — one ER visit, 11/18/2025",
+              "Patient: Aisha K. (uninsured / self-pay)",
+              "",
+              "Hospital facility bill (Lakeside Hospital): $98,400 — FORGIVEN 100% (charity care)",
+              "",
+              "STILL OUTSTANDING (separate billers, NOT the hospital):",
+              "  Summit Emergency Physicians (ER doctor) ........ $2,180.00",
+              "  Clearview Anesthesia Associates ................ $1,940.00",
+              "  Apex Radiology Group ........................... $1,055.00",
+              "TOTAL STILL OWED ............................... $5,175.00"
+            ]
+          }
+        },
+        { "text": "So what do I do about these three bills? Is there any way to get them knocked down too?" }
+      ]
+    },
+    {
+      "id": "s01-c4-sued-not-screened-collections",
+      "title": "Uninsured, sued for $12k; debt snowballed to $33k over 12 years; never offered charity care",
+      "persona": "Uninsured, very low income (~$12k/yr), self-pay. A nonprofit hospital sued instead of screening her for charity care. The debt ballooned with interest and her wages have been garnished for years. Worn down, scared, doesn't know charity care was ever an option.",
+      "turns": [
+        {
+          "text": "Years ago I went to the ER with no insurance. The hospital never offered me any kind of financial help — they just sued me. The original bill was about $12,000 and now with all the interest and court stuff it's up around $33,000, and they've been garnishing my paycheck for years. I only make about $12,000 a year. I feel like I'm drowning. Was there ever supposed to be a charity option, and is there anything I can still do?",
+          "doc": {
+            "name": "collections-summary.pdf",
+            "lines": [
+              "ACCOUNT / JUDGMENT SUMMARY",
+              "Creditor: Grace Memorial Hospital (nonprofit)",
+              "Debtor: Wanda T.    Annual income: ~$12,000",
+              "",
+              "Original ER bill (2013) ........................... $12,019.00",
+              "Court judgment entered ............................ $16,200.00",
+              "Interest applied (multiple years) + court fees",
+              "CURRENT BALANCE (2025) ............................ $33,000.00",
+              "Status: WAGE GARNISHMENT ACTIVE",
+              "Charity care / financial assistance: never offered"
+            ]
+          }
+        },
+        { "text": "What's the single most important thing I should do right now?" }
+      ]
+    },
+    {
+      "id": "s01-c5-cash-price-paradox-benchmark",
+      "title": "Cash-price paradox: online tool said ~$1,400, real self-pay ~$8.4k, chargemaster $17,979",
+      "persona": "Insured on a high-deductible plan but effectively paying cash. The hospital's online price tool quoted ~$1,400, but the negotiated price came to $8,424 and her share is $5,169. A competitor's cash price is about $2,100. Feels the price is arbitrary and wants to push back.",
+      "turns": [
+        {
+          "text": "I have a high-deductible plan so I'm basically paying out of pocket for this. Before my breast biopsy I checked the hospital's own online price estimator and it said about $1,400. The bill that came is way more — the negotiated amount is $8,424 and my share is $5,169. The chargemaster 'list price' on the statement is almost $18,000. Meanwhile another clinic near me quotes about $2,100 cash for the same thing. This feels totally made up. Can I push back on this?",
+          "doc": {
+            "name": "biopsy-statement.pdf",
+            "lines": [
+              "HARBOR POINT IMAGING & HOSPITAL",
+              "Patient: Nora P.    Service: breast biopsy, 04/15/2026",
+              "Plan: Cigna HDHP (deductible not met)",
+              "",
+              "Chargemaster list price ........................... $17,979.00",
+              "Negotiated / allowed amount ....................... $8,424.00",
+              "Insurer paid ...................................... $3,254.00",
+              "PATIENT RESPONSIBILITY ............................ $5,169.00",
+              "Note: hospital online estimator had quoted ~$1,400 for this service"
+            ]
+          }
+        },
+        { "text": "What's the best way to actually get this down — what do I say and to who?" }
+      ]
+    }
+  ]
+}

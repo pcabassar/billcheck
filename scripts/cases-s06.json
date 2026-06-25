@@ -1,0 +1,145 @@
+{
+  "cases": [
+    {
+      "id": "s06-c1-sued-never-received-bill",
+      "title": "Sued over hospital bills she never received; 7% interest snowball",
+      "persona": "Uninsured at service, in Tennessee. Moved around a lot, never got a bill. Found out she was sued only when a process server handed her papers. A default judgment was already entered months ago and interest is piling up. Scared, low income, not a billing or legal person.",
+      "turns": [
+        {
+          "text": "I just got served with court papers from the hospital. I never even got a bill from them — I moved a couple times and I guess they sent it to an old address. Now there's a judgment against me for almost twelve thousand dollars plus 7% interest a year, and I had no idea any of this was happening. I've actually been paying them a little bit here and there over the years, like five grand total. I'm freaking out. What do I do?",
+          "doc": {
+            "name": "civil-summons-judgment.pdf",
+            "lines": [
+              "GENERAL SESSIONS COURT - WASHINGTON COUNTY, TENNESSEE",
+              "BALLAD HEALTH SYSTEM, Plaintiff",
+              "v.  DONNA R., Defendant",
+              "Docket No. GS-2025-04417",
+              "",
+              "NOTICE: A DEFAULT JUDGMENT has been entered against the Defendant",
+              "Judgment date: 02/11/2025",
+              "Original principal billed ............ $11,590.00",
+              "Judgment amount (with costs) ......... $11,749.00",
+              "Post-judgment interest ............... 7.00% per annum",
+              "Service of process: by mail to 114 Old Mill Rd (returned undeliverable)",
+              "",
+              "The Defendant may have rights to challenge this judgment.",
+              "Consult the Clerk of Court regarding post-judgment motions."
+            ]
+          }
+        },
+        { "text": "I really can't afford a lawyer. Is there anything I can actually do myself, and is it too late?" }
+      ]
+    },
+    {
+      "id": "s06-c2-methodist-garnished-charity-eligible",
+      "title": "Nonprofit hospital sued, $12k became $33k, wages garnished 15 times (cross-listed 6.2 = 1.4)",
+      "persona": "Low-wage hospital worker, was charity-care eligible at the time of service but never screened. Sued by the nonprofit hospital that employed her. Years of court costs and attorney fees ballooned a $12k bill to $33k, and her paycheck is being garnished. Exhausted, feels trapped.",
+      "turns": [
+        {
+          "text": "I work at the same hospital that's suing me. My original bill was around twelve thousand dollars but with all the court costs and lawyer fees and interest it's now thirty-three thousand and they're garnishing my paycheck — this is like the fifteenth time they've taken money out. I make barely above minimum wage. I think I should have qualified for their financial assistance but nobody ever told me about it or signed me up. Is there any way out of this?",
+          "doc": {
+            "name": "garnishment-summons.pdf",
+            "lines": [
+              "CIRCUIT COURT - SHELBY COUNTY, TENNESSEE",
+              "METHODIST LE BONHEUR HEALTHCARE, Plaintiff",
+              "v.  TANYA W., Defendant / Judgment Debtor",
+              "Case No. CT-2024-00982",
+              "",
+              "WRIT OF GARNISHMENT (continuing)",
+              "Original account balance ............. $12,019.00",
+              "Accrued interest, court costs, fees .. $21,300.00",
+              "TOTAL JUDGMENT OUTSTANDING ........... $33,319.00",
+              "Garnishment this period .............. $214.00",
+              "Garnishment instances to date ........ 15",
+              "Employer (garnishee): Methodist Le Bonheur Healthcare"
+            ]
+          }
+        },
+        { "text": "They're literally my employer taking it out of the check they pay me. Can they keep doing this forever? And is there a way to stop the garnishment now?" }
+      ]
+    },
+    {
+      "id": "s06-c3-insured-sued-zero-balance-collector",
+      "title": "Insured, portal shows $0, but a third-party collector is suing him (answer-the-summons trap)",
+      "persona": "Has a commercial employer plan. His patient portal shows a $0 balance, his insurer says it paid, yet a company he's never heard of is suing him in its own name for a hospital ER visit. In Colorado. He has a court date and 21 days to respond. Confused and angry, doesn't understand how he can be sued for something that's paid.",
+      "turns": [
+        {
+          "text": "This makes no sense. I have insurance through my job, my hospital portal literally shows a $0 balance, and my insurance company told me they paid the claim. But I just got sued by some company called 'Credit Service Company' that I've never heard of, for an ER visit from last year. The hospital's name isn't even on the lawsuit. There's a court date on the papers. How am I being sued for a bill that's already paid, and what am I supposed to do?",
+          "doc": {
+            "name": "summons-civil-complaint.pdf",
+            "lines": [
+              "COUNTY COURT - EL PASO COUNTY, COLORADO",
+              "CREDIT SERVICE COMPANY, INC. (assignee), Plaintiff",
+              "v.  MARCUS L., Defendant",
+              "Case No. 2025 C 113042",
+              "",
+              "SUMMONS AND COMPLAINT",
+              "Claim: assigned medical account, date of service 03/02/2024",
+              "Principal claimed .................... $6,480.00",
+              "Pre-judgment interest ................ $510.00",
+              "YOU MUST FILE A RESPONSE WITHIN 21 DAYS of service or",
+              "a DEFAULT JUDGMENT may be entered against you.",
+              "Original creditor: (not stated on filing)"
+            ]
+          }
+        },
+        { "text": "So do I just call them and explain it's already paid, or do I actually have to file something with the court? I don't want to mess this up." }
+      ]
+    },
+    {
+      "id": "s06-c4-prior-auth-denial-cancer-urgent",
+      "title": "Cancer treatment denied as 'experimental' four times; patient is deteriorating fast",
+      "persona": "Spouse advocating for her husband, who has aggressive liver cancer. His oncologist recommended an FDA-cleared treatment, but his state-employee plan (administered by UnitedHealthcare) has denied it four times as 'experimental / not medically necessary.' He is getting sicker by the week. She is desperate and racing a clock she doesn't fully understand.",
+      "turns": [
+        {
+          "text": "My husband has aggressive liver cancer and his oncologist says he needs a treatment that's FDA-cleared, but his insurance has now denied it FOUR times saying it's 'experimental' and 'not medically necessary.' He is getting worse fast — we don't have weeks to waste. The doctor is fighting too but we keep getting the same denial letter. I don't know what else to do. Is there a faster way to force them to cover this?",
+          "doc": {
+            "name": "denial-letter.pdf",
+            "lines": [
+              "UnitedHealthcare (administering WV PEIA state employee plan)",
+              "ADVERSE BENEFIT DETERMINATION - 4th review",
+              "Member: Robert M.   Claim/Auth #: PA-88123-04",
+              "Requested service: histotripsy of hepatic tumor (~$50,000)",
+              "Determination: DENIED",
+              "Reason: service considered EXPERIMENTAL / INVESTIGATIONAL;",
+              "        not established as medically necessary.",
+              "",
+              "You have the right to appeal this decision.",
+              "Standard internal appeal: file within 180 days.",
+              "If your situation is urgent, an EXPEDITED appeal may be available.",
+              "After internal appeals you may request EXTERNAL REVIEW."
+            ]
+          }
+        },
+        { "text": "His doctor says this is urgent — he can't wait the normal appeal timeline. What's the single fastest thing we can do right now?" }
+      ]
+    },
+    {
+      "id": "s06-c5-ivig-denied-external-review-reimbursement",
+      "title": "IVIG denied 2 years, $90k out of pocket; wants the money back and coverage secured",
+      "persona": "Has small-fiber neuropathy. Anthem (commercial, now on COBRA) denied her IVIG infusions as 'not medically necessary' for two years; she paid roughly $90,000 out of pocket to keep getting treated. She just won an external review that orders coverage going forward — but it didn't give her the $90k back, and her COBRA is about to run out. Wants two things: her money back, and to not lose coverage again.",
+      "turns": [
+        {
+          "text": "I finally won. After two years of Anthem denying my IVIG infusions as 'not medically necessary,' the state external review just overturned them and said they have to cover it. The problem: that ruling only covers me going forward. During those two years I paid about $90,000 out of my own pocket to keep getting treatment. Nobody's said anything about giving that back. And my COBRA is running out in a couple months. So — can I get the $90k back, and how do I not end up right back in this nightmare when my insurance changes?",
+          "doc": {
+            "name": "external-review-decision.pdf",
+            "lines": [
+              "VIRGINIA BUREAU OF INSURANCE - EXTERNAL REVIEW DECISION",
+              "Enrollee: Susan T.   Plan: Anthem (employer / COBRA)",
+              "Service in dispute: IVIG infusion (~$10,000 per infusion)",
+              "Condition: small-fiber neuropathy",
+              "",
+              "DECISION: The insurer's denial is OVERTURNED.",
+              "Anthem must AUTHORIZE the requested IVIG treatment.",
+              "Scope: prospective (going-forward) authorization.",
+              "Amounts the enrollee paid out of pocket during the denial",
+              "period (~$90,000) are NOT addressed by this decision.",
+              "Coverage basis: current Anthem/COBRA enrollment."
+            ]
+          }
+        },
+        { "text": "The $90,000 is the part that's killing me. Is there any real path to getting that reimbursed, or is it just gone?" }
+      ]
+    }
+  ]
+}

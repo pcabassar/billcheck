@@ -1,0 +1,135 @@
+{
+  "cases": [
+    {
+      "id": "s03-c1-nicu-twins-emergency-loophole",
+      "title": "NICU twins ~$80K — insurer says it wasn't an 'emergency'",
+      "persona": "Parents of newborn twins delivered via surrogate. Babies went straight to the NICU and were billed as fully out-of-network. Cigna refused to treat it as an emergency because the surrogate was admitted through obstetrics, not the ER. Family owed ~$80K, now in collections. Not billing experts — scared, blindsided.",
+      "turns": [
+        {
+          "text": "Our twins were born early and spent weeks in the NICU. We thought we were covered, but Cigna is saying the hospital was out of network for the babies and they're only paying a small part. We owe something like $80,000 and it's gone to collections now. The babies were in intensive care — how is that not an emergency? What can we even do?",
+          "doc": {
+            "name": "cigna-eob-nicu.pdf",
+            "lines": [
+              "CIGNA — EXPLANATION OF BENEFITS (THIS IS NOT A BILL)",
+              "Members: Baby A and Baby B (newborns)    Plan: Employer group",
+              "Facility: Regional Medical Center — NICU admission",
+              "Admission source: OBSTETRICS (not Emergency Department)",
+              "",
+              "Total billed ............................. $117,084.00",
+              "Network status: OUT OF NETWORK (newborns)",
+              "Emergency services determination: NOT APPROVED",
+              "Plan paid ................................ $37,000.00",
+              "Estimated patient responsibility ......... $80,084.00",
+              "OON out-of-pocket maximum ................ $10,000.00",
+              "Note: Admission did not originate in the ER; not processed as emergency."
+            ]
+          }
+        },
+        { "text": "One of the babies was in real distress at birth — that's why they rushed them to the NICU. Does that change anything? And honestly I don't even know if this plan is the kind where the state can help us." }
+      ]
+    },
+    {
+      "id": "s03-c2-oon-neonatologists-in-network-hospital",
+      "title": "In-network NICU, but the baby's doctors billed out-of-network ($12,531)",
+      "persona": "Parent whose baby spent 36 days in an in-network NICU. The hospital was in-network, but the neonatologists were a separate group that billed out-of-network. Fully-insured BCBS-IL plan. Both the insurer and the doctors' billing office claim they've never heard of the state surprise-billing law. Frustrated, going in circles for months.",
+      "turns": [
+        {
+          "text": "My son was in the NICU for 36 days at a hospital that's in my network. Now I'm getting a separate bill from the babies' doctors for $12,531 — turns out the neonatologists are a different company and they're out of network. I never picked them, they were just who was there. When I call, both my insurance and the doctors' office act like there's nothing they can do. This feels wrong. Is it?",
+          "doc": {
+            "name": "neonatology-bill.pdf",
+            "lines": [
+              "LURIE CHILDREN'S NEONATOLOGY ASSOCIATES",
+              "Patient: Baby (36-day NICU stay)",
+              "Service location: Prentice / Northwestern (IN-NETWORK FACILITY)",
+              "Billing provider network status: OUT OF NETWORK",
+              "",
+              "Total billed ............................. $14,624.55",
+              "Insurance allowed/paid ................... $2,092.97",
+              "AMOUNT DUE FROM PATIENT .................. $12,531.58",
+              "Plan type: BCBS Illinois — employer group (fully insured)"
+            ]
+          }
+        },
+        { "text": "I'm on my employer's BCBS plan. Is there anyone besides the insurance company I can push on to actually get this fixed?" }
+      ]
+    },
+    {
+      "id": "s03-c3-prenatal-labs-facility-fee",
+      "title": "Routine prenatal bloodwork — $2,390 owed at an in-network hospital lab",
+      "persona": "Pregnant patient who got routine prenatal blood tests drawn and sent to her in-network hospital's lab. Everything was in-network, but the bill is huge — over $2,000 toward her deductible — for blood draws she assumed were standard prenatal care. Confused why 'normal pregnancy labs' cost this much. (NOTE: this case is cross-listed in the source index as case 2.1; simulated once here.)",
+      "turns": [
+        {
+          "text": "I'm pregnant and at one of my early appointments they drew a bunch of blood for routine tests — the standard pregnancy panel my OB ordered. Everything was in-network. But I just got hit with a $2,390 bill that went toward my deductible. It's just bloodwork! Why is routine pregnancy testing costing me this much, and is there anything I can do?",
+          "doc": {
+            "name": "hospital-lab-statement.pdf",
+            "lines": [
+              "TEXAS HEALTH HOSPITAL — LABORATORY STATEMENT",
+              "Patient: prenatal panel    Coverage: Anthem BCBS (in-network)",
+              "Place of service: Hospital outpatient laboratory",
+              "",
+              "Lab panel — routine prenatal screening (incl. HIV, Hep B, syphilis, CBC, metabolic)",
+              "Billed amount ............................ $9,520.02",
+              "Plan allowed amount ...................... $6,700.50",
+              "Insurance paid ........................... $4,310.38",
+              "Applied to deductible .................... $2,390.12",
+              "PATIENT RESPONSIBILITY ................... $2,390.12"
+            ]
+          }
+        },
+        { "text": "I thought the screening tests in pregnancy were supposed to be free preventive care. Were these billed the wrong way?" }
+      ]
+    },
+    {
+      "id": "s03-c4-air-ambulance-medical-necessity-denial",
+      "title": "Infant air ambulance $97,599 — insurer paid $0, calls it 'not medically necessary'",
+      "persona": "Parent of an infant flown by air ambulance during an RSV crisis. The air transport was out-of-network. Cigna denied the entire claim as 'not medically necessary' and paid nothing, leaving the family on the hook for $97,599. Two internal appeals already denied; the hospital won't write a support letter. Desperate and overwhelmed.",
+      "turns": [
+        {
+          "text": "My baby got really sick with RSV and the hospital flew her by air ambulance to a bigger children's hospital. Now Cigna says the flight wasn't 'medically necessary' and they're paying zero. The bill is $97,599. I've appealed twice and they keep denying it. The first hospital won't even write a letter saying she needed the flight. I don't know what to do — I can't pay this.",
+          "doc": {
+            "name": "air-ambulance-denial.pdf",
+            "lines": [
+              "CIGNA — CLAIM DETERMINATION",
+              "Patient: infant    Service: Air ambulance transport (fixed-wing/rotor)",
+              "Provider network status: OUT OF NETWORK",
+              "",
+              "Total billed ............................. $97,599.00",
+              "Plan paid ................................ $0.00",
+              "Denial reason: SERVICE NOT MEDICALLY NECESSARY",
+              "Patient responsibility ................... $97,599.00",
+              "Appeals: Internal appeal #1 — DENIED; Internal appeal #2 — DENIED"
+            ]
+          }
+        },
+        { "text": "Doesn't the No Surprises Act protect people from giant air ambulance bills? I keep reading that it does." }
+      ]
+    },
+    {
+      "id": "s03-c5-telehealth-consent-after-visit",
+      "title": "$660 telehealth surprise — consent form was signed AFTER the visit",
+      "persona": "Patient who did a quick telehealth visit through an in-network hospital system, expecting to pay ~$60 (the app showed that). The specific doctor was out-of-network; insurer paid $0; bill is $660. The provider later admitted the out-of-network consent form was timestamped AFTER the visit, which violates the No Surprises Act — but still keeps billing. Worn down, more than a year in.",
+      "turns": [
+        {
+          "text": "I did a short telehealth visit through Mount Sinai's system. The app showed it'd cost me about $60. Then I got a bill for $660 — turns out the doctor was out of network and my insurance paid nothing. When I pushed, they finally showed me a 'consent form' I supposedly signed agreeing to out-of-network charges, but it's timestamped AFTER my appointment ended. They even admitted that's not allowed. A year later they're still billing me. What do I do?",
+          "doc": {
+            "name": "telehealth-bill-consent.pdf",
+            "lines": [
+              "MOUNT SINAI HEALTH SYSTEM — TELEHEALTH VISIT",
+              "Patient estimate shown in app: ~$60.00",
+              "Rendering physician network status: OUT OF NETWORK",
+              "System/facility network status: IN NETWORK",
+              "",
+              "Total billed ............................. $660.00",
+              "Insurance paid ........................... $0.00",
+              "PATIENT RESPONSIBILITY ................... $660.00",
+              "",
+              "Visit end time ............ 2:42 PM, 03/04/2025",
+              "OON consent form signed ... 4:15 PM, 03/04/2025 (after visit ended)"
+            ]
+          }
+        },
+        { "text": "It's only a $660 bill — is it even worth fighting, or should I just pay it to make it stop?" }
+      ]
+    }
+  ]
+}

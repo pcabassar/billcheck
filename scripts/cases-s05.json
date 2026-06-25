@@ -1,0 +1,150 @@
+{
+  "cases": [
+    {
+      "id": "s05-c1-medicaid-oos-emergency-balance-bill",
+      "title": "Florida Medicaid patient balance-billed $77,574 for an out-of-state heart attack",
+      "persona": "On Florida Medicaid, no other insurance. Had a heart attack while traveling out of state on Christmas. The out-of-state hospital never billed Medicaid and is now sending the full charges to him directly, with only a payment plan offered. Stressed, low-income, doesn't know charity care exists.",
+      "turns": [
+        {
+          "text": "I'm on Florida Medicaid and that's my only insurance. Back in December I had a heart attack while I was visiting family in South Dakota and ended up in the hospital there. Now they keep sending me bills for the whole thing — over seventy thousand dollars — and the lady on the phone just offered me a payment plan I can't afford. I thought Medicaid was supposed to cover emergencies. Do I really owe this?",
+          "doc": {
+            "name": "monument-health-statement.pdf",
+            "lines": [
+              "MONUMENT HEALTH - RAPID CITY HOSPITAL",
+              "PATIENT STATEMENT",
+              "Patient: Walter R.    Account: SD-2291874",
+              "Date of service: 12/25/2025  (Emergency admission - acute MI)",
+              "Guarantor insurance on file: NONE",
+              "",
+              "Total hospital charges ...................... $77,574.44",
+              "Insurance payments .......................... $0.00",
+              "Adjustments ................................. $0.00",
+              "AMOUNT DUE FROM PATIENT ..................... $77,574.44",
+              "",
+              "Note: This facility is not enrolled with Florida Medicaid.",
+              "Payment plan available: $646.45/month x 120 months.",
+              "Please remit payment or call our billing office."
+            ]
+          }
+        },
+        { "text": "They told me they 'don't take Florida Medicaid' so there's nothing they can do. Is that true? What do I actually say to them?" }
+      ]
+    },
+    {
+      "id": "s05-c2-cob-birthday-rule-nicu",
+      "title": "Birthday rule flips primary/secondary on a NICU newborn, $270,951 in dispute",
+      "persona": "New parents, both have employer health plans. Mom's plan had been paying as primary for their baby's long NICU stay, then suddenly reversed everything and re-billed citing the 'birthday rule.' Now providers are chasing them for the whole NICU bill. Overwhelmed, sleep-deprived, doesn't understand coordination of benefits.",
+      "turns": [
+        {
+          "text": "Our baby was in the NICU for weeks and we have two insurance plans — mine and my husband's, both through work. My plan (Blue) was paying everything as the main insurance. Then out of nowhere they reversed all the payments and said because of something called the 'birthday rule' my husband's plan is actually supposed to be primary. Now the hospital is sending us bills for the whole NICU stay. We're drowning. What is going on and what do we do?",
+          "doc": {
+            "name": "nicu-billing-summary.pdf",
+            "lines": [
+              "CHILDREN'S HOSPITAL - BILLING SUMMARY",
+              "Patient: Baby C.    Account: NB-558102",
+              "Admission: NICU, 31 days",
+              "",
+              "Total billed (all services) ................ $270,951.00",
+              "  of which NICU room & care ................ $207,455.00",
+              "",
+              "Primary insurer (Blue KC) - PAYMENTS REVERSED",
+              "  Reason code: COB - other plan is primary per birthday rule",
+              "  Amount clawed back ....................... -$35,721.00",
+              "",
+              "Secondary insurer (CommunityCare OK): no claim on file",
+              "BALANCE NOW BILLED TO GUARANTOR ............ $270,951.00",
+              "",
+              "Note: Mom's Blue KC plan is self-funded (administered by employer)."
+            ]
+          }
+        },
+        { "text": "My husband's birthday is in March and mine is in August, if that matters. Who do we even call first — the insurance companies, the hospital, or my work?" }
+      ]
+    },
+    {
+      "id": "s05-c3-qmb-dual-ambulance-balance-bill",
+      "title": "QMB dual-eligible billed for ambulance copay he legally owes $0 on, now in collections",
+      "persona": "Dual-eligible: Medicare plus Medicaid, has a QMB (Qualified Medicare Beneficiary) card. Got an ambulance bill for the 20% Medicare 'coinsurance,' didn't know he was protected, and it's now gone to a collection agency and hit his credit. Low-income senior, scared, assumes he has to pay.",
+      "turns": [
+        {
+          "text": "I'm 71 and I have Medicare and Medicaid both — they gave me a card that says QMB on it. I had to take an ambulance to the hospital a few months back. Medicare paid most of it but the ambulance company billed me for the rest, the 20 percent part, and when I couldn't pay it they sent it to a collection agency. Now it's on my credit report. I'm on a fixed income. How do I pay this off, or can I set up small payments?",
+          "doc": {
+            "name": "ambulance-collection-notice.pdf",
+            "lines": [
+              "RAPID RECOVERY COLLECTIONS, LLC",
+              "RE: Mobile Life Ambulance - acct 7741",
+              "Patient: George T.    DOB: 03/1955",
+              "Insurance: Medicare (paid) + Medicaid QMB",
+              "",
+              "Original charge ............................. $1,250.00",
+              "Medicare paid ............................... $1,000.00",
+              "Balance billed to patient (20% coinsurance)   $250.00",
+              "",
+              "THIS DEBT HAS BEEN REPORTED TO CREDIT BUREAUS",
+              "Amount now due (with interest) ............. $271.40",
+              "Call to arrange payment. This is an attempt to collect a debt."
+            ]
+          }
+        },
+        { "text": "Wait — does the QMB thing mean I'm not supposed to be charged this at all? Nobody ever told me that. What about the hit to my credit?" }
+      ]
+    },
+    {
+      "id": "s05-c4-retroactive-medicaid-window",
+      "title": "Uninsured 86-day hospital stay, $1M+ billed; retroactive Medicaid window is the whole game",
+      "persona": "Adult daughter handling her uninsured elderly father's bills after a long hospitalization. He was uninsured at admission. Hospital sat on the Medicaid application for weeks. She's terrified of a seven-figure bill and doesn't understand retroactive Medicaid or how tight the deadline is.",
+      "turns": [
+        {
+          "text": "My dad was uninsured and ended up hospitalized for almost three months. He's home now but the bills are over a million dollars and I have no idea how we'd ever pay that. He didn't have any insurance when he went in. Someone mentioned Medicaid might be able to help even though he didn't have it at the time? I don't really understand how that works or if it's too late. Can you help me figure out what to do?",
+          "doc": {
+            "name": "hospital-account-summary.pdf",
+            "lines": [
+              "REGIONAL MEDICAL CENTER - ACCOUNT SUMMARY",
+              "Patient: John D.    Account: 9920-114",
+              "Admission: 86 inpatient days",
+              "Insurance at admission: SELF-PAY / UNINSURED",
+              "",
+              "Total charges .............................. $1,042,300.00",
+              "Payments received .......................... $0.00",
+              "BALANCE DUE ................................ $1,042,300.00",
+              "",
+              "Note from financial counseling:",
+              "Medicaid application started by hospital on day 65 of stay.",
+              "Application still PENDING. Patient resides in Florida."
+            ]
+          }
+        },
+        { "text": "It's been about two and a half months since he was admitted. Is there a deadline I'm about to miss? What's the very first thing I should do today?" }
+      ]
+    },
+    {
+      "id": "s05-c5-aca-priorauth-emergency-denial",
+      "title": "ACA-marketplace plan denies an emergency inpatient stay for no prior auth, ~$59,000",
+      "persona": "Has a Molina ACA marketplace plan (NOT Medicaid). Was airlifted unconscious to an out-of-network hospital with sudden amnesia, admitted overnight, discharged next day. Molina denied the inpatient stay because there was no prior authorization. Fighting it for months, frustrated, confused about why an emergency needs pre-approval.",
+      "turns": [
+        {
+          "text": "I have a Molina marketplace plan that I bought on Healthcare.gov — it's not Medicaid. A few months ago I suddenly couldn't remember anything and was airlifted, unconscious, to a hospital in another city. They kept me overnight and sent me home the next day. Now Molina is refusing to cover the hospital stay because nobody got 'prior authorization' first. I was unconscious — how was I supposed to get pre-approval? They're saying I owe a fortune. What can I do?",
+          "doc": {
+            "name": "molina-denial-eob.pdf",
+            "lines": [
+              "MOLINA HEALTHCARE - MARKETPLACE PLAN",
+              "EXPLANATION OF BENEFITS (this is not a bill)",
+              "Member: Susan A.    Plan: Marketplace Silver (ACA)",
+              "Provider: Phoenix Regional Hospital (OUT OF NETWORK)",
+              "Date of service: emergency air transport + inpatient admit",
+              "",
+              "Inpatient admission charges ................ $59,000.00",
+              "Plan paid ................................... $0.00",
+              "Denial reason: INPATIENT STAY NOT PRIOR-AUTHORIZED",
+              "Member may be responsible for billed charges.",
+              "",
+              "Direct patient bill from hospital so far ... $15,312.43",
+              "You have the right to appeal this decision."
+            ]
+          }
+        },
+        { "text": "I've already appealed twice and gotten nowhere, and I've written to two state insurance departments. What's left that actually has teeth?" }
+      ]
+    }
+  ]
+}
