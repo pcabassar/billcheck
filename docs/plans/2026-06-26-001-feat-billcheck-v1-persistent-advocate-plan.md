@@ -183,7 +183,7 @@ sequenceDiagram
 
 ## Implementation Units
 
-> Phased: **Phase 1 (Saturday hackathon slice)** = U1–U7 (thin cuts); **Phase 2 (v1 proper)** = U8–U12 + within-unit completeness. See Phased Delivery.
+> Phased: **Phase 1 (Saturday hackathon slice)** = U1–U8 (thin cuts; U8 = the profile object); **Phase 2 (v1 proper)** = U9–U12 + within-unit completeness. See Phased Delivery.
 
 ### U1. Supabase auth + persistence + RLS foundation
 
@@ -263,7 +263,7 @@ sequenceDiagram
 
 **Approach:**
 - `makeTools(userId)` closes over the session userId; every `execute` runs under the `.rls()` client and re-validates the active case (`resolveActiveCase(userId, requestedCaseId)` → owned only). Zod `inputSchema`; idempotent writes (DB unique-constraint dedup); **field-level merge** for `saveCase`/`updateProfile`; `experimental_repairToolCall`.
-- **Tool set = the complete capability surface (every UI action is a tool; buttons call the same tools):** `saveCase`/`updateCase`, `linkDocument`/`relinkDocument` (U3), `updateProfile` (U8), `markArtifactSent`, `updateDeadline`/`cancelDeadline` (U6), `markResolved`/`reopenCase`, `generateShareCard` (U7), and the world-effecting `generateArtifact` (U5) + `scheduleReminder` (U6). **`recordAggregate` is NOT a tool** — deterministic at conclusion (U9). Per phase: Phase 1 wires case/doc/artifact/reminder/share/status tools; `updateProfile` (U8) lands in Phase 2.
+- **Tool set = the complete capability surface (every UI action is a tool; buttons call the same tools):** `saveCase`/`updateCase`, `linkDocument`/`relinkDocument` (U3), `updateProfile` (U8), `markArtifactSent`, `updateDeadline`/`cancelDeadline` (U6), `markResolved`/`reopenCase`, `generateShareCard` (U7), and the world-effecting `generateArtifact` (U5) + `scheduleReminder` (U6). **`recordAggregate` is NOT a tool** — deterministic at conclusion (U9). Per phase: Phase 1 wires case/doc/**profile**/artifact/reminder/share/status tools (incl. `updateProfile`, U8); the deterministic aggregate write (U9) is Phase 2.
 - **`needsApproval` on `generateArtifact` + `scheduleReminder`** — a conditional fn: `true` when the trigger is document-borne or a model-*inferred* deadline (injection defense), `false` when the user asked explicitly. The UI renders an edit-before-approve confirmation card; the user approves via `addToolApprovalResponse`. Parity holds (one tool, gated) — no separate commit tool.
 - **Prompt = three parts, only the first frozen (R16):** [frozen advice prose] + [a brief **orchestration note** — when to use the tools as a set + the propose-vs-confirm policy — **not** a per-tool restatement: each tool's own `description` + Zod `inputSchema` is the single source of truth, which the SDK sends to the model automatically, so there's nothing to hand-sync] + [dynamic per-turn state block from U2's structured state: open artifacts/deadlines/links/profile/status] — so the agent acts with full context and never re-proposes what exists. Tool/context wiring, not advice-tuning.
 - Surface `tool-<name>` parts as **plain-language ✓ status lines, raw details collapsed** (progressive disclosure — never raw JSON to a scared user).
@@ -328,19 +328,19 @@ sequenceDiagram
 
 **Verification:** every case can produce a coherent, PII-free card at any time; resolution is an explicit, reversible action.
 
-### U8. Profile / situation (ask once, reuse)
+### U8. Profile / situation — a first-class object (ask once, reuse, apply)
 
-**Goal:** Persist the user's insurance situation and apply it across sessions and artifacts.
+**Goal:** Make the user's coverage situation a **structured, first-class object** the orchestrator always sees as labeled facts — persisted, displayed/editable, usable by deterministic rules — not buried in the conversation.
 
 **Requirements:** R8
 
 **Dependencies:** U1, U2, U4
 
-**Files:** Create `lib/db/profile.ts`; Modify `lib/tools/update-profile.ts`, `lib/artifacts/generate.ts`; Test `test/profile-apply.test.ts`
+**Files:** Create `lib/db/profile.ts`; Modify `lib/tools/update-profile.ts`, `lib/artifacts/generate.ts`, `app/(app)/` (a "your situation" panel); Test `test/profile-apply.test.ts`
 
-**Approach:** `updateProfile` (model-proposed, server-validated, **field-level merge**) upserts `profiles` (insurer, planType incl. fully-insured-vs-self-funded, status: veteran/Medicaid/QMB/income/state). Seeded into structured state (U2) so the model never re-probes; artifacts auto-fill; protected-class facts (QMB→$0) applied proactively.
+**Approach:** a `profiles` row with **named fields** — coverage **situation** (program: uninsured / commercial / Medicare / Medicaid / dual-QMB / ACA-marketplace · insurer · plan name · fully-insured-vs-self-funded) and **status** (veteran, household-income band, state). `updateProfile` (model-proposed, server-validated, **field-level merge**) persists facts as the user reveals them. The profile is injected into every turn as its **own labeled block** (distinct from the case summary) so the model never re-probes; the UI shows it as an editable panel; deterministic protections key off the structured fields (QMB → $0). Artifacts auto-fill from it. The user's **plan documents** (e.g. a commercial SBC) attach at the **profile level** so they persist across all their cases. *Public-program coverage **rules** (Medicare/Medicaid/QMB/ACA cost-sharing) are NOT stored — the model already knows them well (testing confirmed); a cited rules-store is the deferred R13 KB. Commercial specifics come from the user's plan docs.*
 
-**Test scenarios:** "QMB" stored in session 1 → applied in session 3 without re-asking; a profile fact fills an artifact blank; two concurrent profile edits merge (no lost update); invalid diff rejected.
+**Test scenarios:** "QMB" stored in session 1 → applied in session 3 without re-asking; the profile renders as an editable panel and edits persist; a profile fact fills an artifact blank; two concurrent profile edits merge (no lost update); invalid diff rejected.
 
 **Verification:** the model stops re-asking known facts across sessions.
 
@@ -454,12 +454,12 @@ Most findings are now folded into the units above; these are the cross-cutting p
 ## Phased Delivery
 
 ### Phase 1 — Saturday hackathon slice (~7h, demoable core)
-Thin cuts of **U1** (Supabase auth + Postgres + RLS — fewer moving parts than Neon+Clerk: ~30–45 min of auth UI, RLS is a few policy lines, transactions just work), **U2** (case spine + deterministic persist + cached owner-verified inlining), **U3** (doc record + link), **U4** (tools + `needsApproval`), **U5** (artifact + download), **U6** (the reminder Workflow — the headline), **U7** (always-available share card + `markResolved`), minimal **U10**. Demo: signup → upload → analyze → draft artifact (approval card → download) → save case + deadline → smart reminder → share card.
+Thin cuts of **U1** (Supabase auth + Postgres + RLS — fewer moving parts than Neon+Clerk: ~30–45 min of auth UI, RLS is a few policy lines, transactions just work), **U2** (case spine + deterministic persist + cached owner-verified inlining), **U3** (doc record + link), **U4** (tools + `needsApproval`), **U5** (artifact + download), **U6** (the reminder Workflow — the headline), **U7** (always-available share card + `markResolved`), **U8** (the profile object — ask-once/reuse + QMB→$0), minimal **U10**. Demo: signup → upload → analyze → (profile captured) → draft artifact (approval card → download) → save case + deadline → smart reminder → share card.
 
 **Phase-1 security non-negotiables:** RLS policies live (the cross-user-invisibility test is the gate); DB-resolved owner-checked inlining; `resolveActiveCase` ownership re-check in tools; `needsApproval` on the world-effecting tools. **Cut-line under clock pressure:** descope *demo polish* (reminder copy, share styling, faked send) before any security non-negotiable. Phase-1 accounts are synthetic/own-bills only (per AGENTS.md); the privacy policy + consent UI gate *public* reachability (Phase 2).
 
 ### Phase 2 — v1 proper
-**U8** (profile reuse), **U9** (consent + deterministic aggregate capture), **U11** (multi-case), **U12** (deletion + logs + privacy policy), plus within-unit completeness: full reminder branch copy + email-fail + reschedule (U6), document-linking lifecycle (U3), real Resend send, re-auth/two-tab handling, the full browser pass (U10).
+**U9** (consent + deterministic aggregate capture), **U11** (multi-case), **U12** (deletion + logs + privacy policy), plus within-unit completeness: full reminder branch copy + email-fail + reschedule (U6), document-linking lifecycle (U3), real Resend send, re-auth/two-tab handling, the full browser pass (U10).
 
 ---
 
