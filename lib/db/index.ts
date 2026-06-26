@@ -16,7 +16,9 @@ let _db: Db | undefined
 
 function client() {
   if (!_client) {
-    const url = process.env.DATABASE_URL
+    // Tolerate an accidentally quote-wrapped value: dotenv strips surrounding quotes locally,
+    // but some env-var UIs (e.g. the Vercel dashboard) keep them literal → `new URL()` would throw.
+    const url = (process.env.DATABASE_URL ?? '').trim().replace(/^["']|["']$/g, '')
     if (!url) throw new Error('DATABASE_URL is not set')
     _client = postgres(url, { prepare: false }) // required for the Supavisor transaction pooler
   }
