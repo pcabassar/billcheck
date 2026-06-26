@@ -25,10 +25,18 @@ function fmtDate(d: Date | null | undefined): string {
  * model knows other cases exist (and binds every action to the ACTIVE case above) without
  * conflating them. The tools all close over the active caseId, so this is purely awareness.
  */
-export function buildStateBlock(ctx: CaseContext, otherCases?: OtherCaseSummary[]): string {
+export function buildStateBlock(
+  ctx: CaseContext,
+  otherCases?: OtherCaseSummary[],
+  now: Date = new Date(),
+): string {
   const lines: string[] = []
 
   lines.push('--- CASE STATE (system-maintained; do not re-ask what is already known) ---')
+
+  // Give the model the current date so relative deadlines ("in 2 weeks") resolve correctly —
+  // it otherwise has no reliable sense of "today" and will guess a wrong/past date.
+  lines.push(`TODAY'S DATE: ${now.toISOString().slice(0, 10)}`)
 
   lines.push(`CASE STATUS: ${ctx.status}`)
 
