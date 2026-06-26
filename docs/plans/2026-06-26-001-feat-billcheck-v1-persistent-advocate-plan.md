@@ -11,38 +11,36 @@ origin: docs/brainstorms/2026-06-25-billcheck-v1-requirements.md
 
 ## Summary
 
-Turn the validated, stateless prototype into a **persistent advocate**: it remembers the case across visits, drafts the real artifact, tracks deadlines with a durable smart reminder, and ends with a shareable card. The model's reasoning is frozen (it's already strong and safe — see [docs/observations/SUMMARY.md](../observations/SUMMARY.md)); v1 builds the **deterministic "hands and memory"** around it — auth, a Postgres case spine, model-callable tools, and one Vercel Workflow. The approach is additive: the existing `streamText` chat route stays the brain and grows a `tools` map; everything else slots underneath it.
+Turn the validated, stateless prototype into a **persistent advocate**: it remembers the case across visits, drafts the real artifact, tracks deadlines with a durable smart reminder, and ends with a shareable card. The model's reasoning is frozen (already strong + safe — see [docs/observations/SUMMARY.md](../observations/SUMMARY.md)); v1 builds the **deterministic "hands and memory"** around it — Supabase auth + a Postgres case spine with row-level security, model-callable tools, prompt-cached document context, and one Vercel Workflow. Additive: the existing `streamText` route stays the brain and grows a `tools` map.
 
 ---
 
 ## Problem Frame
 
-The prototype answers well but forgets everything, can't act, and can't track a clock — so a user has no reason to choose it over ChatGPT. The wedge is the things a foundation model structurally can't do: remember the case, act in the real world, and be trustworthy enough to hand a bill to (see origin: [docs/brainstorms/2026-06-25-billcheck-v1-requirements.md](../brainstorms/2026-06-25-billcheck-v1-requirements.md)).
+The prototype answers well but forgets everything, can't act, and can't track a clock — so a user has no reason to choose it over ChatGPT. The wedge is what a foundation model structurally can't do: remember the case, act in the real world, and be trustworthy enough to hand a bill to (see origin: [docs/brainstorms/2026-06-25-billcheck-v1-requirements.md](../brainstorms/2026-06-25-billcheck-v1-requirements.md)).
 
 ---
 
 ## Requirements
 
-Traced from the origin requirements doc (R1–R16). v1 scope = R1, R3 (account tier), R4–R12, R14, R15 (generic), R16.
+Traced from origin R1–R16. v1 scope = R1, R3 (account tier), R4–R12, R14, R15 (generic), R16.
 
 - **R1.** Signup-first (anonymous-first + gating is v1.1).
-- **R3.** Consent tiers — account-tier collected at signup; aggregate-tier as a separate opt-in (default OFF).
+- **R3.** Consent tiers — account-tier at signup; aggregate-tier a separate opt-in (default OFF).
 - **R4.** A **Case** is a first-class object: bill(s), EOB(s)/docs, profile, timeline, deadlines.
-- **R5.** Document linking — know which EOB/doc belongs to which bill; survive out-of-order uploads.
+- **R5.** Document linking — which EOB/doc belongs to which bill; survives out-of-order uploads.
 - **R6.** One **active session** per case; prior sessions stored as transcript objects; the active session is seeded with a **case summary + structured state**, not raw transcripts.
 - **R7.** Cross-case awareness without losing track of each object/action.
-- **R8.** Stored profile/situation (insurer, plan type, veteran/Medicaid/QMB/income…) applied across sessions — ask once, reuse, proactively apply.
-- **R9.** Artifact generation, personalized from the stored profile (fill the blanks).
+- **R8.** Stored profile/situation applied across sessions — ask once, reuse, proactively apply.
+- **R9.** Artifact generation, personalized from the profile.
 - **R10.** Deliver: v1 renders download/print/copy; real send is **mocked** but marked "sent" on the timeline.
-- **R11.** Artifacts + their deadlines saved to the case as tracked objects.
-- **R12.** **Smart reminder** — a durable Vercel Workflow that checks case state at the deadline and tailors/suppresses the nudge; channel = email; v1 "new info" = user-side changes.
-- **R14.** Anonymized structured data capture from user #1, stored separate from the personal case, behind the aggregate consent tier.
-- **R15.** Generic **share card** when a case "concludes" (model-flagged) + a persistent manual share/recap button.
+- **R11.** Artifacts + deadlines saved as tracked objects.
+- **R12.** **Smart reminder** — a durable Vercel Workflow that checks case state at the deadline and tailors/suppresses the nudge; email; v1 "new info" = user-side changes.
+- **R14.** Anonymized structured data capture, stored separate from the personal case, behind the aggregate consent tier.
+- **R15.** **Share card** — generated on demand via an always-available affordance (+ optional advisory conclusion signal).
 - **R16.** Treat the system prompt as **frozen**; build capability via tools + memory + structured state.
 
-**Success criteria (v1):** a person uses billcheck instead of ChatGPT because it (1) remembers the case across visits, (2) produces the actual artifact, (3) proactively nudges the deadline, and (4) yields a share card on conclusion — demoable end-to-end on Vercel.
-
-**Origin actors:** the scared individual (~30–55), signup-first D2C. **Origin flows:** signup → case → upload → analyze/probe → artifact → deadline+reminder → conclusion → share. Wellthy is a channel/pilot, not a v1 build target.
+**Success criteria (v1):** a person uses billcheck instead of ChatGPT because it (1) remembers the case across visits, (2) produces the actual artifact, (3) proactively nudges the deadline, and (4) yields a share card — demoable end-to-end on Vercel.
 
 ---
 
@@ -51,65 +49,61 @@ Traced from the origin requirements doc (R1–R16). v1 scope = R1, R3 (account t
 **In v1:** R1, R3 (account tier), R4–R12, R14, R15 (generic card), R16.
 
 ### Deferred for later (v1.1+)
-- Anonymous-first onboarding + the anonymous→account migration + feature-gating (R1/R3 full).
-- Real artifact send (fax/mail/email, likely paid) (R10).
+- Anonymous-first onboarding + the anonymous→account migration + feature-gating.
+- Real artifact send (fax/mail/email, likely paid).
 - Cited-KB / retrieval with trusted source links (R13).
-- Rich external reminder signals (EOB posted, provider replied) (R12).
-- Nicer/selective "legible-win" share card design (R15).
+- Rich external reminder signals (EOB posted, provider replied).
+- Nicer/selective "legible-win" share card design.
 
 ### Outside this product's identity (north-star, not now)
-- Insurance-portal connect (Granted = swamp) and MyChart/clinical integration.
+- Insurance-portal connect (Granted = swamp); MyChart/clinical integration.
 - Public price-index product; journalist/outrage pipeline; benefits navigator; GFE/upstream prevention.
 - Wellthy/employer software integration; pricing / pay-what-you-want.
 
 ### Deferred to Follow-Up Work
-- A full compliance program (BAA-grade infra, formal de-id certification). v1 bakes the *cheap* primitives (separate consent, two-store separation, no health data in logs, deletion path) and flags the rest — consistent with AGENTS.md "no PHI/compliance machinery yet (own/synthetic bills only)."
+- A full compliance program (BAA-grade infra, formal de-id certification). v1 bakes the cheap primitives (separate consent, RLS isolation, two-store separation, no health data in logs, deletion path) and flags the rest — consistent with AGENTS.md "no PHI/compliance machinery yet (own/synthetic bills only)."
 
 ---
 
 ## Context & Research
 
 ### Relevant code and patterns (extend, don't rebuild)
-- `app/api/chat/route.ts` — the brain: `streamText` + AI Gateway string `"anthropic/claude-opus-4.8"` + `await convertToModelMessages(await inlinePrivateBlobs(messages))`. v1 attaches `tools` + `stopWhen: stepCountIs(n)` here and inserts userId/caseId scoping + deterministic persistence + a per-turn document-selection rule.
-- `inlinePrivateBlobs()` — fetches private-blob bytes server-side and inlines them as base64 data URLs (the model can't fetch URLs). **Reuse**, but (a) it currently re-inlines *every* file part *every* turn — does not survive persistence (CC-2), and (b) it fails *silently* on a non-OK fetch — must surface.
-- `app/api/blob-upload/route.ts` — client-upload token route (`handleUpload`, allow-list, 10 MB). Currently **unauthenticated** and rejects HEIC silently — both fixed in v1.
-- `lib/prompt.ts` — the frozen `SYSTEM_PROMPT` (R16). Add a small tool-usage appendix only (visible before/after); the advice prose is untouched.
-- `app/page.tsx` — single-screen `useChat` client; renders `message.parts` by type. v1 adds routes/screens and renders `tool-*` parts.
+- `app/api/chat/route.ts` — the brain: `streamText` + AI Gateway `"anthropic/claude-opus-4.8"` + `await convertToModelMessages(await inlinePrivateBlobs(messages))`. v1 attaches `tools` + `stopWhen: stepCountIs(n)`, inserts auth/case scoping, deterministic persistence, and **prompt-caching** of the doc context.
+- `inlinePrivateBlobs()` — fetches private-blob bytes server-side and inlines them as base64 (the model can't fetch URLs). **Keep**, but (a) resolve which blobs to inline **from the DB by owner** (not the client `part.url` — that path is the cross-tenant authorization boundary), (b) surface fetch failures (no silent skip), (c) keep doc ordering stable so the cache holds.
+- `app/api/blob-upload/route.ts` — client-upload token route. Currently **unauthenticated** + rejects HEIC silently — both fixed.
+- `lib/prompt.ts` — the frozen `SYSTEM_PROMPT` (R16). Becomes a 3-part prompt (below); the advice prose is untouched.
+- `app/page.tsx` — single-screen `useChat`; renders `message.parts` by type.
 
 ### Institutional learnings
-- **Freeze the prompt, build hands not answers** — 33 sims, 0 safety failures; the gap is execution, not reasoning.
-- **Model choice is a safety control** — Opus needs AI-Gateway credits in *every* environment; free tier silently down-tiers to Haiku, which is unsafe here. v1's reminder makes **no model call** (rule-based tailoring), so the Workflow runtime needs no gateway access.
-- **Private-blob fetch→inline + `convertToModelMessages` is async** — keep both; documents now *persist* (add metadata + access control; there is no `del()` to remove — the prototype already retains).
-- **Two render bugs (white-space, remark-gfm) were invisible to text-only testing** — budget a browser/integration pass for every new rendered surface.
-- **One hallucination class (a fabricated FDA date)** → artifact generation fills from profile and leaves external facts as *attributed placeholders*; no cited-KB gate (R9/R13).
-- No `docs/solutions/` exists — capture this build with `/ce-compound` after it lands.
+- **Freeze the prompt, build hands not answers** — 33 sims, 0 safety failures; the gap is execution.
+- **Model choice is a safety control** — Opus needs AI-Gateway credits in *every* environment; free tier silently down-tiers to Haiku, which is unsafe here. The reminder makes **no model call**.
+- **Private-blob fetch→inline + `convertToModelMessages` is async** — keep both; documents now persist (metadata + access control; no `del()` to remove — the prototype already retains).
+- **Two render bugs (white-space, remark-gfm)** were invisible to text-only testing — budget a browser pass for every new rendered surface.
+- **One hallucination class (a fabricated FDA date)** → artifacts fill from profile and leave external facts as *attributed placeholders*; no cited-KB gate.
 
-### External references (version-checked against installed packages)
-- **AI SDK v6 (`ai@6.0.209`):** `tool({ inputSchema })` (not `parameters`), `stopWhen: stepCountIs(n)` (not `maxSteps`/`isStepCount`), `hasToolCall`, `onStepFinish`, `Output.object`. Default `stopWhen` is one step — must set it or tools won't loop. Tools surface as `tool-<name>` parts (`state`: input-streaming → input-available → output-available).
-- **Vercel Workflows / WDK (`workflow`):** `'use workflow'` / `'use step'`; durable `sleep(date|duration)` (zero compute while waiting, survives redeploys); `start()` from `workflow/api`; `createHook`/`resumeHook` for early wake; **no native idempotency key on `start()`** (dedup yourself); determinism rule (no IO/`Date.now`/random in the workflow body — only in steps); skew protection pins a run to its deployment (keep the body thin). **Pin `workflow@^4.5.0`** (the verified surface; the registry also carries a 5.x beta that could resolve on a bare install).
-- **Next.js 16:** root middleware file renamed `middleware.ts` → **`proxy.ts`** (Clerk/Auth.js key off this).
-- **Storage:** first-party Vercel Postgres/KV are sunset → **Neon Postgres** + **Upstash Redis** via Marketplace; `@vercel/blob` unaffected. **Drizzle** + `neon-http` driver (lazy `getDb()`, no top-level client, no Proxy wrapper; `drizzle-kit push` via `dotenv -e .env.local`).
-- **Auth:** **Clerk** (Marketplace-native, drop-in signup-first UI). **Resend** for email (called inside a Workflow step with `stepId` as idempotency key).
-- **Compliance:** not a HIPAA covered entity, but **WA MHMDA applies with no size threshold** (separate opt-in consent, privacy policy, deletion, breach plan) and FTC HBNR applies. Bake the cheap primitives now.
+### External references (verified June 2026; flag drift)
+- **AI SDK v6 (`ai@6.0.209`):** `tool({ inputSchema })`, `stopWhen: stepCountIs(n)` (not `maxSteps`), `hasToolCall`, `Output.object`, **`needsApproval`** (the SDK-native human-in-the-loop gate — a `boolean` or a conditional fn; UI confirms via `addToolApprovalResponse`). Tools surface as `tool-<name>` parts with `state`.
+- **Prompt caching (Anthropic via the Vercel AI Gateway):** mark large content with `providerOptions.anthropic.cacheControl: { type: 'ephemeral' }` (or the Gateway's `caching: 'auto'`) on the system prefix + the last inlined-doc part, **after** `convertToModelMessages`. Cache read ≈ 0.1× input (10× cheaper), 5-min TTL (1h optional), min 1,024 tokens, max 4 breakpoints. **Caching reduces cost/latency, NOT context-window usage** — cached docs still count against the 1M-token window, so a size-based trim remains as a capacity fallback for very large cases. Reorder/drop a doc → cache miss, so keep the doc set/order stable per turn.
+- **Supabase (June 2026):** Auth via `@supabase/ssr` (browser/server/proxy clients; `proxy.ts` at root — Next 16's `middleware.ts` rename, **Node-runtime only**). Authenticate with **`getClaims()`** (local JWT verify), never `getUser()`/`getSession()` for authz; don't run code between `createServerClient` and the check. New API keys: **publishable** (`sb_publishable_…`, browser+SSR, RLS applies) + **secret** (`sb_secret_…`, backend-only, bypasses RLS). Drizzle via **`postgres-js` over the Supavisor transaction pooler (port 6543, `prepare:false`)** — `db.transaction()` works (no Neon two-driver workaround); migrations via the 5432 connection.
+- **RLS:** Drizzle does **not** auto-run as the authed user — it bypasses RLS unless the connection runs as the `authenticated` role with the JWT set. Use the two-client + `.rls(tx => …)` pattern (`drizzle-orm/supabase` `pgPolicy`/`authUid`); RLS depends on `db.transaction()`.
+- **Compliance:** not a HIPAA covered entity, but **WA MHMDA applies with no size threshold** (separate opt-in consent, privacy policy, deletion); FTC HBNR applies. EU AI Act Art. 50 (AI-disclosure) + Art. 14 land **2026-08-02** — relevant only for EU users.
 
 ---
 
 ## Key Technical Decisions
 
-- **Neon Postgres + Drizzle, docs in Blob, metadata in Postgres.** Two drivers by path: **`neon-serverless` (WebSocket) for the write path** (it supports `db.transaction()`; `neon-http` does **not**) and `neon-http` for simple scoped reads. Lazy `getDb()` avoids build-time/init footguns. *(Alt: Prisma — heavier on serverless.)*
-- **Clerk for auth, signup-first.** Drop-in UI + Marketplace auto-provisioning = fastest-correct. *(Alt: Auth.js v5 — more wiring, no hosted screens.)*
-- **The smart reminder is a Vercel Workflow, not Cron+queue.** A reminder is one durable timer keyed to a deadline that must read live state on wake and be cancellable — exactly `sleep()` + a `case-closed` hook race. Cron would re-implement timers, dedup, and state polling by hand.
-- **Capability via model-callable tools wired into the existing `streamText`** (R16). One orchestrator, no second framework, no `ToolLoopAgent` wrapper for live chat.
-- **Deterministic vs. model-driven split (the central safety seam, CC-1):** case existence + transcript persistence happen **deterministically every turn**, never hostage to a model tool call. Semantic actions (link doc, generate artifact, schedule reminder, update profile, flag conclusion, record aggregate) are tools — each **server-authoritative** (userId from the Clerk session, caseId bound server-side, never from model args), **idempotent**, and **input-validated** (Zod + `experimental_repairToolCall`).
-- **Two privacy-critical guards are server-enforced, not prompt-enforced:** (1) `recordAggregate` checks the aggregate consent tier server-side and drops the write if false; (2) the **share card is generated from a structured-state field whitelist**, never from the raw transcript or document text.
-- **Per-turn document inlining is selective** (CC-2): only documents relevant to the turn (newly added / referenced / explicitly requested) are inlined, not the whole case. Blob-fetch failure surfaces to the user instead of silently degrading.
-- **Model-omission backstops:** artifact creation and share/recap each get a deterministic UI affordance (a button) so they don't depend on the model remembering to call the tool — mirroring R15's manual button, extended to artifacts.
-- **Testing posture:** manual/browser verification + the existing probe for model behavior (consistent with the prototype), **plus a light unit-test layer (`node:test` or vitest) for the pure-logic safety/privacy guards only** — consent gate, aggregate de-identification/PII-strip, reminder branch selection, idempotency keys. These are cheap pure functions where a silent bug is catastrophic and invisible to manual testing.
-- **Blob inlining is the document-authorization boundary**, not just a performance rule: inline candidates resolve from the DB by `(caseId, userId)`, never from the client-sent `part.url`; ownership is asserted before each fetch (closes a cross-tenant IDOR/SSRF — see Hardening).
-- **Derived case summary** (rebuilt from the transcript when stale) instead of a second write per turn — removes the turn-persist atomicity requirement by construction. Persist the **blob URL, never the inlined base64**. *Prefer a deterministic structured-state→prose template; if regeneration uses the model, it's a second per-turn call — budget the cost/latency, pin it to funded Opus (a silent down-tier to Haiku would poison the persistent seed), and fall back to the prior summary on failure, never an empty seed.*
-- **The anonymized aggregate row is written once, at conclusion, with the outcome inline** (UUID PK, jittered insertion time, consent checked before compute) — one choice that fixes append-non-idempotency, timing/sequence re-join, and outcome-backfill together. Not a Phase-1 / free model-tool write.
-- **Confirm-to-commit** on artifact finalize + reminder arm (the backstop buttons are the commit point) — contains document-borne prompt injection now that the model can call action tools.
-- **`drizzle-kit push` for the synthetic-only demo; cut over to versioned migrations at the first real signup** (push silently drops/rewrites columns to reconcile a diff — irreversible on real data).
+- **Supabase for Postgres + Auth + RLS; keep Vercel Blob for documents.** Pedro already pays for Supabase; it collapses DB + auth + isolation into one service and makes RLS first-class. Vercel Blob stays — the private-upload + server-inline pattern is already built. *(Drops Neon + Clerk vs. the first draft.)*
+- **One DB driver: `postgres-js` over the Supavisor transaction pooler** (`prepare:false`). `db.transaction()` works on serverless — so the dependent writes (turn+summary, the scheduleReminder dual-write) are transactional. No two-driver split.
+- **RLS-first isolation, in U1 (not deferred).** Every tenant table carries `user_id` + a forced `(select auth.uid()) = user_id` policy; user-facing queries run through the `.rls()` client (JWT-scoped); a `secret`-key admin client is reserved for the Workflow + the aggregate write. A forgotten `WHERE` is then structurally harmless — the DB filters it.
+- **Prompt caching, not a relevance heuristic, for document context.** Cache the inlined docs; keep all case docs in context (no fragile selective-inline). Size-based trim is a capacity fallback only (context-window limit, which caching doesn't change).
+- **Capability via model-callable tools wired into the existing `streamText`** (R16); one orchestrator, no second framework.
+- **Human-in-the-loop via the SDK's `needsApproval`** on the two world-effecting tools (`generateArtifact`, `scheduleReminder`) — conditional: confirm when the trigger is document-borne or a model-*inferred* deadline; skip when the user asked explicitly. This is the injection defense + keeps agent/user parity (one tool, gated), replacing a hand-rolled two-phase commit.
+- **Deterministic vs. model-driven seam:** case existence + transcript persist deterministically every turn (never hostage to a tool call). Semantic actions are tools — each server-authoritative (userId from the session, caseId re-validated as owned), idempotent (DB unique-constraint dedup), field-level-merge for blob-shaped state, Zod-validated + `experimental_repairToolCall`.
+- **Conclusion is user-driven, not model-detected.** An always-available "wrap up / share" affordance triggers `generateShareCard`; the model emits an advisory per-turn `phase` field that only *surfaces* the CTA when `resolved` (never gates). Case-closed status is set by an explicit `markResolved` action (user or agent), which the reminder reads — not a model auto-flag.
+- **`recordAggregate` is deterministic at conclusion (not a model tool), keyless + a personal-side pointer.** The aggregate row carries no key; `cases.aggregate_record_id` (in the RLS-protected case table) lets the conclusion-time write **update in place** (no duplicates) and is destroyed on account deletion.
+- **Two privacy-critical guards are server-enforced:** the aggregate write checks consent **before computing** the record; the share card is built from a structured-state **enum/bucketed whitelist**, never the transcript.
+- **`drizzle-kit push` for the synthetic-only demo; cut to versioned migrations at the first real signup.**
+- **Testing posture:** manual/browser + the existing probe for model behavior, **plus light unit tests for the pure safety/privacy guards** (consent gate, de-identification/PII-strip, reminder branch selection, RLS cross-user invisibility, idempotency).
 
 ---
 
@@ -117,7 +111,7 @@ Traced from the origin requirements doc (R1–R16). v1 scope = R1, R3 (account t
 
 > *Directional guidance for review, not implementation specification.*
 
-**Data model (Postgres; the `aggregate_records` table deliberately has no key back to a person):**
+**Data model (Supabase Postgres; RLS on every tenant table; `aggregate_records` keyless):**
 
 ```mermaid
 erDiagram
@@ -129,285 +123,209 @@ erDiagram
   cases ||--o{ artifacts : produces
   cases ||--o{ transcripts : archives
   documents ||--o| documents : "linkedToDocId (EOB→bill)"
-  deadlines ||--o| artifacts : "reminds about"
-  aggregate_records }o--|| NONE : "no FK — structural wall"
+  cases ||..o| aggregate_records : "aggregate_record_id pointer (personal-side only; not an FK)"
+  aggregate_records }o--|| NONE : "keyless, UUID PK, no back-reference"
 ```
+`users.id` = the Supabase `auth.uid()` (UUID). Every tenant table has `user_id` + a forced `auth.uid() = user_id` RLS policy.
 
-**The chat turn (one orchestrator, tools + deterministic persistence):**
+**The chat turn (one orchestrator; tools; cached docs; deterministic persistence):**
 
 ```mermaid
 sequenceDiagram
   participant U as User
-  participant R as /api/chat (route)
-  participant M as Opus (Gateway)
-  participant DB as Postgres
-  U->>R: message (+files) [Clerk session]
-  R->>DB: deterministic: ensure case, persist user turn, load summary+state
-  R->>R: select+inline relevant private blobs (CC-2)
-  R->>M: streamText(system+appendix, msgs, tools, stopWhen: stepCountIs(8))
-  M-->>R: tool calls (saveCase / linkDocument / generateArtifact / scheduleReminder / flagConclusion / updateProfile / recordAggregate)
-  R->>DB: each tool executes server-side (userId from session, caseId bound, idempotent, consent-gated)
-  R->>DB: deterministic: persist assistant turn + refresh summary
-  R-->>U: stream text + tool-* parts (✓ steps, artifact, share card)
+  participant R as /api/chat
+  participant M as Opus (Gateway, cached prefix)
+  participant DB as Supabase (RLS)
+  U->>R: message (+files) [Supabase session]
+  R->>DB: getClaims() → userId; .rls(): ensure case, persist user turn, load summary+state
+  R->>R: inline owner-verified blobs (DB-resolved); cacheControl on system + last doc
+  R->>M: streamText(3-part prompt, msgs, tools, stopWhen, needsApproval on world-effecting tools)
+  M-->>R: tool calls (save/link/profile/markSent/deadline/share/markResolved/reopen; artifact+reminder gated)
+  R->>DB: tools execute under RLS (userId from session, caseId re-validated, idempotent)
+  R->>DB: persist assistant turn
+  R-->>U: stream text + tool-* parts (plain-language status; details collapsed); approval cards when gated
 ```
 
-**The smart reminder Workflow (durable, state-aware, cancellable):**
-
-```mermaid
-flowchart TD
-  S[scheduleReminder tool: start workflow, store runId] --> SL[sleep until ~1d before deadline]
-  SL --> RACE{case-closed hook fires first?}
-  RACE -->|yes| SUP1[timeline: suppressed - case closed]
-  RACE -->|no, timer wins| ST[step: read LIVE case state]
-  ST --> DEC{resolved / closed / deadline passed / acted?}
-  DEC -->|resolved or closed| SUP2[timeline: suppressed]
-  DEC -->|deadline passed| PD[email: past-due copy]
-  DEC -->|artifact marked sent| SOFT[email: gentle follow-up copy]
-  DEC -->|no action| ACT[email: act-now copy]
-  PD --> TL[timeline: reminder_sent]
-  SOFT --> TL
-  ACT --> TL
-```
+**The smart reminder Workflow (durable, state-aware, cancellable):** unchanged in shape — `sleep` to ~1 day before the deadline, raced against a `case-closed` hook; on wake a step reads **live** state (primary, not replica) and a **pure function** picks the branch (act / gentle-if-sent / past-due / suppress-if-resolved-or-closed / send-failed→timeline); Resend send keyed off `(caseId, deadlineId, branch)` via the `Idempotency-Key` header. Runs under the admin (service-role) client.
 
 ---
 
 ## Output Structure
 
-New/changed top-level shape (additive to the existing `app/`):
-
-    proxy.ts                      # Clerk middleware (Next 16 rename)
+    proxy.ts                      # Supabase session refresh (Next 16 rename; Node runtime)
     drizzle.config.ts
     lib/
+      supabase/
+        server.ts, client.ts, proxy.ts   # @supabase/ssr clients (getClaims-based)
       db/
-        index.ts                  # lazy getDb() neon-http (reads) + getWriteDb() neon-serverless (transactional writes)
-        schema.ts                 # all tables
-        cases.ts, documents.ts, profile.ts, deadlines.ts, artifacts.ts, aggregate.ts  # scoped queries
-      auth.ts                     # requireUserId() helper
-      tools/
-        index.ts                  # makeTools(userId) -> tools map
-        *.ts                      # one file per tool
-      artifacts/generate.ts       # artifact templating from profile
-      share/card.ts               # whitelist -> card (no PII)
-      aggregate/deidentify.ts     # Safe-Harbor-grade field hygiene (pure, unit-tested)
-      reminder/state.ts           # pure branch-selection (unit-tested)
+        index.ts                  # postgres-js / Supavisor pooler; rls(tx) wrapper + admin client
+        schema.ts                 # tables + pgPolicy(auth.uid() = user_id)
+        cases.ts, documents.ts, profile.ts, deadlines.ts, artifacts.ts, aggregate.ts  # owner-scoped
+      auth.ts                     # requireUserId() = getClaims().sub
+      tools/                      # one file per tool; makeTools(userId)
+      artifacts/generate.ts
+      share/card.ts               # whitelist → card (no PII)
+      aggregate/deidentify.ts     # Safe-Harbor field hygiene (pure, unit-tested)
+      reminder/state.ts           # pure branch selection (unit-tested)
+      cache/doc-cache.ts          # cacheControl placement + size-based trim fallback
       email/resend.ts
-    lib/workflows/
-      reminder.ts                 # 'use workflow' + 'use step'
+    lib/workflows/reminder.ts     # 'use workflow' + 'use step'
     app/
       (app)/cases/page.tsx        # case list + empty state
-      (app)/cases/[id]/page.tsx   # case detail (timeline, artifacts, share)
-      api/chat/route.ts           # MODIFIED: auth, case spine, tools, selective inline
+      (app)/cases/[id]/page.tsx   # case detail (timeline, artifacts, wrap-up/share)
+      (auth)/                     # Supabase sign-in / sign-up screens
+      api/chat/route.ts           # MODIFIED: auth, case spine, tools, cached inline, needsApproval
       api/blob-upload/route.ts    # MODIFIED: auth + HEIC + clearer errors
-    test/                         # light unit tests for the pure guards only
+    test/                         # light unit tests for the pure guards + RLS cross-user check
 
 ---
 
 ## Implementation Units
 
-> Phased: **Phase 1 (Saturday hackathon slice)** = U1–U6 (thin cuts) + U7; **Phase 2 (v1 proper)** = U8–U12 + the deferred-within-unit completeness. See Phased Delivery.
+> Phased: **Phase 1 (Saturday hackathon slice)** = U1–U7 (thin cuts); **Phase 2 (v1 proper)** = U8–U12 + within-unit completeness. See Phased Delivery.
 
-### U1. Auth + persistence foundation
+### U1. Supabase auth + persistence + RLS foundation
 
-**Goal:** Clerk auth (signup-first) + Neon Postgres + Drizzle wired, with the full schema and per-user scoping baseline.
+**Goal:** Supabase Auth (signup-first) + Postgres + Drizzle wired, the full schema, and RLS-first per-user isolation.
 
 **Requirements:** R1, R4 (substrate), R16 (substrate)
 
 **Dependencies:** None
 
-**Files:**
-- Create: `proxy.ts`, `lib/auth.ts` (`requireUserId()`), `lib/db/index.ts` (lazy `getDb()`), `lib/db/schema.ts`, `drizzle.config.ts`
-- Modify: `app/layout.tsx` (`ClerkProvider`), `package.json`, `.env.local`/Vercel env
-- Test: `test/db-scoping.test.ts`
+**Files:** Create `proxy.ts`, `lib/supabase/{server,client,proxy}.ts`, `lib/auth.ts` (`requireUserId()`), `lib/db/index.ts` (pooler client + `rls()` wrapper + admin client), `lib/db/schema.ts`, `drizzle.config.ts`; Modify `app/layout.tsx`, `package.json`, env; Test `test/rls-isolation.test.ts`
 
 **Approach:**
-- `vercel integration add clerk` + `neon`; auto-provisioned env. `clerkMiddleware()` in `proxy.ts` (NOT `middleware.ts` — Next 16). `requireUserId()` reads the session server-side; **every** scoped query filters `where(eq(table.userId, userId))`.
-- Drizzle schema for all tables (see ERD): `users, profiles, cases, documents, timeline_events, deadlines, artifacts, transcripts, aggregate_records` (`aggregate_records` uses a **random UUID PK**, no serial — see Hardening).
-- **Two lazy drivers by path** (never a top-level client or Proxy wrapper): `getDb()` = `neon-http` for scoped reads; `getWriteDb()` = `neon-serverless` (WebSocket) for the transactional write path (`neon-http` can't run `db.transaction()`). Every scoped access goes through per-table modules taking `userId` as a required first arg (the cheap forgotten-`where` guard).
-- `drizzle-kit push` via `dotenv -e .env.local` for the synthetic demo; **cut over to versioned migrations at the first real signup** (push silently drops/rewrites columns on real data).
-- RLS is deferred to U12 (defense-in-depth); the per-table scoped modules + the cross-user-invisibility test (a Phase-1 gate) are the v1 baseline.
-
-**Patterns to follow:** single-export `lib/` modules, `@/` imports; env handling like the existing `AI_GATEWAY_API_KEY`/`BLOB_READ_WRITE_TOKEN`.
+- `@supabase/ssr` three clients; `proxy.ts` refreshes the session (Node runtime; nothing between `createServerClient` and the check). `requireUserId()` = `getClaims().sub` (UUID). Build minimal sign-in/sign-up screens (the cost vs. Clerk's hosted UI).
+- Drizzle over `postgres-js` on the **Supavisor transaction pooler** (`prepare:false`); a `.rls(tx => …)` wrapper sets the JWT + `authenticated` role per request (RLS-scoped); a separate **secret-key admin client** for the Workflow + the aggregate write only. Migrations via the 5432 connection.
+- Schema for all tables (see ERD); `users.id = auth.uid()`; every tenant table gets `user_id` + a **forced** `(select auth.uid()) = user_id` `pgPolicy`. `aggregate_records`: UUID PK, no FK. `drizzle-kit push` for the synthetic demo; migrations at first real signup.
 
 **Test scenarios:**
-- Happy path: an authed request resolves a stable `userId`; a scoped query returns only that user's rows.
-- Edge: unauthenticated request to a protected route → redirect/401, no DB access.
-- Edge: `getDb()` is not constructed at module load (no build-time env throw).
-- Integration: two users' cases are mutually invisible through the scoped query layer.
+- Happy: authed request resolves a stable `userId`; an `.rls()` query returns only that user's rows.
+- Edge: unauthenticated request → redirect/401, no DB access; `/api/chat` and `/api/blob-upload` both named in this test.
+- Edge (the structural guarantee): a query that *forgets* `where userId` still returns only the session user's rows under RLS.
+- Edge: `getDb()`/clients are lazy (no build-time env throw); pooler uses `prepare:false`.
+- Integration: user A's rows are invisible to user B through both the query layer and RLS.
 
-**Verification:** signup works; a row created under user A is unreadable as user B; `next build` clean; `drizzle-kit push` syncs the schema.
+**Verification:** signup works; a row created as A is unreadable as B *even with a deliberately unscoped query*; `next build` clean; `db.transaction()` succeeds on the pooler.
 
-### U2. Case spine + deterministic persistence + chat-route integration
+### U2. Case spine + deterministic persistence + cached chat-route integration
 
-**Goal:** Cases persist; each turn deterministically saves the transcript and (re)seeds the active session from a summary + structured state; the chat route becomes user/case-scoped with selective document inlining.
+**Goal:** Cases persist; each turn deterministically saves the transcript and seeds the active session from summary + structured state; the chat route is owner-scoped with prompt-cached, owner-verified document context.
 
 **Requirements:** R4, R6, R16
 
 **Dependencies:** U1
 
-**Files:**
-- Create: `lib/db/cases.ts`, `lib/case/summary.ts` (seed builder + summary (re)gen), `lib/case/inline-select.ts`
-- Modify: `app/api/chat/route.ts`
-- Test: `test/inline-select.test.ts`, `test/case-seed.test.ts`
+**Files:** Create `lib/db/cases.ts`, `lib/case/summary.ts`, `lib/cache/doc-cache.ts`; Modify `app/api/chat/route.ts`; Test `test/case-seed.test.ts`, `test/doc-cache.test.ts`
 
 **Approach:**
-- Route flow: `requireUserId()` → resolve/create the active case → **deterministically persist the incoming turn** → load **summary + structured state** (not raw transcripts) → select+inline only relevant blobs (CC-2) → `streamText(..., tools, stopWhen)` → **deterministically persist the assistant turn** → refresh the summary.
-- **Structured state** (always carried) = profile facts, open question(s), artifacts + status, deadlines, conclusion flag. **Summary** = short prose, regenerated on turn/session close; fallback to last-N turns if missing (prior-session-crash case).
-- One active session per case (R6); prior sessions become `transcripts` rows. Fix `inlinePrivateBlobs` to surface fetch failures (no silent degrade).
+- Route: `requireUserId()` → resolve/create the active case → **deterministically persist the incoming turn** → load **summary + structured state** (not raw transcripts) → inline only **owner-verified** blobs (resolved from `documents` by `(caseId, userId)`, never the client `part.url` — the authorization boundary; surface fetch failures) → apply `cacheControl` to the system prefix + the last doc part → `streamText(..., tools, stopWhen)` → **deterministically persist the assistant turn**.
+- **Structured state** (always carried) = profile facts, open question(s), artifacts + status, deadlines, case status. **Summary** = prefer a deterministic structured-state→prose template; if model-generated, budget the extra call, pin to Opus, fall back to the prior summary (never empty). Persist the **blob URL, not the base64**.
+- Keep the doc set/order **stable** turn-to-turn so the cache holds; a **size-based trim** drops oldest/least-relevant docs only when the case would exceed a context budget (capacity guard, not a relevance guess).
 
-**Execution note:** the deterministic persistence + the selective-inline rule are the load-bearing seams — write the inline-selection and seed builders as pure functions first, then wire the route.
-
-**Patterns to follow:** the existing `inlinePrivateBlobs` + `convertToModelMessages` (async) usage in `app/api/chat/route.ts`.
+**Execution note:** write `doc-cache` (which docs to inline + cache-control placement + the size-trim) and the seed builder as pure functions first.
 
 **Test scenarios:**
-- Happy path: a 3-turn session persists 3 user + 3 assistant turns under the case; resuming seeds from summary+state, not raw transcript.
-- Edge (CC-2): a case with 6 documents — a follow-up question inlines only the relevant subset, not all 6.
-- Edge: prior session ended on an unanswered model question → the seed reconstructs the open question (doesn't restart triage).
-- Edge: prior session crashed (no summary) → fallback seed from last-N turns produces a usable context.
-- Error: blob fetch returns 403/404 → the user sees "I can't read that document," the model does not analyze it as if read.
-- Error (7.7): deterministic persist DB write fails → user sees "couldn't save," turn not silently lost.
+- Happy: a 3-turn session persists 3+3 turns; resume seeds from summary+state, not transcript; turns 2+ are cache hits (assert `inputTokenDetails.cacheReadTokens > 0`).
+- Edge (authz): a message carrying another user's blob URL is **not** inlined (resolved from DB, ownership-checked).
+- Edge: prior session ended mid-question → seed reconstructs the open question; prior session crashed (no summary) → fallback seed works.
+- Edge: case exceeds the context budget → size-based trim keeps it under, deterministically.
+- Error: blob fetch 403/404 → user sees "I can't read that document"; the model doesn't analyze it as read. DB persist failure → "couldn't save," turn not silently lost.
 
-**Verification:** close the tab mid-case and return — the conversation resumes coherently from stored state; large multi-doc cases don't re-inline everything.
+**Verification:** close the tab mid-case and return — resumes coherently; large multi-doc cases stay cheap (cache) and bounded (trim); no cross-tenant doc read.
 
 ### U3. Document model + linking
 
-**Goal:** Uploaded docs persist as case-scoped records; EOB↔bill linking works even out of order and is user-correctable; the upload route is authed and handles HEIC.
+**Goal:** Uploaded docs persist as owner-scoped records; EOB↔bill linking works out of order and is correctable; the upload route is authed + handles HEIC.
 
 **Requirements:** R4, R5
 
 **Dependencies:** U1, U2
 
-**Files:**
-- Create: `lib/db/documents.ts`
-- Modify: `app/api/blob-upload/route.ts` (auth + HEIC + clearer errors), `app/api/chat/route.ts` (record document metadata on upload), `app/page.tsx` (link affordance)
-- Test: `test/document-link.test.ts`
+**Files:** Create `lib/db/documents.ts`; Modify `app/api/blob-upload/route.ts`, `app/api/chat/route.ts`, `app/page.tsx`; Test `test/document-link.test.ts`
 
-**Approach:**
-- On upload, write a `documents` row (blobUrl, mediaType, kind, caseId, userId). `linkDocument` sets `linkedToDocId`; it tolerates "no target yet" (EOB before bill) and supports retroactive + reversible relink. Token route gains session auth and a clear HEIC path (convert or an explicit "please upload PDF/JPG/PNG" message), with size/type errors that name the real limit.
+**Approach:** write the `documents` row **before** issuing the upload token (`status='pending'`), confirm via `onUploadCompleted` (currently a no-op) so Postgres is the authoritative blob index for deletion; orphan blobs are detectable. `linkDocument`/`relinkDocument` set `linkedToDocId`, tolerate "no target yet," and are reversible; **retroactive auto-link only when exactly one candidate** (else leave unlinked + surface a choice); guard against self/cycle links. Upload route: session auth + HEIC handled (prefer client-side convert or a clear "upload PDF/JPG/PNG" message — no server-side decoder on untrusted bytes) + errors that name the real limit.
 
-**Patterns to follow:** `handleUpload` allow-list pattern; the doc-chip rendering in `app/page.tsx`.
+**Test scenarios:** bill→EOB links; EOB-first links retroactively; two bills + one EOB → user-correctable, no wrong auto-link; HEIC → actionable message; 15 MB → names the 10 MB cap; unauthenticated upload-token request → rejected; blob row written before token, confirmed on completion.
 
-**Test scenarios:**
-- Happy path: bill then EOB → EOB links to the bill; the link shows on the case.
-- Edge: EOB uploaded first into an empty case → link establishes retroactively when the bill arrives.
-- Edge: two bills + one ambiguous EOB → linking is user-correctable; a wrong link can be fixed without corrupting state.
-- Error: HEIC upload → actionable message (not a silent "unsupported"); 15 MB file → names the 10 MB limit.
-- Error: unauthenticated upload-token request → rejected.
-
-**Verification:** documents survive across sessions and render on the case; relinking is possible.
+**Verification:** documents persist across sessions, render on the case, relink works, and no orphan blob escapes the deletion index.
 
 ### U4. AI tools layer (the deterministic capability surface)
 
-**Goal:** Model-callable tools wired into `streamText`, server-authoritative, idempotent, validated, and surfaced in the UI.
+**Goal:** Model-callable tools wired into `streamText`, server-authoritative under RLS, idempotent, with `needsApproval` on the world-effecting two — the complete capability layer (agent/user parity).
 
-**Requirements:** R16 (and the substrate for R5/R8/R9/R11/R12/R14/R15)
+**Requirements:** R16 (+ substrate for R5/R8/R9/R11/R12/R15)
 
 **Dependencies:** U1, U2
 
-**Files:**
-- Create: `lib/tools/index.ts` (`makeTools(userId)`), `lib/tools/*.ts`
-- Modify: `app/api/chat/route.ts` (attach `tools`, `stopWhen: stepCountIs(8)`), `lib/prompt.ts` (small tool-usage appendix — visible before/after), `app/page.tsx` (render `tool-*` parts)
-- Test: `test/tools-guard.test.ts`
+**Files:** Create `lib/tools/index.ts` (`makeTools(userId)`), `lib/tools/*.ts`; Modify `app/api/chat/route.ts`, `lib/prompt.ts`, `app/page.tsx`; Test `test/tools-guard.test.ts`
 
 **Approach:**
-- `makeTools(userId)` closes over the session `userId`; every `execute` re-resolves the active case via `resolveActiveCase(userId, requestedCaseId)` (returns it only if `case.userId === userId`) and **rejects if absent or unowned** — args never carry userId/caseId. Each tool: Zod `inputSchema`, idempotent write (upsert / **DB unique-constraint** dedup), **field-level merge** for `saveCase`/`updateProfile` (never a whole-object overwrite — two-tab lost-update), `experimental_repairToolCall` for bad input.
-- **Tool set = the complete capability surface (agent/user parity — every UI action is a tool, and UI buttons call the same tools the agent does).** Immediate state-writes: `saveCase`/`updateCase`, `linkDocument`/`relinkDocument` (U3), `updateProfile` (U8), `markArtifactSent`, `updateDeadline`/`cancelDeadline` (U6), `flagConclusion` (U7, a pure conclusion stamp), `reopenCase` + `generateShareCard` (U7). World-effecting (two-phase, below): `generateArtifact` (U5) + `commitArtifact`; `scheduleReminder` (U6) + `armReminder`. **`recordAggregate` is NOT a model tool** — aggregate capture is a deterministic write at conclusion (U9), removing a decision-shaped tool the agent shouldn't own. **`makeTools` composes per phase:** Phase 1 wires the case/doc/artifact/reminder/conclusion/share tools; `updateProfile` (U8) lands in Phase 2; aggregate capture (U9, deterministic) is Phase 2.
-- **Two-phase, agent-callable commit for the world-effecting tools:** the model calls `generateArtifact`/`scheduleReminder` to **stage a proposal** (no `start()`, no email arm, artifact not finalized), surfaced as a tool part; a **`commitArtifact`/`armReminder` tool finalizes it** (writes the deadline + `start()`, finalizes the artifact). Confirmation is a **policy gate on commit, not a missing capability**: required when the trigger is document-borne or a model-*inferred* deadline (the injection defense); skippable when the user asks explicitly in their own words. The UI button is just the human surface of the same commit tool — so the agent keeps parity. `saveCase`/profile/link/mark-sent stay immediate. Partial-turn coherence: each committed write is independently valid + idempotent.
-- **Prompt = three parts, only the first frozen (R16):** [frozen advice prose, unchanged] + [static tool catalog: what each tool does + propose-vs-commit] + [**dynamic per-turn state block** rendered from U2's structured state: the active case's open artifacts/deadlines/links/profile-facts/conclusion status] — so the agent acts with full case context and never re-proposes what already exists. This is tool/context wiring, not advice-tuning.
-- Surface `tool-<name>` parts as ✓ steps in the existing `message.parts` loop.
-
-**Patterns to follow:** AI SDK v6 `tool({ inputSchema })`; the parts-rendering loop in `app/page.tsx`.
+- `makeTools(userId)` closes over the session userId; every `execute` runs under the `.rls()` client and re-validates the active case (`resolveActiveCase(userId, requestedCaseId)` → owned only). Zod `inputSchema`; idempotent writes (DB unique-constraint dedup); **field-level merge** for `saveCase`/`updateProfile`; `experimental_repairToolCall`.
+- **Tool set = the complete capability surface (every UI action is a tool; buttons call the same tools):** `saveCase`/`updateCase`, `linkDocument`/`relinkDocument` (U3), `updateProfile` (U8), `markArtifactSent`, `updateDeadline`/`cancelDeadline` (U6), `markResolved`/`reopenCase`, `generateShareCard` (U7), and the world-effecting `generateArtifact` (U5) + `scheduleReminder` (U6). **`recordAggregate` is NOT a tool** — deterministic at conclusion (U9). Per phase: Phase 1 wires case/doc/artifact/reminder/share/status tools; `updateProfile` (U8) lands in Phase 2.
+- **`needsApproval` on `generateArtifact` + `scheduleReminder`** — a conditional fn: `true` when the trigger is document-borne or a model-*inferred* deadline (injection defense), `false` when the user asked explicitly. The UI renders an edit-before-approve confirmation card; the user approves via `addToolApprovalResponse`. Parity holds (one tool, gated) — no separate commit tool.
+- **Prompt = three parts, only the first frozen (R16):** [frozen advice prose] + [static tool catalog: what each tool does] + [dynamic per-turn state block from U2's structured state: open artifacts/deadlines/links/profile/status] — so the agent acts with full context and never re-proposes what exists. Tool/context wiring, not advice-tuning.
+- Surface `tool-<name>` parts as **plain-language ✓ status lines, raw details collapsed** (progressive disclosure — never raw JSON to a scared user).
 
 **Test scenarios:**
-- Happy path: a turn runs analyze → `saveCase` → `generateArtifact` in one multi-step response; UI shows ✓ steps.
-- Edge: a tool fires before a case exists → safe rejection, no orphan row.
-- Edge: malformed tool input ("next month" as a date) → structured tool-error, conversation continues (no stream crash).
-- Edge: step cap reached mid-plan → committed writes are coherent; continuation is possible.
-- Error (7.2): stream dies after `updateProfile` but before `generateArtifact` → profile saved, no half-artifact, retry doesn't double-write.
+- Happy: analyze → `saveCase` → `generateArtifact` (approval card) → user approves → artifact created; UI shows ✓ steps.
+- Edge: tool fires before a case exists / on an unowned case → safe rejection (RLS + ownership re-check).
+- Edge: malformed input ("next month") → structured tool-error, conversation continues.
+- Edge: `needsApproval` fires for a document-inferred reminder → user sees the card, can edit/decline.
+- Edge: step cap reached mid-plan → committed writes coherent; continuation possible.
+- Error: stream dies after `updateProfile`, before `generateArtifact` → profile saved (transaction), no half-artifact, retry no double-write.
 
-**Verification:** the model can act through tools; bad/duplicate calls never corrupt state or leak across users.
+**Verification:** the agent acts through tools under RLS; bad/duplicate calls never corrupt or cross users; world-effecting actions from untrusted triggers require approval.
 
 ### U5. Artifact generation + delivery
 
-**Goal:** Generate the real artifact, personalized from the profile, render it download/print/copy, and track it (mock-send → "sent").
+**Goal:** Generate the real artifact, personalized from the profile, render download/print/copy, track it (mock-send → "sent"), gated by `needsApproval` when untrusted.
 
 **Requirements:** R9, R10, R11
 
-**Dependencies:** U4 (U8 profile enhances; degrades gracefully without it)
+**Dependencies:** U4 (U8 profile enhances; degrades without it)
 
-**Files:**
-- Create: `lib/artifacts/generate.ts`, `lib/db/artifacts.ts`, `app/(app)/cases/[id]/` artifact view + download
-- Modify: `lib/tools/generate-artifact.ts`, `app/page.tsx` (manual "Create the letter" backstop)
-- Test: `test/artifact-placeholders.test.ts`
+**Files:** Create `lib/artifacts/generate.ts`, `lib/db/artifacts.ts`, `app/(app)/cases/[id]/` artifact view; Modify `lib/tools/generate-artifact.ts`, `app/page.tsx`; Test `test/artifact-placeholders.test.ts`
 
-**Approach:**
-- `generateArtifact` renders a dispute/appeal/complaint/call-script, filling blanks from the profile; unknown personal fields become `[BRACKET]` placeholders; **external facts (dates, citations, codes) stay attributed placeholders** the user/doctor supplies (anti-hallucination, per the FDA-date learning). Store `artifacts.contentMd`; render to download/print/copy. Mock send → set `status: 'sent'` + a `timeline_event`. A deterministic "Create the letter" button forces the tool if the model only offers in prose.
+**Approach:** `generateArtifact` renders a dispute/appeal/complaint/call-script, filling from the profile; unknown personal fields → `[BRACKET]` placeholders; **external facts (dates, citations, codes) stay attributed placeholders** the user/doctor supplies (anti-hallucination). Store `artifacts.contentMd`; download/print/copy. `markArtifactSent` (its own tool) sets `status:'sent'` + a `timeline_event` the reminder reads. The approval card *is* the human review step (the model's call stages it; approval finalizes) — an always-available "draft the letter" button is the same tool.
 
-**Test scenarios:**
-- Happy path: artifact for a QMB dispute pulls the issue + lever; downloads as a file.
-- Edge: empty profile → `[YOUR NAME]`/`[ADDRESS]` placeholders, still generates.
-- Edge: chat-only case (no document) → a call-script artifact.
-- Safety: the artifact never states an unverifiable external specific (e.g., an FDA date) as fact — it's an attributed placeholder.
-- Integration: mark-sent writes a timeline event the reminder later reads.
+**Test scenarios:** QMB dispute pulls issue+lever, downloads as a file; empty profile → bracket placeholders, still generates; chat-only case → call-script; never states an unverifiable external specific as fact; mark-sent writes the timeline event the reminder reads.
 
-**Verification:** a user leaves with the actual letter in hand; the case shows it as a tracked, "sent"-markable object.
+**Verification:** the user leaves with the actual letter; the case shows it as tracked + mark-sent-able.
 
-### U6. Smart reminder Workflow (the agentic centerpiece)
+### U6. Smart reminder Workflow
 
-**Goal:** A durable Workflow that waits to the deadline, reads live state, and tailors/suppresses an email — cancellable when the case closes.
+**Goal:** A durable Workflow that waits to the deadline, reads live state, tailors/suppresses an email — cancellable when the case closes.
 
 **Requirements:** R11, R12
 
 **Dependencies:** U1, U2, U4, U5
 
-**Files:**
-- Create: `lib/workflows/reminder.ts` (`'use workflow'`/`'use step'`), `lib/reminder/state.ts` (pure branch selection), `lib/email/resend.ts`, `lib/db/deadlines.ts`
-- Modify: `lib/tools/schedule-reminder.ts`, `next.config.ts` (`withWorkflow`), `package.json`
-- Test: `test/reminder-state.test.ts`
+**Files:** Create `lib/workflows/reminder.ts`, `lib/reminder/state.ts` (pure), `lib/email/resend.ts`, `lib/db/deadlines.ts`; Modify `lib/tools/schedule-reminder.ts`, `next.config.ts` (`withWorkflow`), `package.json`; Test `test/reminder-state.test.ts`
 
-**Approach:**
-- `scheduleReminder` inserts a `deadline`, dedups on `(caseId, deadlineId)` (no native idempotency on `start()`), calls `start(reminderWorkflow, …)`, stores `workflowRunId`. The workflow: `sleep` to ~1 day before the deadline, raced against a `case-closed` hook; on wake, a step reads **live** state and a **pure function** selects the branch — upcoming(act) / acted-sent(gentle) / past-due / resolved/closed(suppress) / send-failed(retry→timeline). All IO in steps; body thin (skew protection); the Resend send keys idempotency off the deterministic tuple `(caseId, deadlineId, branch)` via Resend's `Idempotency-Key` header (not a skew-fragile step index), and the wake-time state read hits **primary** (not a replica) so it sees the latest `conclusionDeliveredAt`. No model call inside (rule-based tailoring).
-- Deadline edit → reschedule the *same* logical reminder (don't arm a second); artifact/deadline delete or case close → cancel.
+**Approach:** `scheduleReminder` (gated by `needsApproval` for inferred deadlines) inserts a `deadline`, dedups on a **`UNIQUE (caseId, deadlineId)`** constraint, then — as a transaction-or-outbox dual-write — writes `reminder_status='pending'`, calls `start(reminderWorkflow,…)`, stores `workflowRunId`, sets `armed`. The workflow: `sleep` to ~1 day before, raced against a `case-closed` hook; on wake a step reads **live state (primary, not replica)** and a **pure function** picks the branch (act / gentle-if-sent / past-due / suppress-if-resolved-or-closed / send-failed→timeline). All IO in steps; body thin (skew protection); Resend keyed off `(caseId, deadlineId, branch)` via the `Idempotency-Key` header. No model call inside. `updateDeadline` reschedules the same logical reminder; `cancelDeadline`/case-close cancels. Pin `workflow@^4.5.0`.
 
-**Execution note:** write `lib/reminder/state.ts` as a pure, unit-tested function (every branch expressible from deterministic fields) before wiring the workflow.
+**Execution note:** write `lib/reminder/state.ts` as a pure, unit-tested function first.
 
-**Patterns to follow:** WDK `'use workflow'`/`'use step'`, `sleep(date)`, `start()`, hook race (per the Vercel architect findings).
+**Test scenarios:** deadline in 14 days → act-now email ~1 day prior, timeline logs sent; `scheduleReminder` twice → one workflow, one email (unique constraint); case closed during sleep → hook cancels, no email; not cancelled but resolved → wake-time check still suppresses; deadline already passed at wake → past-due copy; artifact marked sent → gentle copy; Resend fails → retry + `reminder_failed` timeline event; two deadlines → two independent reminders.
 
-**Test scenarios:**
-- Happy path: deadline in 14 days → email fires ~1 day prior with act-now copy; timeline logs `reminder_sent`.
-- Edge (idempotency): `scheduleReminder` called twice for one deadline → exactly one workflow, one email.
-- Edge: case closed during the sleep → hook race cancels; no email; timeline logs suppressed.
-- Edge: not cancelled but case resolved → wake-time state check still suppresses (belt-and-suspenders).
-- Edge: deadline already passed at wake → past-due copy, never "1 day left."
-- Edge: artifact marked sent → gentle follow-up copy, not "don't forget to send."
-- Error: Resend fails → retry/backoff; permanent failure logs a `reminder_failed` timeline event (visible next visit).
-- Edge: two deadlines in one case → two independent reminders; closing the case cancels both.
+**Verification:** demo by fast-forwarding the sleep (`getRun(runId).wakeUp(...)`) **and** a non-fast-forward test (60-s sleep, close mid-sleep, assert suppression) so the branch logic is proven, not just the email.
 
-**Verification:** demo by fast-forwarding the sleep (`getRun(runId).wakeUp(...)`); the nudge reflects current state, not schedule-time state.
+### U7. Conclusion + share card (user-driven)
 
-### U7. Conclusion + share card
-
-**Goal:** Emit a reliable "conclusion" signal and generate an anonymized share card, with a manual backstop that's the primary path.
+**Goal:** A share card the user can produce anytime; case-resolution as an explicit action; no reliance on the model detecting "done."
 
 **Requirements:** R15
 
 **Dependencies:** U2, U4
 
-**Files:**
-- Create: `lib/share/card.ts` (whitelist → card), `app/(app)/cases/[id]/` share UI
-- Modify: `lib/tools/flag-conclusion.ts`, `app/page.tsx` (persistent "Share/recap" button)
-- Test: `test/share-card-pii.test.ts`
+**Files:** Create `lib/share/card.ts` (whitelist → card), `app/(app)/cases/[id]/` wrap-up/share UI; Modify `lib/tools/{generate-share-card,mark-resolved,reopen-case}.ts`, `app/page.tsx`; Test `test/share-card-pii.test.ts`
 
-**Approach:**
-- `flagConclusion` is a **pure conclusion stamp** (sets `conclusionDeliveredAt` + a `conclusion` timeline event) — it does **not** itself cancel reminders; cancellation is `cancelDeadline`/the case-closed hook, decoupled so a premature flag never kills a live reminder. `generateShareCard` (agent-callable AND the button's backstop — same function) builds the card from a **structured-state field whitelist** of enum/bucketed values only (issue type, lever, coarse/bucketed outcome) — never the transcript, document text, or a free-text field; one card per case (regenerated, not duplicated); honest copy for non-win/"decided not to pursue" outcomes. The manual button is the primary path (the model often never flags) and works in any state. `reopenCase` is the inverse of `flagConclusion` (clears `conclusionDeliveredAt`, supersedes the card) so a new denial mid-case is agent-actionable.
+**Approach:** an **always-available "wrap up / share" affordance** calls `generateShareCard` (agent-callable AND the button's backstop — same function), building the card from a **structured-state field whitelist of enum/bucketed values only** (issue type, lever, coarse/bucketed outcome) — never the transcript, document text, or a free-text field; one card per case (regenerated, not duplicated); honest copy for non-win outcomes. The model emits an **advisory per-turn `phase` field** (gathering/explaining/resolved) that only *surfaces* the CTA when `resolved` — it never gates and nothing waits on it. `markResolved` (user or agent) sets `caseStatus='resolved'` (what the reminder reads); `reopenCase` is its inverse (re-opens, supersedes the card). No `flagConclusion` tool.
 
-**Test scenarios:**
-- Happy path: model flags conclusion → card appears inline; contains no names/IDs/amounts beyond the whitelist.
-- Safety (critical): a case whose transcript contains real names/member-IDs → the card contains none of them.
-- Edge: model never flags → the manual button still produces a valid card.
-- Edge: premature flag while a reminder is live → card reads "in progress"; the live reminder is NOT auto-cancelled.
-- Edge: re-open a concluded case (new denial letter) → prior card marked superseded.
+**Test scenarios:** model never signals → the button still produces a valid card; card contains no names/IDs/amounts beyond the whitelist **even when a name was typed into a structured field**; `phase:resolved` surfaces the CTA but doesn't close anything; `markResolved` closes + the reminder suppresses; `reopenCase` re-opens + supersedes the card.
 
-**Verification:** every case can produce a coherent, PII-free card; sharing leaks nothing personal.
+**Verification:** every case can produce a coherent, PII-free card at any time; resolution is an explicit, reversible action.
 
 ### U8. Profile / situation (ask once, reuse)
 
@@ -419,48 +337,43 @@ New/changed top-level shape (additive to the existing `app/`):
 
 **Files:** Create `lib/db/profile.ts`; Modify `lib/tools/update-profile.ts`, `lib/artifacts/generate.ts`; Test `test/profile-apply.test.ts`
 
-**Approach:** `updateProfile` (model-proposed, server-validated against a schema) upserts `profiles` (insurer, planType incl. fully-insured-vs-self-funded, status: veteran/Medicaid/QMB/income/state). Seeded into structured state (U2) so the model never re-probes; artifacts auto-fill from it; protected-class facts (QMB→$0) applied proactively.
+**Approach:** `updateProfile` (model-proposed, server-validated, **field-level merge**) upserts `profiles` (insurer, planType incl. fully-insured-vs-self-funded, status: veteran/Medicaid/QMB/income/state). Seeded into structured state (U2) so the model never re-probes; artifacts auto-fill; protected-class facts (QMB→$0) applied proactively.
 
-**Test scenarios:** stored "QMB" in session 1 → session 3 applies the $0 protection without re-asking; a profile fact fills an artifact blank; an invalid profile diff is rejected server-side.
+**Test scenarios:** "QMB" stored in session 1 → applied in session 3 without re-asking; a profile fact fills an artifact blank; two concurrent profile edits merge (no lost update); invalid diff rejected.
 
 **Verification:** the model stops re-asking known facts across sessions.
 
-### U9. Consent + anonymized data capture
+### U9. Consent + anonymized data capture (deterministic, keyless + pointer)
 
-**Goal:** Separate, default-OFF aggregate consent; server-enforced; de-identified records in a keyless store.
+**Goal:** Separate, default-OFF aggregate consent; a deterministic, de-identified write at conclusion that updates in place.
 
 **Requirements:** R3, R14
 
-**Dependencies:** U1, U4
+**Dependencies:** U1, U7
 
-**Files:** Create `lib/aggregate/deidentify.ts` (pure), `lib/db/aggregate.ts`, consent UI; Modify `lib/tools/record-aggregate.ts`, signup flow; Test `test/deidentify.test.ts`, `test/consent-gate.test.ts`
+**Files:** Create `lib/aggregate/deidentify.ts` (pure), `lib/db/aggregate.ts`, consent UI; Modify `markResolved` path, signup flow; Test `test/deidentify.test.ts`, `test/consent-gate.test.ts`
 
-**Approach:** consent state machine — account-tier at signup (required to proceed), aggregate-tier a **separate opt-in, default OFF**, versioned/timestamped. Aggregate capture is a **deterministic step at case conclusion (not a model-callable tool)**: on conclusion, if the aggregate tier is true, compute the de-identified record and write it once (consent checked **before** compute). De-identification (pure, unit-tested): geo = state by default, ZIP3 only if pop>20k (else state), year-only dates, **bucketed** amounts, enum fields, **no free text, no PII, no join key**; skip if below a minimum field threshold (sparse bill). Disclosure copy states that contributed records can't be retracted (no key back).
+**Approach:** consent state machine — account-tier at signup (required), aggregate-tier a **separate opt-in, default OFF**, versioned. Aggregate capture is a **deterministic step at conclusion (not a model tool)**: on `markResolved`, if the aggregate tier is true, compute the de-identified record (consent checked **before** compute) and write/update via `cases.aggregate_record_id` — **update in place**, no duplicates; the `aggregate_records` row stays keyless (UUID PK, no back-ref, bucketed/jittered insertion time). De-identification (pure, unit-tested): geo = state by default, ZIP3 only if pop>20k, year-only dates, bucketed amounts, enums, no free text, no PII; skip if below a minimum field threshold. Consent copy discloses that contributed records can't be retracted — and the deletion policy honors that (account deletion drops the pointer; the keyless row remains, as disclosed). Runs under the admin client.
 
-**Test scenarios (privacy-critical):**
-- Consent false → `recordAggregate` writes nothing even when the model calls it.
-- A record carrying any PII-shaped field is rejected.
-- ZIP in a <20k-pop area → stored as state, not ZIP3; exact ZIP never stored.
-- Chat-only / no-amounts bill → no aggregate row (no junk).
-- The aggregate row has no `userId`/`caseId`.
+**Test scenarios (privacy-critical):** consent false → nothing computed or written; re-conclude → the existing row updates (no duplicate); the row has no `userId`/`caseId` and a UUID PK; sparse bill → no row; a record with any PII-shaped field is rejected (adversarial fuzz: PII salted into every field → stripped/rejected); ZIP in a <20k-pop area → stored as state.
 
-**Verification:** declined users get full personal features and zero aggregate rows; stored records pass a Safe-Harbor field check.
+**Verification:** declined users get full features + zero rows; re-concluded cases update one row; stored records pass a Safe-Harbor field check.
 
 ### U10. Multi-screen UI + integration test pass
 
-**Goal:** The persistent app's screens, empty/error states, and a browser pass for the new rendered surfaces.
+**Goal:** The persistent app's screens, empty/error states, progressive-disclosure tool UX, and a browser pass for the new rendered surfaces.
 
 **Requirements:** R4, R6, R9, R10, R15 (surfacing)
 
 **Dependencies:** U2–U9
 
-**Files:** Create `app/(app)/cases/page.tsx`, `app/(app)/cases/[id]/page.tsx`; Modify `app/page.tsx`, `app/globals.css`
+**Files:** Create `app/(app)/cases/page.tsx`, `app/(app)/cases/[id]/page.tsx`, `app/(auth)/`; Modify `app/page.tsx`, `app/globals.css`
 
-**Approach:** case list + **no-cases home that feels like relief** (auto-create the first case on first message, not an empty dashboard); case detail with timeline/artifacts/share; render `tool-*` parts as ✓ steps; artifact download + share-card UI; consent UI; **upload-failure fallback ("just tell me about it")**; re-auth-without-loss; a "single active session / opened elsewhere" notice. Reuse the white-space + remark-gfm fixes on every new markdown surface; run a browser/integration pass (the render bugs were invisible to text-only testing).
+**Approach:** case list + a **no-cases home that feels like relief** (auto-create the first case on first message); case detail (timeline, artifacts, wrap-up/share); render `tool-*` parts as **plain-language ✓ steps with collapsed details** (never raw JSON); approval cards (edit-before-approve) for the gated tools; artifact download + share-card UI; consent UI; **upload-failure fallback ("just tell me about it")**; re-auth-without-loss; a single-active-session ("opened elsewhere") notice. Reuse the white-space + remark-gfm fixes on every new markdown surface; run a browser/integration pass.
 
-**Test scenarios:** signup → land → first message creates exactly one case; upload failure offers retry + describe-instead; artifact downloads; share card renders; tables/markdown render correctly on artifact + card surfaces; two tabs on one case → defined non-corrupting behavior.
+**Test scenarios:** signup → land → first message creates one case; upload failure offers retry + describe-instead; artifact downloads; share card renders; approval card renders + edit-before-approve works; tables/markdown render on the new surfaces; two tabs on one case → defined non-corrupting behavior.
 
-**Verification:** the end-to-end flow is demoable in a browser; no render regressions.
+**Verification:** the end-to-end flow is demoable in a browser; no render regressions; tool activity is legible without raw JSON.
 
 ### U11. Multi-case / cross-case awareness
 
@@ -472,83 +385,49 @@ New/changed top-level shape (additive to the existing `app/`):
 
 **Files:** Modify `lib/db/cases.ts`, `app/api/chat/route.ts`, `lib/case/summary.ts`
 
-**Approach:** explicit "new case" vs. "belongs to active case" decision (deterministic, not a new case per mentioned bill); inject **light** cross-case context (other open cases by title/provider, not contents); tools always bind the active `caseId` (no cross-write); cross-case reminders independent. If "contest related items together" needs a durable case-relationship object, that's flagged out-of-scope for v1 (state it).
+**Approach:** explicit "new case" vs. "belongs to active case" decision (not a new case per mentioned bill); inject **light** cross-case context (other open cases by title/provider, not contents); tools always bind the active `caseId` (RLS + ownership re-check); cross-case reminders independent. A durable case-relationship object is out of v1 scope (stated).
 
-**Test scenarios:** in an active session about case A, a second unrelated bill → correctly starts case B (or joins A) per the defined rule; an `updateCase`/`scheduleReminder` call writes only the active case; closing case A doesn't suppress case B's reminder.
+**Test scenarios:** a second unrelated bill in an active session → correctly starts case B (or joins A) per the rule; a tool writes only the active case; closing case A doesn't suppress case B's reminder.
 
 **Verification:** a multi-case user's objects never bleed across cases.
 
 ### U12. Hardening + compliance primitives
 
-**Goal:** Defense-in-depth isolation and the cheap compliance primitives MHMDA/HBNR require.
+**Goal:** The remaining defense-in-depth + the cheap compliance primitives. (RLS itself now lands in U1.)
 
 **Requirements:** R3 (data handling), R16 (substrate)
 
-**Dependencies:** U1 (and final)
+**Dependencies:** U1 (final)
 
-**Files:** Create RLS migration (`lib/db/`), `app/privacy/page.tsx` (policy), deletion path; Modify logging/telemetry config
+**Files:** Create `app/privacy/page.tsx`, deletion path; Modify logging/telemetry config
 
-**Approach:** enable + FORCE Postgres RLS on every user-scoped table; set `app.current_user` per request and **reset per pooled connection**; app DB role has no `BYPASSRLS`. Keep bill contents/amounts/CPT out of logs and any third-party analytics/error tracker. Provide account+data deletion. Add a consumer-health privacy policy + the separate-consent copy. Confirm the model provider/Gateway terms (no-train/retention) and that Opus credits cover every environment.
+**Approach:** keep bill contents/amounts/CPT out of logs and any third-party analytics/error tracker (decide the redaction posture in U2/U4 where the handlers are written — don't echo raw errors); keep them out of the **Workflow payload** (pass only `caseId`/`deadlineId`). Account+data deletion (drops the personal rows + the `aggregate_record_id` pointer; the keyless aggregate row remains as disclosed). Define `ON DELETE` cascade for every child + **cancel live reminder workflows** on case/account deletion. Consumer-health **privacy policy + separate-consent copy must exist before the app is publicly reachable** (MHMDA, no size threshold). Confirm the AI Gateway request-logging is off / retention-bounded for medical content, and Opus credits cover every environment.
 
-**Test scenarios:** with RLS forced, a deliberately unscoped query still returns only the session user's rows; a pooled connection reused across users does not leak rows; deletion removes personal rows (aggregate rows are keyless and remain, as disclosed); no health data appears in logs.
+**Test scenarios:** a deliberately unscoped query still returns only the session user's rows (RLS, from U1); deletion removes personal rows + pointer + cancels reminders (keyless aggregate rows remain); no health data in logs; AI-Gateway logging confirmed off.
 
-**Verification:** isolation holds even if an app-layer `where` is forgotten; a security review of the isolation path passes.
+**Verification:** isolation holds at the DB layer; deletion is complete + honest; a security review of the isolation + redaction path passes.
 
 ---
 
-## Hardening from deepening (security + data integrity)
+## Hardening notes (carried from the security / data-integrity / agent-native reviews)
 
-An adversarial security + data-integrity pass surfaced findings that **amend the units above**. Highest-impact first; each is tagged to the unit it changes.
+Most findings are now folded into the units above; these are the cross-cutting principles to preserve:
 
-### Cross-tenant + authorization (Phase 1)
-- **[U2/U3 — CRITICAL] Document inlining is an authorization boundary, not just performance (CC-2 reframed).** Today the client sends `part.url` and the server inlines *any* `.private.blob.vercel-storage.com` URL with the store-wide token — a cross-tenant IDOR/SSRF (user B pastes user A's blob URL → reads their bill; app-layer `where userId` never runs because this path skips the DB). Resolve inline candidates **from the DB by (caseId, userId)**, never from the message body; assert ownership before each fetch; **reject (don't silently skip)** anything unresolved.
-- **[U4/U11 — HIGH] Re-validate active-case ownership every turn and inside every tool.** A client-supplied `caseId` passes `resolveActiveCase(userId, requestedCaseId)` returning a case only if `case.userId === userId`. Test: "a tool fires on a case the session user doesn't own → safe rejection."
-- **[U1 — HIGH] Make the forgotten-`where` structurally hard** (cheap substitute for not-yet-RLS): every scoped read/write goes through per-table query modules taking `userId` as a required first arg — no raw `getDb()` in routes/tools. The cross-user-invisibility test is a **Phase-1 gate**. Name `/api/chat` AND `/api/blob-upload` in the "unauthenticated → rejected" tests (`proxy.ts` mis-scope silently makes them public).
-
-### Prompt-injection via document content (new capability with tools)
-- **[U5/U6 — HIGH] Confirm-to-commit on the two externally-effecting tools.** A malicious bill can now drive *actions* via the multi-step loop. The model *proposes* an artifact/reminder; the user *confirms* (the backstop buttons are the commit point) before it's finalized or an email is armed. An **inferred** deadline always requires confirmation. Cross-tenant impact = none; residual = own-case state pollution, contained by confirm-to-commit.
-
-### Transactions + consistency (driver decision)
-- **[Key Decisions/U1/U2 — CRITICAL] `neon-http` can't run multi-statement transactions**, so "independently valid + idempotent" doesn't cover the dependent writes. Use **`neon-serverless` for the write path** + a **derived summary** (rebuilt from the transcript when stale, so turn-persist needs no transaction). Persist the **blob URL, not the inlined base64** (CC-2 trap).
-- **[U6 — HIGH] `scheduleReminder` is a dual-write (Postgres + Workflow).** Outbox/state column: deadline `reminder_status='pending'` → `start()` → `armed` + `runId`. A row stuck `pending`, or `armed`-without-`runId`, is detectable — not a silent orphan or an un-cancellable timer.
-
-### Idempotency + concurrency
-- **[U6] `scheduleReminder` dedup is a DB `UNIQUE (caseId, deadlineId)` + upsert** (not read-then-write — two tabs race it).
-- **[U4/U8] `saveCase`/`updateProfile` whole-blob upsert is a lost-update under concurrency** (two tabs are live in Phase 1) → **field-level merge**, not whole-object overwrite (or a `version` column).
-- **[U6] Email idempotency:** key the Resend send off a deterministic durable tuple `(caseId, deadlineId, branch)` via Resend's `Idempotency-Key` header — not a skew-fragile step index. The wake read must hit **primary (not a replica)** and see the `conclusionDeliveredAt` stamp.
-
-### The keyless aggregate store (one decision fixes idempotency + re-join + backfill)
-- **[U9/U4] Record the aggregate row ONCE, at conclusion, outcome inline** — not a free mid-turn tool, not append-then-backfill. Exactly-once via a source-side `cases.aggregate_recorded_at` stamp (lives in the personal store, so it doesn't re-key the aggregate row). Abandoned cases yield no row. **Excluded from Phase 1.**
-- **[U9] Make it genuinely un-re-joinable:** random **UUID** PK (never serial — order reconstructs conclusion order); **bucket/jitter the insertion timestamp**; check consent **before computing** the de-identified record; no aggregate **read** path in v1; a k-anonymity/min-cell suppression rule before any future exposure; an adversarial fuzz test (PII salted into every field → stripped/rejected).
-- **[U7] Share-card whitelist = enum/bucketed values only** (a name typed into a *structured* field would otherwise ride through) — test the structured-field-PII case, not only the transcript.
-
-### Document + blob integrity
-- **[U3] Retroactive auto-link only when the target is unambiguous** (one candidate); else leave unlinked + surface a choice. Guard `linkedToDocId` against self-reference/cycles.
-- **[U3/U12] Blob↔Postgres dual-write:** write the `documents` row `status='pending'` before issuing the token, confirm via the `onUploadCompleted` callback (currently a no-op); Postgres is the **authoritative blob index** so the U12 deletion path can enumerate + delete (an orphaned blob is a PHI deletion miss).
-
-### Logs, schema, lifecycle, compliance
-- **[U2/U4/U6 — HIGH] Redaction is decided where the leak is introduced**, not only U12: don't echo raw errors to the client (the current `onError` does); keep bill contents out of tool results that reach third-party trackers and out of the **Workflow payload** (pass only `caseId`/`deadlineId`); confirm AI-Gateway request-logging is off / retention-bounded.
-- **[U1/U12] `drizzle-kit push` → versioned migrations at the FIRST real signup** (push is fine for the synthetic-only demo).
-- **[U12] Case deletion** defines `ON DELETE` cascade for every child AND **cancels live reminder workflows** for deleted cases.
-- **[U7] Re-open clears `conclusionDeliveredAt`** (a real transition, not a second stamp) so the one-card-per-case invariant holds.
-- **[Compliance — earlier] The privacy policy + separate-consent disclosure must exist before the app is publicly reachable** (MHMDA has no size threshold; a public signup-first deploy is one ad from real users). Show the "contributed records can't be retracted" disclosure at consent time, tied to deletion. Prefer client-side HEIC→JPEG (or "ask for PDF/JPG/PNG") over a server-side decoder on untrusted bytes. Confirm Clerk cookies are `SameSite=Lax/Strict` (CSRF).
-
-### Agent-native parity (from the agent-native review)
-- **Principle:** every action a user can take, the agent can take through a tool — and the UI buttons call the *same* tools. The U4 tool set is the complete capability layer; no capability is UI-only.
-- **New primitives this requires** (folded into U4/U6/U7): `markArtifactSent`, `updateDeadline`, `cancelDeadline`, `relinkDocument`, `reopenCase`, `generateShareCard`, plus the explicit `commitArtifact`/`armReminder` commit tools. Mark-sent + deadline edits are load-bearing — the reminder's branch selection reads exactly that state, so "I mailed it; they moved my deadline to the 15th" must be agent-actionable, not button-only.
-- **Commit is a tool, gated by policy** — confirmation fires for document-borne/inferred triggers (the injection defense) but the capability exists as a tool, so parity holds.
-- **Context parity:** the agent sees live case state every turn (the three-part prompt's dynamic state block) so it never acts blind or re-proposes what already exists.
-- **Affirmed as correct (not gaps):** deterministic case/transcript persistence and selective-inline-as-authorization are infrastructure the agent operates *within*, not actions it chooses; `recordAggregate` is moved off the tool surface to a deterministic conclusion write.
+- **Document inlining is an authorization boundary** (U2): resolve from the DB by owner, never the client `part.url`; reject unresolved. RLS (U1) is the backstop.
+- **Agent/user parity** (U4): every UI action is a tool; UI buttons call the same tools; `needsApproval` gates the two world-effecting tools without removing the capability.
+- **Keyless aggregate store** (U9): UUID PK, no back-reference, bucketed+jittered time, consent-checked-before-compute, updated in place via the personal-side pointer; account deletion honors the "can't retract" disclosure.
+- **Write consistency** (U2/U6): `db.transaction()` (Supabase pooler) for dependent writes; the scheduleReminder dual-write uses a `reminder_status` state column.
+- **Redaction where the leak is introduced** (U2/U4/U6), **`push`→migrations at first signup** (U1/U12), **prompt-caching keeps docs cheap but watch the context window** (U2).
 
 ---
 
 ## System-Wide Impact
 
-- **Interaction graph:** the chat route now triggers tool executions (DB writes) and starts Workflows; conclusion fires a hook that the reminder races. Keep `flagConclusion`'s auto-cancel decoupled from premature flags.
-- **Error propagation:** tool errors return structured results (conversation continues); deterministic-persist failures surface to the user; blob-fetch failures surface (no silent analysis).
-- **State lifecycle risks:** partial multi-step turns, duplicate tool calls, reminder double-arm, premature conclusion, re-opened cases — each addressed by idempotency + server-authoritative guards + backstops.
-- **API surface parity:** both routes (`/api/chat`, `/api/blob-upload`) gain auth; any new route inherits `requireUserId()`.
-- **Unchanged invariants:** the frozen `SYSTEM_PROMPT` (advice prose), the AI Gateway model string, the private-blob inline mechanism, and the v6 message-parts contract are preserved; v1 only adds around them.
+- **Interaction graph:** the chat route triggers tool executions (RLS-scoped DB writes), gated approvals for world-effecting tools, and starts Workflows; `markResolved` sets status the reminder reads.
+- **Error propagation:** tool errors return structured results (conversation continues); persist failures + blob-fetch failures surface to the user (no silent analysis).
+- **State lifecycle risks:** partial multi-step turns (transactions), duplicate tool calls (unique constraints), reminder double-arm (constraint + state column), re-opened cases — all addressed.
+- **API surface parity:** both routes gain auth; new routes inherit `requireUserId()` + run under RLS.
+- **Unchanged invariants:** the frozen advice prose, the AI Gateway model string, the private-blob inline mechanism, and the v6 message-parts contract are preserved.
 
 ---
 
@@ -556,72 +435,64 @@ An adversarial security + data-integrity pass surfaced findings that **amend the
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| Tools are hostage to model calls (model omits/duplicates) (CC-1) | High | High | Deterministic persistence for case+transcript; idempotent server-authoritative tools; manual backstops for artifact + share |
-| Re-inlining all blobs per turn breaks at persistence scale (CC-2) | High | Med | Selective per-turn inlining (U2); surface blob-fetch failures |
-| `recordAggregate` writes without consent / PII leaks into aggregate or share card | Med | High (privacy) | Server-side consent gate; de-id pure function (unit-tested); share card from whitelist; no join key by schema |
-| WA MHMDA / FTC HBNR obligations underestimated | Med | High (legal) | Bake cheap primitives now (separate consent, deletion, no health data in logs, privacy policy); synthetic/own bills only at this altitude; full program deferred + flagged |
-| Workflow `start()` has no idempotency key → duplicate reminders | Med | Med | App-level dedup key `(caseId, deadlineId)`; store `runId` |
-| Reminder logic change can't reach in-flight runs (skew protection) | Med | Low | Keep workflow body thin; push logic into steps/data |
-| **Cross-tenant document read via trusted `part.url` blob inline (IDOR/SSRF)** | High (if unfixed) | High | Resolve inline docs from DB by (caseId,userId); assert ownership before fetch; reject unresolved — **Phase 1** (Hardening C1) |
-| Multi-tenant data leak via forgotten `where` | Med | High | Per-table query modules (userId required arg) + cross-user test as a **Phase-1 gate**; RLS forced (U12) |
-| Document-borne prompt injection drives action tools | Med | Med | Server-authoritative scoping (no cross-tenant impact) + confirm-to-commit on artifact/reminder |
-| Torn dependent writes (turn+summary; scheduleReminder dual-write) | Med | High | `neon-serverless` transactions on the write path; derived summary; outbox/state-column for the dual-write |
-| `drizzle-kit push` drops/rewrites columns on real data | Med | High | Cut to versioned migrations at first real signup; push only for the synthetic demo |
-| Orphaned blobs (Blob↔Postgres dual-write) escape deletion | Med | Med | documents row pending→confirmed via `onUploadCompleted`; Postgres = authoritative blob index |
-| Opus silently down-tiers to Haiku (unsafe) if gateway not funded per-env | Med | High (safety) | Confirm credits in every environment; cap spend; reminder makes no model call |
-| Render bugs recur on new surfaces (artifact/card/timeline) | Med | Low | Reuse white-space/remark-gfm fixes; browser/integration pass (U10) |
-| 7-hour hackathon overrun | High | Med | Phased Delivery: ship the thin spine; mock email; fast-forward the sleep on stage |
+| Tools hostage to model calls (omit/duplicate) | High | High | Deterministic case/transcript persistence; idempotent RLS-scoped tools; always-available buttons for artifact + share |
+| Cross-tenant read (blob inline / forgotten WHERE) | Low (with RLS) | High | RLS-first (U1, `auth.uid()`, forced) + DB-resolved owner-checked inlining (U2) |
+| Document-borne prompt injection drives action tools | Med | Med | Server-authoritative scoping (no cross-tenant impact) + `needsApproval` on the two world-effecting tools |
+| Context-window overflow on a large case (caching ≠ window) | Med | Med | Size-based trim fallback (U2); Opus 4.8 1M window covers typical cases |
+| Cache miss from doc reorder/drop | Med | Low | Keep the doc set + order stable per turn (U2) |
+| Drizzle bypasses RLS if run as service-role by mistake | Med | High | `.rls()` client for all user-facing queries; admin client only for Workflow + aggregate (U1/U4) |
+| `drizzle-kit push` drops columns on real data | Med | High | Cut to versioned migrations at first real signup |
+| Opus silently down-tiers to Haiku if gateway unfunded | Med | High (safety) | Confirm credits in every env; reminder makes no model call |
+| 7-hour hackathon overrun | High | Med | Phased Delivery + cut-line (below): security non-negotiables ship before demo polish |
 
-**External dependencies:** Neon (Marketplace), Clerk (Marketplace), Resend (API key), Vercel Workflows (managed), AI Gateway credits. New env vars: `DATABASE_URL`, `CLERK_SECRET_KEY`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `RESEND_API_KEY` (+ existing `AI_GATEWAY_API_KEY`, `BLOB_READ_WRITE_TOKEN`).
+**External dependencies:** Supabase (Postgres + Auth, already paid), Vercel Blob, Resend, Vercel Workflows, AI Gateway credits. New env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `DATABASE_URL` (Supavisor 6543), `RESEND_API_KEY` (+ existing `AI_GATEWAY_API_KEY`, `BLOB_READ_WRITE_TOKEN`). Dropped: Neon, Clerk.
 
 ---
 
 ## Phased Delivery
 
 ### Phase 1 — Saturday hackathon slice (~7h, demoable core)
-Thin cuts of: **U1** (Clerk + Neon + the tables actually touched), **U2** (case spine + deterministic persist + selective inline), **U3** (basic doc record + link), **U4** (tools: saveCase, linkDocument, generateArtifact, scheduleReminder, flagConclusion), **U5** (artifact + download), **U6** (the reminder Workflow — the headline; mock email, fast-forward on stage), **U7** (share card on flag + manual button), and minimal **U10** (tool-step rendering, download, share, empty state). Demo: signup → upload → analyze → draft artifact (download) → save case + deadline → smart reminder → share card.
+Thin cuts of **U1** (Supabase auth + Postgres + RLS — fewer moving parts than Neon+Clerk: ~30–45 min of auth UI, RLS is a few policy lines, transactions just work), **U2** (case spine + deterministic persist + cached owner-verified inlining), **U3** (doc record + link), **U4** (tools + `needsApproval`), **U5** (artifact + download), **U6** (the reminder Workflow — the headline), **U7** (always-available share card + `markResolved`), minimal **U10**. Demo: signup → upload → analyze → draft artifact (approval card → download) → save case + deadline → smart reminder → share card.
 
-**Phase-1 security non-negotiables (from deepening):** DB-resolved document inlining with a per-fetch ownership check (never the client's `part.url`); the per-table `userId`-scoped query modules + the cross-user-invisibility test as a gate; `resolveActiveCase` ownership re-check inside every tool; confirm-to-commit on artifact + reminder; `neon-serverless` writes + a derived summary. **`recordAggregate`/consent is excluded from Phase 1** (lands in U9) so there's no consent-gap window. **Cut-line under clock pressure:** if time runs short, descope *demo polish* (reminder copy, share-card styling, even a faked artifact download) **before** any security non-negotiable — DB-resolved inlining + the cross-user-invisibility gate test ship no matter what, so an overrun yields a thinner demo, never a public IDOR. (Phase-1 accounts are synthetic/own-bills only per AGENTS.md; the privacy policy + consent UI gate *public* reachability, which is Phase 2.)
+**Phase-1 security non-negotiables:** RLS policies live (the cross-user-invisibility test is the gate); DB-resolved owner-checked inlining; `resolveActiveCase` ownership re-check in tools; `needsApproval` on the world-effecting tools. **Cut-line under clock pressure:** descope *demo polish* (reminder copy, share styling, faked send) before any security non-negotiable. Phase-1 accounts are synthetic/own-bills only (per AGENTS.md); the privacy policy + consent UI gate *public* reachability (Phase 2).
 
 ### Phase 2 — v1 proper
-**U8** (profile reuse), **U9** (consent + anonymized capture), **U11** (multi-case/cross-case), **U12** (RLS + compliance primitives), plus the deferred-within-unit completeness: full reminder branch copy + email-fail + reschedule (U6), document-linking lifecycle completeness (U3), real Resend send, re-auth/two-tab handling, and the full browser pass (U10).
+**U8** (profile reuse), **U9** (consent + deterministic aggregate capture), **U11** (multi-case), **U12** (deletion + logs + privacy policy), plus within-unit completeness: full reminder branch copy + email-fail + reschedule (U6), document-linking lifecycle (U3), real Resend send, re-auth/two-tab handling, the full browser pass (U10).
 
 ---
 
 ## Alternative Approaches Considered
 
-- **Prisma instead of Drizzle:** rejected for v1 — heavier client/engine + pooling setup on serverless; Drizzle `neon-http` is lighter for the hackathon. Revisit if migrations/Studio DX matters at scale.
-- **Auth.js v5 instead of Clerk:** viable and vendor-neutral, but you build the signup screens and wire a DB adapter; Clerk's hosted UI + Marketplace provisioning is faster-correct for D2C.
-- **Cron + queue instead of a Workflow for reminders:** rejected — you'd re-implement durable timers, dedup, and state polling; WDK `sleep` + hook race is the native fit.
-- **Regex/text-parse the "conclusion" instead of a sentinel tool:** rejected — brittle; a `flagConclusion` tool gives a deterministic, testable signal.
-- **RLS now vs. app-layer scoping now + RLS in U12:** app-layer scoping is the required baseline from U1; RLS (defense-in-depth) lands in U12 so the hackathon spine isn't blocked on per-request session-var plumbing.
+- **Neon + Clerk (the first draft):** rejected — Pedro already pays for Supabase, which collapses DB+auth+RLS into one service, makes isolation first-class, and removes the `neon-http` two-driver transaction workaround. (Vercel Blob is kept; Supabase Storage would only win if serving files directly to browsers.)
+- **Custom two-phase propose/commit tools:** rejected in favor of the SDK-native `needsApproval` — same injection defense + parity, far less plumbing, no separate commit tools.
+- **Selective document-inlining heuristic:** rejected in favor of prompt caching — keeps all docs in context cheaply with no relevance-recall risk; a size-based trim remains only as a capacity guard.
+- **Model-detected conclusion (`flagConclusion`):** rejected as a trigger — production consumer chat apps don't auto-detect "done"; an always-available user affordance + an advisory per-turn `phase` signal is simpler and avoids a false "you're finished."
+- **Vector/graph memory (mem0/Zep-style):** rejected as over-engineering for a single-case-per-user app — structured-state-in-Postgres + a compact summary is the pragmatic 2026 default.
 
 ---
 
 ## Documentation Plan
 
-- Update `README.md` + `AGENTS.md` in the same change (new stack: auth/DB/workflow; new env vars; the deterministic-vs-tool seam).
-- Update the v1 requirements doc's open questions as resolved (datastore=Neon, auth=Clerk, email=Resend, R15 trigger=sentinel tool + button, R10=mock).
-- After landing, capture the load-bearing decisions (smart-reminder-as-Workflow, the deterministic/tool split, the consent + de-id guards) via `/ce-compound` (no `docs/solutions/` exists yet).
+- Update `README.md` + `AGENTS.md` in the same change (Supabase stack, RLS, prompt caching, the env vars; the deterministic-vs-tool seam).
+- Mark the requirements doc's open questions resolved (datastore=Supabase, auth=Supabase, caching, conclusion=user-driven, aggregate=deterministic+pointer).
+- After landing, capture the load-bearing decisions via `/ce-compound` (no `docs/solutions/` exists yet).
 
 ---
 
 ## Open Questions
 
 ### Resolved during planning
-- **Datastore + auth + email:** Neon Postgres + Drizzle (`neon-http`), Clerk, Resend.
-- **Reminder primitive:** Vercel Workflow (`sleep` + `case-closed` hook race + wake-time state check).
-- **R15 trigger:** `flagConclusion` sentinel tool + a persistent manual button (the primary path).
-- **R10:** mock send, mark "sent" on the timeline; real Resend send only if Phase 1 finishes early.
-- **R14 fields:** service/CPT-or-type, provider type, coarse geo (state default / ZIP3>20k), bucketed billed/allowed/paid/responsibility, issue, lever, outcome-if-known — no PII, no join key.
-- **Testing posture:** manual + probe, plus light unit tests for the pure safety/privacy guards.
-- **Inferred deadlines:** a model-inferred deadline always requires user confirmation before arming a real email (also the injection guard).
-- **Aggregate capture timing/backfill:** record once at conclusion with outcome inline (UUID PK, jittered time, consent-checked-first) — no join key, no backfill; abandoned cases yield no row.
-- **Write-path consistency:** `neon-serverless` transactions + a derived summary; the two dual-writes use an outbox/state column.
+- **Datastore + auth:** Supabase Postgres + Auth + RLS (already paid); Vercel Blob kept for documents; Resend for email.
+- **DB driver / transactions:** `postgres-js` over the Supavisor transaction pooler (`prepare:false`) — one client, `db.transaction()` works.
+- **Document context:** prompt caching (keep all docs in context) + a size-based trim fallback — not a relevance heuristic.
+- **Conclusion/share:** user-driven (always-available affordance → `generateShareCard`) + an advisory per-turn `phase` field; `markResolved`/`reopenCase` are explicit status actions; no `flagConclusion` trigger.
+- **Human-in-the-loop:** the SDK's `needsApproval` (conditional) on the two world-effecting tools.
+- **Aggregate:** deterministic at conclusion, keyless row + `cases.aggregate_record_id` pointer for update-in-place; account deletion honors the "can't retract" disclosure.
 
 ### Deferred to implementation
-- Exact structured-state field list + when the derived summary is rebuilt (tune against real sessions).
-- ZIP3 population-threshold data source (bake a table vs. default-to-state when unknown).
+- Exact structured-state field list + whether the summary is a deterministic template or a model call (decide against real sessions).
+- The size-trim policy's exact budget + which docs it drops first.
+- ZIP3 population-threshold data source (bake a table vs. default-to-state).
 
 ---
 
@@ -629,6 +500,5 @@ Thin cuts of: **U1** (Clerk + Neon + the tables actually touched), **U2** (case 
 
 - **Origin:** [docs/brainstorms/2026-06-25-billcheck-v1-requirements.md](../brainstorms/2026-06-25-billcheck-v1-requirements.md)
 - **Testing evidence:** [docs/observations/SUMMARY.md](../observations/SUMMARY.md), [docs/observations/ui/SUMMARY.md](../observations/ui/SUMMARY.md)
-- **Prototype plan:** [docs/plans/2026-06-24-001-feat-billcheck-prototype-plan.md](2026-06-24-001-feat-billcheck-prototype-plan.md)
 - **Code:** `app/api/chat/route.ts`, `app/api/blob-upload/route.ts`, `lib/prompt.ts`, `app/page.tsx`
-- **External:** AI SDK v6 (tools/loop-control/Output), Vercel Workflows/WDK (sleep/hooks/idempotency), Neon+Drizzle on Vercel, Clerk on Next 16 (`proxy.ts`), Resend; WA MHMDA + FTC HBNR; Postgres RLS multi-tenant guidance.
+- **External (June 2026):** AI SDK v6 (tools / `stopWhen` / `needsApproval` / `Output`); Anthropic prompt caching via the Vercel AI Gateway (`cacheControl`, context-window counting, pricing); Supabase `@supabase/ssr` on Next 16 (`getClaims`, `proxy.ts`), Supabase + Drizzle (`postgres-js` / Supavisor pooler), Supabase RLS + `auth.uid()` + the Drizzle `.rls()` pattern; Resend; WA MHMDA + FTC HBNR; EU AI Act Art. 50/14 (2026-08-02).
