@@ -1,7 +1,7 @@
 // Case-spine data access. EVERY function takes a `DbTx` from `withUser(...)` and
 // therefore runs under RLS as that user — a forgotten WHERE is structurally harmless,
 // but we still scope by userId/caseId for clarity and correct row selection.
-import { and, desc, eq, ne } from 'drizzle-orm'
+import { and, desc, eq, ne, notInArray } from 'drizzle-orm'
 import type { UIMessage } from 'ai'
 import type { DbTx } from './index'
 import {
@@ -174,6 +174,29 @@ export async function setCaseStatus(
     .where(eq(cases.id, caseId))
 }
 
+/**
+ * Set the case status ONLY IF the case is not already in a terminal/explicit state
+ * ('resolved' | 'closed' | 'reopened'). Used for the model's per-turn ADVISORY status write,
+ * so an advisory status (e.g. 'acting') can never clobber a terminal status a deterministic
+ * tool set in the same turn (e.g. markResolved → 'resolved'). The terminal transitions are
+ * owned by the tools (markResolved/reopenCase) — never by the advisory output.
+ */
+export async function setCaseStatusIfNotTerminal(
+  tx: DbTx,
+  caseId: string,
+  status: CaseStatus,
+): Promise<void> {
+  await tx
+    .update(cases)
+    .set({ status, updatedAt: new Date() })
+    .where(
+      and(
+        eq(cases.id, caseId),
+        notInArray(cases.status, ['resolved', 'closed', 'reopened']),
+      ),
+    )
+}
+
 /** All of the user's cases, most-recently-updated first. */
 export async function listCases(tx: DbTx, userId: string): Promise<CaseRow[]> {
   return tx
@@ -188,7 +211,7 @@ export type OtherCaseSummary = { id: string; title: string | null; status: strin
 
 /**
  * U11 — light cross-case awareness. The user's OTHER cases (excluding the active one and any
- * 'closed' case), most-recently-updated first, as TITLES + STATUS ONLY. Used to make the model
+ * 'closed' or 'resolved' case), most-recently-updated first, as TITLES + STATUS ONLY. Used to make the model
  * aware that other cases exist (so it doesn't conflate them) WITHOUT ever loading their contents:
  * this returns no summaries, documents, profile facts, or amounts — only id/title/status.
  */
@@ -204,7 +227,7 @@ export async function listOtherOpenCases(
       and(
         eq(cases.userId, userId),
         ne(cases.id, excludeCaseId),
-        ne(cases.status, 'closed'),
+        notInArray(cases.status, ['closed', 'resolved']),
       ),
     )
     .orderBy(desc(cases.updatedAt))

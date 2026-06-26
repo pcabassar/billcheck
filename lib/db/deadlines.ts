@@ -28,6 +28,12 @@ type ReminderStatus = 'none' | 'pending' | 'armed' | 'sent' | 'failed' | 'cancel
  * (caseId, dedupKey), return that existing row instead of inserting a second one.
  * Relies on the partial UNIQUE (case_id, dedup_key) WHERE dedup_key IS NOT NULL:
  * we insert with onConflictDoNothing, then select the surviving row.
+ *
+ * Re-open semantics: if the matched row was previously CANCELLED, re-opening it (rather than
+ * returning the dead row) means a re-scheduled deadline actually arms again — otherwise
+ * `startReminder` would arm a workflow that `selectReminderBranch` immediately suppresses
+ * (deadlineStatus='cancelled') while the tool reported "armed". Re-opening preserves the
+ * partial unique index (same row, no second insert).
  */
 export async function createDeadline(
   tx: DbTx,
@@ -43,7 +49,7 @@ export async function createDeadline(
   if (input.dedupKey) {
     // Pre-check (covers the common case cheaply + handles the no-unique-index dev DB).
     const existing = await findByDedupKey(tx, input.caseId, input.dedupKey)
-    if (existing) return existing
+    if (existing) return reopenIfCancelled(tx, existing, input)
   }
 
   const inserted = await tx
@@ -66,9 +72,38 @@ export async function createDeadline(
   // Conflict happened (a concurrent insert won the unique race) — return the existing row.
   if (input.dedupKey) {
     const existing = await findByDedupKey(tx, input.caseId, input.dedupKey)
-    if (existing) return existing
+    if (existing) return reopenIfCancelled(tx, existing, input)
   }
   throw new Error('createDeadline: insert produced no row and no dedup match')
+}
+
+/**
+ * If a dedup-matched row is CANCELLED, re-open it in place (status='open', reminderStatus='none',
+ * clear the workflow bookkeeping, and refresh due_at/kind/title to the new values) and return the
+ * refreshed row. If it's not cancelled, return it unchanged.
+ */
+async function reopenIfCancelled(
+  tx: DbTx,
+  existing: DeadlineRow,
+  input: { kind?: string; title?: string; dueAt: Date },
+): Promise<DeadlineRow> {
+  if (existing.status !== 'cancelled') return existing
+
+  const [reopened] = await tx
+    .update(deadlines)
+    .set({
+      status: 'open',
+      reminderStatus: 'none',
+      reminderBranch: null,
+      workflowRunId: null,
+      dueAt: input.dueAt,
+      kind: input.kind ?? null,
+      title: input.title ?? null,
+      updatedAt: new Date(),
+    })
+    .where(eq(deadlines.id, existing.id))
+    .returning()
+  return reopened ?? existing
 }
 
 async function findByDedupKey(

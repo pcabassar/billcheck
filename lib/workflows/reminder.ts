@@ -1,4 +1,4 @@
-// The smart-reminder durable Workflow + its start/close helpers.
+// The smart-reminder durable Workflow (the thin, deterministic `'use workflow'` body).
 //
 // Shape (per the plan's "smart reminder Workflow" design):
 //   - sleep durably until ~1 day before the deadline (proceed immediately if already past),
@@ -11,9 +11,13 @@
 //   - NO model call anywhere in here. Speed/clocks are the product's job, not the model's.
 //   - The workflow BODY is thin + deterministic: no Date.now() / new Date() outside a step;
 //     the only time it reads is `dueAtISO` (passed in) to compute the wake moment. ALL IO
-//     (DB reads/writes, email) lives in `'use step'` functions.
-//   - The Workflow runs OUTSIDE any user session, so every DB call uses adminDb() (BYPASSRLS)
-//     scoped EXPLICITLY by caseId/deadlineId.
+//     (DB reads/writes, email) + all wall-clock reads live in the `'use step'` functions, which
+//     are extracted to `reminder-steps.ts` so THIS module has NO module-level Node-only deps
+//     (postgres / resend). The WDK bundles a workflow module's plain exports for the flow VM,
+//     which forbids those deps — keeping them out of this file's imports is the WDK rule, not a
+//     tree-shaking accident.
+//   - The Workflow runs OUTSIDE any user session, so every DB call (in the steps) uses adminDb()
+//     (BYPASSRLS) scoped EXPLICITLY by caseId/deadlineId.
 //
 // VERIFIED WDK API (workflow@4.5.0, from installed types + bundled docs):
 //   - `'use workflow'` / `'use step'` directives (next.config withWorkflow enables them).
@@ -23,22 +27,15 @@
 //   - `getRun(runId)` -> Run; `Run.cancel()` / `Run.wakeUp()`; from 'workflow/api'.
 //   - `resumeHook(token, payload)` from 'workflow/api' — resume a hook from a server route.
 import { createHook, sleep } from 'workflow'
-import { adminDb } from '@/lib/db'
-import { readReminderContext, setReminderState } from '@/lib/db/deadlines'
-import { timelineEvents } from '@/lib/db/schema'
-import { sendReminderEmail } from '@/lib/email/resend'
-import { selectReminderBranch, type ReminderBranch } from '@/lib/reminder/state'
+import type { ReminderBranch } from '@/lib/reminder/state'
+import {
+  computeWakeDelayStep,
+  fireReminderStep,
+  onClosedStep,
+} from './reminder-steps'
+import type { ReminderInput } from './reminder-types'
 
-// Roughly one day in milliseconds — how far before the deadline we wake to nudge.
-const ONE_DAY_MS = 24 * 60 * 60 * 1000
-
-export type ReminderInput = {
-  caseId: string
-  deadlineId: string
-  userId: string
-  dueAtISO: string
-  recipientEmail: string
-}
+export type { ReminderInput }
 
 // The hook token closing the case (or cancelling the deadline) uses to wake + cancel the wait.
 function caseClosedToken(caseId: string, deadlineId: string): string {
@@ -76,150 +73,6 @@ export async function reminderWorkflow(input: ReminderInput): Promise<{ branch: 
   // Woke at ~1 day before the deadline — read live state and act on it.
   const branch = await fireReminderStep(input)
   return { branch }
-}
-
-// ---------------------------------------------------------------------------
-// Steps (ALL IO + clock reads live here)
-// ---------------------------------------------------------------------------
-
-/**
- * Compute how many ms to sleep before nudging: (dueAt - 1 day) - now, clamped to >= 0.
- * Reads the wall clock — hence a step, not the deterministic workflow body. Idempotent on
- * replay (the durable runtime persists the step result, so the sleep target is stable).
- */
-async function computeWakeDelayStep(dueAtISO: string): Promise<number> {
-  'use step'
-
-  const wakeAtMs = Date.parse(dueAtISO) - ONE_DAY_MS
-  return Math.max(0, wakeAtMs - Date.now())
-}
-
-/**
- * Wake-time step: read LIVE state, pick the branch (pure), then suppress or send.
- * Returns the branch taken (for observability / the workflow return value).
- */
-async function fireReminderStep(input: ReminderInput): Promise<ReminderBranch> {
-  'use step'
-
-  const db = adminDb()
-  const ctx = await readReminderContext(db, input.caseId, input.deadlineId)
-
-  // The deadline/case vanished (deleted) — nothing to do; record cancellation defensively.
-  if (!ctx) {
-    await setReminderState(db, input.deadlineId, { reminderStatus: 'cancelled' })
-    return 'suppress'
-  }
-
-  // `now` is read inside the step (allowed — steps run real Node), passed into the pure fn.
-  const branch = selectReminderBranch({
-    now: new Date(),
-    dueAt: ctx.dueAt,
-    caseStatus: ctx.caseStatus,
-    deadlineStatus: ctx.deadlineStatus,
-    artifactSent: ctx.artifactSent,
-  })
-
-  if (branch === 'suppress') {
-    await setReminderState(db, input.deadlineId, {
-      reminderStatus: 'cancelled',
-      reminderBranch: 'suppress',
-    })
-    await db.insert(timelineEvents).values({
-      userId: input.userId,
-      caseId: input.caseId,
-      type: 'reminder_suppressed',
-      payload: { deadlineId: input.deadlineId },
-    })
-    return 'suppress'
-  }
-
-  const { subject, html } = buildEmail(branch, ctx.dueAt)
-  const result = await sendReminderEmail({
-    to: input.recipientEmail,
-    subject,
-    html,
-    idempotencyKey: `${input.caseId}:${input.deadlineId}:${branch}`,
-  })
-
-  if (result.ok) {
-    await setReminderState(db, input.deadlineId, {
-      reminderStatus: 'sent',
-      reminderBranch: branch,
-    })
-    await db.insert(timelineEvents).values({
-      userId: input.userId,
-      caseId: input.caseId,
-      type: 'reminder_sent',
-      payload: { deadlineId: input.deadlineId, branch },
-    })
-  } else {
-    await setReminderState(db, input.deadlineId, {
-      reminderStatus: 'failed',
-      reminderBranch: branch,
-    })
-    await db.insert(timelineEvents).values({
-      userId: input.userId,
-      caseId: input.caseId,
-      type: 'reminder_failed',
-      payload: { deadlineId: input.deadlineId, branch, error: result.error ?? 'unknown' },
-    })
-  }
-
-  return branch
-}
-
-/** Hook-resume step: the case closed / deadline cancelled mid-wait — flip state, log it. */
-async function onClosedStep(input: ReminderInput): Promise<void> {
-  'use step'
-
-  const db = adminDb()
-  await setReminderState(db, input.deadlineId, {
-    reminderStatus: 'cancelled',
-    reminderBranch: 'suppress',
-  })
-  await db.insert(timelineEvents).values({
-    userId: input.userId,
-    caseId: input.caseId,
-    type: 'reminder_cancelled',
-    payload: { deadlineId: input.deadlineId, reason: 'case_closed' },
-  })
-}
-
-// ---------------------------------------------------------------------------
-// Email bodies (no model — fixed, branch-tailored copy)
-// ---------------------------------------------------------------------------
-
-function fmtDate(d: Date): string {
-  return d.toISOString().slice(0, 10)
-}
-
-function buildEmail(
-  branch: Exclude<ReminderBranch, 'suppress'>,
-  dueAt: Date,
-): { subject: string; html: string } {
-  const due = fmtDate(dueAt)
-  switch (branch) {
-    case 'act':
-      return {
-        subject: `Reminder: your bill deadline is ${due}`,
-        html: `<p>This is a heads-up from billcheck.</p>
-<p>You have a deadline coming up on <strong>${due}</strong>. If you were planning to send your dispute, appeal, or complaint, now's the time — sending before the deadline keeps your options open.</p>
-<p>Open billcheck to finish and send your letter.</p>`,
-      }
-    case 'gentle':
-      return {
-        subject: `You're on track — deadline ${due}`,
-        html: `<p>This is a friendly note from billcheck.</p>
-<p>It looks like you've already sent your letter ahead of the <strong>${due}</strong> deadline — nice work. No action needed; we'll keep tracking the case in case anything changes.</p>`,
-      }
-    case 'past_due':
-      return {
-        subject: `Your deadline (${due}) may have passed`,
-        html: `<p>This is a note from billcheck.</p>
-<p>The deadline on <strong>${due}</strong> appears to have passed. That doesn't always mean the door is closed — many disputes and appeals can still be filed late, or escalated another way.</p>
-<p>Open billcheck and we'll walk through what's still possible.</p>`,
-      }
-  }
 }
 
 // ---------------------------------------------------------------------------

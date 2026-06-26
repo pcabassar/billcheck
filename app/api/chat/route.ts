@@ -3,6 +3,7 @@ import {
   convertToModelMessages,
   stepCountIs,
   Output,
+  type ModelMessage,
   type UIMessage,
 } from "ai";
 import { z } from "zod";
@@ -16,7 +17,7 @@ import {
   loadCaseContext,
   persistTranscript,
   resolveActiveCase,
-  setCaseStatus,
+  setCaseStatusIfNotTerminal,
   type CaseStatus,
 } from "@/lib/db/cases";
 import { upsertDocumentsFromMessage } from "@/lib/db/documents";
@@ -142,12 +143,42 @@ export async function POST(req: Request) {
 
   const inlined = await inlineOwnedBlobs(messages, userId);
 
+  // Prompt caching (Anthropic ephemeral breakpoints, passed THROUGH the AI Gateway):
+  //   - `@ai-sdk/gateway@3.0.134` has NO `caching` input option (the old `gateway:{caching:'auto'}`
+  //     was a silent no-op), so we set the supported breakpoints directly.
+  //   - The SYSTEM message is the largest stable prefix (frozen prompt + tool note + state block) →
+  //     mark it cacheable as a leading system ModelMessage carrying providerOptions.anthropic.
+  //   - The LAST inlined document/file part is the next-largest stable content → mark it too.
+  // Anthropic caches the prefix UP TO each breakpoint; repeat turns should then report
+  // cacheReadTokens > 0 (logged in onFinish). If it stays 0 in production, switch to the direct
+  // `@ai-sdk/anthropic` provider (the Gateway passthrough is the suspect, not these breakpoints).
+  const cacheControl = { anthropic: { cacheControl: { type: "ephemeral" } } } as const;
+
+  const systemMessage: ModelMessage = {
+    role: "system",
+    // 3-part prompt: frozen advice prose + tool note (U4) + per-turn case state.
+    content: SYSTEM_PROMPT + "\n\n" + TOOL_NOTE + "\n\n" + stateBlock,
+    providerOptions: cacheControl,
+  };
+
+  const converted = await convertToModelMessages(inlined);
+  // Attach a cache breakpoint to the LAST file part across the converted messages (the largest
+  // stable document content). Mutating in place is fine — `converted` is freshly built here.
+  for (let i = converted.length - 1; i >= 0; i--) {
+    const content = converted[i].content;
+    if (!Array.isArray(content)) continue;
+    const lastFile = [...content].reverse().find((p) => p.type === "file");
+    if (lastFile) {
+      lastFile.providerOptions = cacheControl;
+      break;
+    }
+  }
+
   const result = streamText({
     // AI Gateway "provider/model" string — routed via AI_GATEWAY_API_KEY.
     model: "anthropic/claude-opus-4.8",
-    // 3-part prompt: frozen advice prose + tool note (U4) + per-turn case state.
-    system: SYSTEM_PROMPT + "\n\n" + TOOL_NOTE + "\n\n" + stateBlock,
-    messages: await convertToModelMessages(inlined),
+    // System prompt is carried as a leading ModelMessage so it can hold the cache breakpoint.
+    messages: [systemMessage, ...converted],
     // U4: the deterministic capability surface — every tool runs under RLS on the active case.
     tools: makeTools(userId, caseId),
     // Allow a few tool steps + the structured-output step within one turn.
@@ -155,7 +186,6 @@ export async function POST(req: Request) {
     // Per-turn case status (advisory). `output` is the canonical v6 name (experimental_output
     // is deprecated). The resolved value is read from `result.output` in onFinish below.
     output: caseStatusOutput,
-    providerOptions: { gateway: { caching: "auto" } },
     maxOutputTokens: 16000,
   });
 
@@ -165,13 +195,31 @@ export async function POST(req: Request) {
     onFinish: async ({ messages: all }) => {
       await withUser(userId, (tx) => persistTranscript(tx, userId, caseId, all));
 
+      // Verifiable cache stat (non-sensitive: token COUNTS only — no message/bill content). On a
+      // repeat turn cacheReadTokens should be > 0; if it stays 0 in production, switch to the direct
+      // `@ai-sdk/anthropic` provider (see the breakpoint comment above). Field names verified against
+      // the installed ai@6 LanguageModelUsage type: inputTokenDetails.{cacheReadTokens,cacheWriteTokens}.
+      // Usage lives on the streamText result (the UIMessageStream onFinish arg carries no usage).
+      try {
+        const usage = await result.totalUsage;
+        const d = usage.inputTokenDetails;
+        console.log(
+          `[chat:cache] cacheRead=${d?.cacheReadTokens ?? 0} cacheWrite=${d?.cacheWriteTokens ?? 0} input=${usage.inputTokens ?? 0}`,
+        );
+      } catch (err) {
+        logError("chat:onFinish:usage", err);
+      }
+
       // Persist the advisory per-turn case status (never gates anything). If the model didn't
       // produce a parseable status, skip silently — the deterministic transcript already saved.
+      // Use setCaseStatusIfNotTerminal so this ADVISORY write can't clobber a terminal status a
+      // tool set in the same turn (e.g. markResolved → 'resolved'); else a resolved case could
+      // be flipped back to 'acting' and the reminder workflow would no longer suppress its email.
       try {
         const out = await result.output;
         if (out?.status) {
           await withUser(userId, (tx) =>
-            setCaseStatus(tx, caseId, out.status as CaseStatus),
+            setCaseStatusIfNotTerminal(tx, caseId, out.status as CaseStatus),
           );
         }
       } catch (err) {

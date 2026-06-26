@@ -318,7 +318,7 @@ export function makeTools(userId: string, caseId: string) {
 
           // 2) Arm the durable reminder. The recipient email comes from the auth claims; if it's
           //    unavailable we still keep the deadline tracked and report that the email couldn't arm.
-          const recipientEmail = await getRecipientEmail()
+          const recipientEmail = await getRecipientEmail(userId)
           if (!recipientEmail) {
             return {
               ok: true,

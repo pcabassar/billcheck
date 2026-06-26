@@ -98,16 +98,21 @@ export async function recordCaseAggregate(
     return { written: true }
   }
 
-  const [inserted] = await db
-    .insert(aggregateRecords)
-    .values(values)
-    .returning({ id: aggregateRecords.id })
+  // Insert the keyless row AND set the personal-side pointer in ONE transaction so a crash
+  // between them can't orphan a keyless aggregate_records row (no back-reference would ever
+  // point to it again, and the case would re-insert a duplicate on the next conclusion).
+  await db.transaction(async (tx) => {
+    const [inserted] = await tx
+      .insert(aggregateRecords)
+      .values(values)
+      .returning({ id: aggregateRecords.id })
 
-  // Set the personal-side pointer, scoped by (id, userId) so we only ever touch this user's case.
-  await db
-    .update(cases)
-    .set({ aggregateRecordId: inserted.id })
-    .where(and(eq(cases.id, caseId), eq(cases.userId, userId)))
+    // Set the personal-side pointer, scoped by (id, userId) so we only ever touch this user's case.
+    await tx
+      .update(cases)
+      .set({ aggregateRecordId: inserted.id })
+      .where(and(eq(cases.id, caseId), eq(cases.userId, userId)))
+  })
 
   return { written: true }
 }
