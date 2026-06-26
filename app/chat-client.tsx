@@ -293,6 +293,9 @@ export default function ChatClient() {
       </header>
 
       <CaseWorkspace
+        // Key to the active case so switching/creating a case remounts the drawer with fresh
+        // state (no stale detail from the previously-open case).
+        key={caseId ?? "none"}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         caseId={caseId}
