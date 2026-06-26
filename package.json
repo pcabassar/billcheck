@@ -23,6 +23,8 @@
     "react-dom": "^19.2.7",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
+    "resend": "^6.16.0",
+    "workflow": "^4.5.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
