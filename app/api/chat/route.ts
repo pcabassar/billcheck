@@ -179,6 +179,9 @@ export async function POST(req: Request) {
     model: "anthropic/claude-opus-4.8",
     // System prompt is carried as a leading ModelMessage so it can hold the cache breakpoint.
     messages: [systemMessage, ...converted],
+    // Our system content is first-party (frozen prompt + tool note + state), not user input — the
+    // system-in-messages prompt-injection warning is a false positive here, so suppress it.
+    allowSystemInMessages: true,
     // U4: the deterministic capability surface — every tool runs under RLS on the active case.
     tools: makeTools(userId, caseId),
     // Allow a few tool steps + the structured-output step within one turn.
