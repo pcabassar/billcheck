@@ -9,3 +9,6 @@ dist/
 *.tsbuildinfo
 .DS_Store
 coverage/
+
+# ce-work subagent worktrees
+.claude/worktrees/
