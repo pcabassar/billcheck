@@ -2,11 +2,9 @@ import {
   streamText,
   convertToModelMessages,
   stepCountIs,
-  Output,
   type ModelMessage,
   type UIMessage,
 } from "ai";
-import { z } from "zod";
 import { SYSTEM_PROMPT } from "@/lib/prompt";
 import { TOOL_NOTE, buildStateBlock } from "@/lib/case/state";
 import { requireUserId, UnauthorizedError } from "@/lib/auth";
@@ -17,26 +15,9 @@ import {
   loadCaseContext,
   persistTranscript,
   resolveActiveCase,
-  setCaseStatusIfNotTerminal,
-  type CaseStatus,
 } from "@/lib/db/cases";
 import { upsertDocumentsFromMessage } from "@/lib/db/documents";
 import { makeTools } from "@/lib/tools";
-
-// The per-turn case status the model emits via structured output (advisory; never gates).
-const caseStatusOutput = Output.object({
-  schema: z.object({
-    status: z.enum([
-      "new",
-      "gathering",
-      "recommendation_offered",
-      "acting",
-      "resolved",
-      "closed",
-      "reopened",
-    ]),
-  }),
-});
 
 // Allow generous streaming time for document-reading replies.
 export const maxDuration = 60;
@@ -184,11 +165,8 @@ export async function POST(req: Request) {
     allowSystemInMessages: true,
     // U4: the deterministic capability surface — every tool runs under RLS on the active case.
     tools: makeTools(userId, caseId),
-    // Allow a few tool steps + the structured-output step within one turn.
+    // Allow a few tool steps within one turn.
     stopWhen: stepCountIs(8),
-    // Per-turn case status (advisory). `output` is the canonical v6 name (experimental_output
-    // is deprecated). The resolved value is read from `result.output` in onFinish below.
-    output: caseStatusOutput,
     maxOutputTokens: 16000,
   });
 
@@ -211,24 +189,6 @@ export async function POST(req: Request) {
         );
       } catch (err) {
         logError("chat:onFinish:usage", err);
-      }
-
-      // Persist the advisory per-turn case status (never gates anything). If the model didn't
-      // produce a parseable status, skip silently — the deterministic transcript already saved.
-      // Use setCaseStatusIfNotTerminal so this ADVISORY write can't clobber a terminal status a
-      // tool set in the same turn (e.g. markResolved → 'resolved'); else a resolved case could
-      // be flipped back to 'acting' and the reminder workflow would no longer suppress its email.
-      try {
-        const out = await result.output;
-        if (out?.status) {
-          await withUser(userId, (tx) =>
-            setCaseStatusIfNotTerminal(tx, caseId, out.status as CaseStatus),
-          );
-        }
-      } catch (err) {
-        // No structured status this turn — advisory only, so leave the status untouched.
-        // Log redacted (the error may carry model/content detail); never surface it.
-        logError("chat:onFinish:status", err);
       }
     },
     // U12: do NOT echo raw internal error text to the client — an error message can carry a bill
