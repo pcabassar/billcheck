@@ -23,7 +23,6 @@
 //   - `getRun(runId)` -> Run; `Run.cancel()` / `Run.wakeUp()`; from 'workflow/api'.
 //   - `resumeHook(token, payload)` from 'workflow/api' — resume a hook from a server route.
 import { createHook, sleep } from 'workflow'
-import { getRun, resumeHook, start } from 'workflow/api'
 import { adminDb } from '@/lib/db'
 import { readReminderContext, setReminderState } from '@/lib/db/deadlines'
 import { timelineEvents } from '@/lib/db/schema'
@@ -224,60 +223,12 @@ function buildEmail(
 }
 
 // ---------------------------------------------------------------------------
-// Start / close helpers (called from U4's scheduleReminder + markResolved/cancelDeadline)
+// Start / close helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Arm a reminder: a transaction-or-outbox dual-write via the admin client.
- *   1) set reminderStatus 'pending' (intent recorded before the side effect),
- *   2) start() the durable Workflow,
- *   3) store workflowRunId + set reminderStatus 'armed'.
- * The deadline row must already exist (created by `createDeadline` under RLS in the tool).
- * Idempotency at the deadline level is the partial UNIQUE (case_id, dedup_key) handled by
- * createDeadline; this only arms whatever single deadline row it's given.
- */
-export async function startReminder(input: ReminderInput): Promise<{ runId: string }> {
-  const db = adminDb()
-
-  // 1) Record intent first (so a crash between here and start() is detectable as 'pending').
-  await setReminderState(db, input.deadlineId, { reminderStatus: 'pending' })
-
-  // 2) Kick off the durable workflow.
-  const run = await start(reminderWorkflow, [input])
-
-  // 3) Persist the run id + flip to 'armed'.
-  await setReminderState(db, input.deadlineId, {
-    reminderStatus: 'armed',
-    workflowRunId: run.runId,
-  })
-
-  return { runId: run.runId }
-}
-
-/**
- * Cancel a live reminder when the case closes / deadline is cancelled. Resumes the
- * case-closed hook (which wakes the workflow out of its sleep and cancels cleanly); if the
- * workflow isn't waiting on the hook anymore (already fired / not yet suspended), falls back
- * to cancelling the run by id. Best-effort + idempotent — never throws into the caller's tx.
- */
-export async function closeReminder(
-  caseId: string,
-  deadlineId: string,
-  workflowRunId?: string | null,
-): Promise<void> {
-  const token = caseClosedToken(caseId, deadlineId)
-  try {
-    await resumeHook(token, { reason: 'case_closed' })
-    return
-  } catch {
-    // Hook not registered / already consumed — fall through to a hard cancel by run id.
-  }
-
-  if (workflowRunId) {
-    try {
-      await getRun(workflowRunId).cancel()
-    } catch {
-      // Run already finished / not found — nothing to cancel.
-    }
-  }
-}
+// These run as ORDINARY server code (they only kick off / wake the workflow) — they do NOT
+// belong in this `'use workflow'` module, because the WDK bundles this file's plain (non-step)
+// exports for the workflow runtime, which forbids the Node-only DB client (postgres) they use.
+// They therefore live in `lib/workflows/reminder-control.ts` (no directive) and import the
+// `reminderWorkflow` reference from here. Callers (U4 tools) import them from that control module.
+// The shared hook token helper is exported so the control module's closeReminder matches it.
+export { caseClosedToken }

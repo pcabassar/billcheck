@@ -1,7 +1,12 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type FileUIPart, type UIMessage } from "ai";
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithApprovalResponses,
+  type FileUIPart,
+  type UIMessage,
+} from "ai";
 import { upload } from "@vercel/blob/client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -28,6 +33,71 @@ function isImage(t: string) {
   return t.startsWith("image/");
 }
 
+// --- Tool UI (progressive disclosure) --------------------------------------
+// A `tool-*` message part carries `{ type: 'tool-<name>', state, input, output, approval }`.
+// We render a plain-language ✓/spinner status line per tool — NEVER raw JSON to the user.
+
+// The tool name out of a `tool-<name>` part type.
+function toolName(partType: string): string {
+  return partType.replace(/^tool-/, "");
+}
+
+// Plain-language labels per tool, by phase. `running` shows while the tool executes;
+// `done` shows once it finishes. Kept warm + jargon-free for a scared user.
+const TOOL_LABELS: Record<string, { running: string; done: string }> = {
+  updateCaseTitle: { running: "Naming your case…", done: "Named your case" },
+  setCaseStatus: { running: "Updating your case…", done: "Updated your case" },
+  updateProfile: { running: "Saving your details…", done: "Saved your details" },
+  linkDocument: { running: "Linking your documents…", done: "Linked your documents" },
+  relinkDocument: { running: "Updating a document link…", done: "Updated a document link" },
+  setDocumentKind: { running: "Sorting your document…", done: "Sorted your document" },
+  generateArtifact: { running: "Drafting your letter…", done: "Drafted your letter" },
+  markArtifactSent: { running: "Marking it sent…", done: "Marked it sent" },
+  scheduleReminder: { running: "Setting a reminder…", done: "Set a reminder" },
+  updateDeadline: { running: "Updating your reminder…", done: "Updated your reminder" },
+  cancelDeadline: { running: "Cancelling the reminder…", done: "Cancelled the reminder" },
+  markResolved: { running: "Wrapping up your case…", done: "Wrapped up your case" },
+  reopenCase: { running: "Re-opening your case…", done: "Re-opened your case" },
+  generateShareCard: { running: "Writing your share card…", done: "Wrote your share card" },
+};
+
+function labelFor(name: string, done: boolean): string {
+  const l = TOOL_LABELS[name];
+  if (l) return done ? l.done : l.running;
+  // Fallback: humanize the camelCase name.
+  const human = name.replace(/([A-Z])/g, " $1").trim().toLowerCase();
+  return done ? `Done: ${human}` : `${human}…`;
+}
+
+const APPROVAL_PROMPTS: Record<string, string> = {
+  generateArtifact: "I'll draft this document for you. Want me to go ahead?",
+  scheduleReminder: "I'll set a reminder for this deadline. Want me to go ahead?",
+};
+
+function fmtMonthDay(iso?: string): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+// Download a string of markdown as a .md file.
+function downloadMarkdown(filename: string, contents: string) {
+  const blob = new Blob([contents], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename.endsWith(".md") ? filename : `${filename}.md`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function safeFilename(s: string): string {
+  return (s || "billcheck").replace(/[^\w-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "billcheck";
+}
+
 export default function ChatClient() {
   // The active case is resolved/created server-side on mount; caseId is sent with every
   // turn and the stored transcript seeds useChat so a returning user resumes coherently.
@@ -48,8 +118,21 @@ export default function ChatClient() {
     [],
   );
 
-  const { messages, setMessages, sendMessage, status, error, stop, regenerate } =
-    useChat({ transport });
+  const {
+    messages,
+    setMessages,
+    sendMessage,
+    status,
+    error,
+    stop,
+    regenerate,
+    addToolApprovalResponse,
+  } = useChat({
+    transport,
+    // Once the user has responded to every pending approval on the last assistant message,
+    // auto-resubmit so the approved tool actually runs (and the turn continues).
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
+  });
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const threadRef = useRef<HTMLDivElement>(null);
@@ -231,6 +314,15 @@ export default function ChatClient() {
                   </span>
                 );
               }
+              if (part.type.startsWith("tool-")) {
+                return (
+                  <ToolPart
+                    key={i}
+                    part={part as ToolPartLike}
+                    addToolApprovalResponse={addToolApprovalResponse}
+                  />
+                );
+              }
               return null;
             })}
           </div>
@@ -324,6 +416,203 @@ export default function ChatClient() {
           )}
         </div>
         <div className="disclaim">Information, not legal or medical advice.</div>
+      </div>
+    </div>
+  );
+}
+
+// A loosely-typed view of a `tool-*` UI part (the SDK's union is keyed by the concrete tool
+// map; here we only read the fields the UI needs, so a structural type keeps this generic).
+type ToolPartLike = {
+  type: string;
+  state:
+    | "input-streaming"
+    | "input-available"
+    | "approval-requested"
+    | "approval-responded"
+    | "output-available"
+    | "output-error"
+    | "output-denied";
+  input?: Record<string, unknown>;
+  output?: Record<string, unknown>;
+  errorText?: string;
+  approval?: { id: string; approved?: boolean };
+};
+
+function ToolPart({
+  part,
+  addToolApprovalResponse,
+}: {
+  part: ToolPartLike;
+  addToolApprovalResponse: (opts: { id: string; approved: boolean }) => void;
+}) {
+  const name = toolName(part.type);
+  const out = part.output ?? {};
+  const hadError =
+    part.state === "output-error" || (typeof out.error === "string" && out.error.length > 0);
+
+  // 1) Approval card — render Approve / Decline for the two world-effecting tools.
+  if (part.state === "approval-requested" && part.approval) {
+    const id = part.approval.id;
+    const prompt = APPROVAL_PROMPTS[name] ?? "Want me to go ahead?";
+    const detail = approvalDetail(name, part.input);
+    return (
+      <div className="tool-approve" role="group" aria-label="Confirm action">
+        <div className="ta-q">{prompt}</div>
+        {detail && <div className="ta-detail">{detail}</div>}
+        <div className="ta-actions">
+          <button
+            className="ta-approve"
+            onClick={() => addToolApprovalResponse({ id, approved: true })}
+          >
+            Yes, go ahead
+          </button>
+          <button
+            className="ta-decline"
+            onClick={() => addToolApprovalResponse({ id, approved: false })}
+          >
+            Not now
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 2) The user declined this action.
+  if (part.state === "output-denied") {
+    return <div className="tool-line muted">Skipped — no problem.</div>;
+  }
+
+  // 3) Still running (input streaming / available, not yet finished).
+  const running =
+    part.state === "input-streaming" ||
+    part.state === "input-available" ||
+    part.state === "approval-responded";
+
+  // 4) Artifact / share-card previews (with copy + download), once the output is ready.
+  if (part.state === "output-available" && !hadError) {
+    if (name === "generateArtifact" && typeof out.contentMd === "string") {
+      return (
+        <ArtifactPreview
+          title={typeof out.title === "string" ? out.title : "Your letter"}
+          contentMd={out.contentMd}
+        />
+      );
+    }
+    if (name === "generateShareCard" && typeof out.bodyMd === "string") {
+      return (
+        <SharePreview
+          title={typeof out.title === "string" ? out.title : "Share card"}
+          bodyMd={out.bodyMd}
+        />
+      );
+    }
+  }
+
+  // 5) Plain-language status line + collapsed raw details (never raw JSON inline).
+  const done = part.state === "output-available";
+  const note = typeof out.note === "string" ? out.note : undefined;
+  return (
+    <div className={`tool-line ${hadError ? "err" : ""}`}>
+      <span className="tl-mark" aria-hidden>
+        {hadError ? "!" : running ? "…" : "✓"}
+      </span>
+      <span className="tl-text">
+        {hadError ? gentleError(name) : labelFor(name, done)}
+        {note && <span className="tl-note"> {note}</span>}
+      </span>
+      {(part.input || part.output) && (
+        <details className="tl-raw">
+          <summary>details</summary>
+          <pre>{JSON.stringify({ input: part.input, output: part.output }, null, 2)}</pre>
+        </details>
+      )}
+    </div>
+  );
+}
+
+// A short, human description shown inside an approval card (no raw JSON).
+function approvalDetail(name: string, input?: Record<string, unknown>): string | null {
+  if (!input) return null;
+  if (name === "generateArtifact" && typeof input.type === "string") {
+    const labels: Record<string, string> = {
+      dispute: "a dispute letter",
+      appeal: "an insurance appeal letter",
+      complaint: "a regulator complaint",
+      call_script: "a phone call-script",
+    };
+    return `Draft ${labels[input.type] ?? "a document"}.`;
+  }
+  if (name === "scheduleReminder") {
+    const when = fmtMonthDay(typeof input.dueAt === "string" ? input.dueAt : undefined);
+    const what = typeof input.title === "string" ? input.title : "this deadline";
+    return when ? `Remind you about ${what} around ${when}.` : `Remind you about ${what}.`;
+  }
+  return null;
+}
+
+function gentleError(name: string): string {
+  const l = TOOL_LABELS[name];
+  return l ? `I couldn't ${l.running.replace(/…$/, "").toLowerCase()} just now.` : "That didn't work.";
+}
+
+function ArtifactPreview({ title, contentMd }: { title: string; contentMd: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="artifact-card">
+      <div className="ac-head">
+        <span className="ac-ic" aria-hidden>
+          ✓
+        </span>
+        <span className="ac-title">{title}</span>
+      </div>
+      <div className="ac-body">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{contentMd}</ReactMarkdown>
+      </div>
+      <div className="ac-actions">
+        <button
+          onClick={() => {
+            navigator.clipboard?.writeText(contentMd);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          }}
+        >
+          {copied ? "Copied" : "Copy"}
+        </button>
+        <button onClick={() => downloadMarkdown(safeFilename(title), contentMd)}>
+          Download
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SharePreview({ title, bodyMd }: { title: string; bodyMd: string }) {
+  const [copied, setCopied] = useState(false);
+  const full = `## ${title}\n\n${bodyMd}`;
+  return (
+    <div className="artifact-card share">
+      <div className="ac-head">
+        <span className="ac-ic" aria-hidden>
+          ↗
+        </span>
+        <span className="ac-title">{title}</span>
+      </div>
+      <div className="ac-body">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{bodyMd}</ReactMarkdown>
+      </div>
+      <div className="ac-note">Preview only — nothing is shared until you choose to.</div>
+      <div className="ac-actions">
+        <button
+          onClick={() => {
+            navigator.clipboard?.writeText(full);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          }}
+        >
+          {copied ? "Copied" : "Copy"}
+        </button>
+        <button onClick={() => downloadMarkdown(safeFilename(title), full)}>Download</button>
       </div>
     </div>
   );

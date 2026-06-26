@@ -3,9 +3,12 @@
 // The 3-part prompt is assembled as: SYSTEM_PROMPT + TOOL_NOTE + buildStateBlock(ctx).
 import type { CaseContext } from '@/lib/db/cases'
 
-// U4 fills this with the orchestration note (when to use the tools as a set +
-// the propose-vs-confirm policy). Empty for U2 so the assembly is stable.
-export const TOOL_NOTE = ''
+// U4 orchestration note — when to use the tools as a SET + the propose-vs-confirm posture.
+// Deliberately does NOT restate each tool: the SDK sends every tool's own description +
+// schema to the model automatically, so per-tool detail lives there (single source of truth).
+export const TOOL_NOTE = `You have tools that let you ACT on the user's behalf — not just advise. Prefer doing the work through a tool over telling the user to do it themselves: record what you learn about their situation, classify and link their documents, draft the actual letter or call-script, track deadlines with a smart reminder, mark things sent, and produce a shareable summary. Keep the case state (above) accurate as you go, and never re-ask for something already recorded there.
+
+Two tools change the outside world and are always confirmed by the user first: drafting an artifact and scheduling a reminder. Propose them naturally — the user gets a confirmation card and approves or edits before anything is saved or sent. Everything else you may do directly when it helps. If a tool returns an error, acknowledge it plainly and continue; never expose raw tool output to the user.`
 
 function fmtDate(d: Date | null | undefined): string {
   if (!d) return 'unknown'

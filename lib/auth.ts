@@ -20,3 +20,15 @@ export async function requireUserId(): Promise<string> {
   if (!userId) throw new UnauthorizedError()
   return userId
 }
+
+/**
+ * The signed-in user's email from the auth claims (the JWT `email` claim), or null.
+ * Used to arm the smart reminder (scheduleReminder). Returns null rather than throwing so a
+ * missing email degrades gracefully (deadline still tracked; email reminder just not armed).
+ */
+export async function getRecipientEmail(): Promise<string | null> {
+  const supabase = await createClient()
+  const { data } = await supabase.auth.getClaims()
+  const email = data?.claims?.email
+  return typeof email === 'string' && email.length > 0 ? email : null
+}

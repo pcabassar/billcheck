@@ -1,4 +1,11 @@
-import { streamText, convertToModelMessages, type UIMessage } from "ai";
+import {
+  streamText,
+  convertToModelMessages,
+  stepCountIs,
+  Output,
+  type UIMessage,
+} from "ai";
+import { z } from "zod";
 import { SYSTEM_PROMPT } from "@/lib/prompt";
 import { TOOL_NOTE, buildStateBlock } from "@/lib/case/state";
 import { requireUserId, UnauthorizedError } from "@/lib/auth";
@@ -7,8 +14,26 @@ import {
   loadCaseContext,
   persistTranscript,
   resolveActiveCase,
+  setCaseStatus,
+  type CaseStatus,
 } from "@/lib/db/cases";
 import { upsertDocumentsFromMessage } from "@/lib/db/documents";
+import { makeTools } from "@/lib/tools";
+
+// The per-turn case status the model emits via structured output (advisory; never gates).
+const caseStatusOutput = Output.object({
+  schema: z.object({
+    status: z.enum([
+      "new",
+      "gathering",
+      "recommendation_offered",
+      "acting",
+      "resolved",
+      "closed",
+      "reopened",
+    ]),
+  }),
+});
 
 // Allow generous streaming time for document-reading replies.
 export const maxDuration = 60;
@@ -118,6 +143,13 @@ export async function POST(req: Request) {
     // 3-part prompt: frozen advice prose + tool note (U4) + per-turn case state.
     system: SYSTEM_PROMPT + "\n\n" + TOOL_NOTE + "\n\n" + stateBlock,
     messages: await convertToModelMessages(inlined),
+    // U4: the deterministic capability surface — every tool runs under RLS on the active case.
+    tools: makeTools(userId, caseId),
+    // Allow a few tool steps + the structured-output step within one turn.
+    stopWhen: stepCountIs(8),
+    // Per-turn case status (advisory). `output` is the canonical v6 name (experimental_output
+    // is deprecated). The resolved value is read from `result.output` in onFinish below.
+    output: caseStatusOutput,
     providerOptions: { gateway: { caching: "auto" } },
     maxOutputTokens: 16000,
   });
@@ -127,6 +159,19 @@ export async function POST(req: Request) {
     // Persist the full UIMessage[] (incl. the assistant turn) once the stream finishes.
     onFinish: async ({ messages: all }) => {
       await withUser(userId, (tx) => persistTranscript(tx, userId, caseId, all));
+
+      // Persist the advisory per-turn case status (never gates anything). If the model didn't
+      // produce a parseable status, skip silently — the deterministic transcript already saved.
+      try {
+        const out = await result.output;
+        if (out?.status) {
+          await withUser(userId, (tx) =>
+            setCaseStatus(tx, caseId, out.status as CaseStatus),
+          );
+        }
+      } catch {
+        // No structured status this turn — advisory only, so leave the status untouched.
+      }
     },
     // Surface a readable error instead of the masked generic message.
     onError: (error) =>

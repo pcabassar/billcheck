@@ -358,3 +358,147 @@ header .sub {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* --- Tool UI (progressive disclosure) ------------------------------------ */
+.tool-line {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-size: 13.5px;
+  color: var(--muted);
+  padding: 2px 2px;
+}
+.tool-line.muted {
+  opacity: 0.85;
+}
+.tool-line .tl-mark {
+  color: var(--accent);
+  font-weight: 700;
+  flex: none;
+}
+.tool-line.err .tl-mark {
+  color: var(--warn);
+}
+.tool-line.err {
+  color: var(--warn);
+}
+.tool-line .tl-text {
+  flex: 1;
+}
+.tool-line .tl-note {
+  color: var(--muted);
+}
+.tool-line .tl-raw {
+  font-size: 12px;
+}
+.tool-line .tl-raw summary {
+  cursor: pointer;
+  color: var(--muted);
+  opacity: 0.7;
+}
+.tool-line .tl-raw pre {
+  background: var(--bot);
+  border-radius: 8px;
+  padding: 8px;
+  margin: 4px 0 0;
+  overflow-x: auto;
+  font-size: 11px;
+  max-width: 100%;
+}
+
+/* Approval card for the world-effecting tools */
+.tool-approve {
+  background: var(--warn-bg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
+  max-width: 100%;
+}
+.tool-approve .ta-q {
+  font-weight: 600;
+  color: var(--ink);
+}
+.tool-approve .ta-detail {
+  font-size: 13.5px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.tool-approve .ta-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.tool-approve button {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tool-approve .ta-approve {
+  background: var(--accent);
+  color: #fff;
+}
+.tool-approve .ta-decline {
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+/* Artifact / share-card preview */
+.artifact-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
+  max-width: 100%;
+}
+.artifact-card .ac-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+  color: var(--ink);
+}
+.artifact-card .ac-ic {
+  color: var(--accent);
+  font-weight: 700;
+}
+.artifact-card .ac-body {
+  margin: 8px 0;
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 13.5px;
+  color: var(--ink);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 0;
+}
+.artifact-card .ac-body p {
+  margin: 0 0 8px;
+}
+.artifact-card .ac-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.artifact-card .ac-actions {
+  display: flex;
+  gap: 8px;
+}
+.artifact-card .ac-actions button {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.artifact-card .ac-actions button:hover {
+  background: var(--bot);
+}
