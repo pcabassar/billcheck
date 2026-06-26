@@ -39,11 +39,12 @@ export async function POST(request: Request): Promise<Response> {
             "image/webp",
           ],
           maximumSizeInBytes: 10 * 1024 * 1024,
-          // Carried to onUploadCompleted (U3 wires the documents row).
           tokenPayload: JSON.stringify({ userId }),
         };
       },
-      // Fires from Vercel's servers (not the browser); no-op for now (U3 wires the row).
+      // Intentionally a no-op: this hook has no caseId, so it can't tie the blob to a case.
+      // The chat route owns documents-row creation (upsertDocumentsFromMessage) because the
+      // turn carries the active caseId. (U3)
       onUploadCompleted: async () => {},
     });
     return Response.json(json);

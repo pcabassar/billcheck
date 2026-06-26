@@ -268,7 +268,9 @@ export default function ChatClient() {
                 </span>
                 <span className="nm">
                   {a.name}
-                  {a.error && <small> unsupported / failed</small>}
+                  {a.error && (
+                    <small> Unsupported — please upload a PDF, JPG, PNG, or WEBP.</small>
+                  )}
                 </span>
                 <button className="rm" aria-label="Remove attachment" onClick={() => removeAttachment(a.id)}>
                   ✕

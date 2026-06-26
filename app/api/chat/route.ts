@@ -8,6 +8,7 @@ import {
   persistTranscript,
   resolveActiveCase,
 } from "@/lib/db/cases";
+import { upsertDocumentsFromMessage } from "@/lib/db/documents";
 
 // Allow generous streaming time for document-reading replies.
 export const maxDuration = 60;
@@ -97,6 +98,14 @@ export async function POST(req: Request) {
   const { caseId, stateBlock } = await withUser(userId, async (tx) => {
     const activeCase = await resolveActiveCase(tx, userId, requestedCaseId);
     await persistTranscript(tx, userId, activeCase.id, messages);
+    // Record any docs attached to THIS turn as case-scoped rows (deduped by blobUrl)
+    // before the model reads them — so the case is the authoritative blob index.
+    const lastUserMessage = [...messages]
+      .reverse()
+      .find((m) => m.role === "user");
+    if (lastUserMessage) {
+      await upsertDocumentsFromMessage(tx, userId, activeCase.id, lastUserMessage);
+    }
     const ctx = await loadCaseContext(tx, userId, activeCase.id);
     return { caseId: activeCase.id, stateBlock: buildStateBlock(ctx) };
   });
