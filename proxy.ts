@@ -7,5 +7,10 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  // `.well-known/workflow/` is excluded so the proxy never intercepts the Workflow Development
+  // Kit's internal POST /.well-known/workflow/v1/flow request (required for durable workflow
+  // execution + resumption in Next 16 — see the WDK Next.js guide). Added for U6.
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.well-known/workflow/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }
