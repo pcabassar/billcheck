@@ -8,6 +8,7 @@ import { listArtifacts } from '@/lib/db/artifacts'
 import { listDeadlines } from '@/lib/db/deadlines'
 import { listTimeline } from '@/lib/db/timeline'
 import { resolveUser } from '@/lib/route-auth'
+import { logError } from '@/lib/log'
 
 export async function GET(
   _req: Request,
@@ -66,8 +67,10 @@ export async function GET(
     })
 
     return Response.json(payload)
-  } catch {
+  } catch (err) {
     // Unowned / unknown case → 404 (loadCaseContext throws). Don't leak which.
+    // Log redacted in case it's a real failure (never the message/content).
+    logError('cases.detail', err)
     return new Response('Not found', { status: 404 })
   }
 }

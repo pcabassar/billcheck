@@ -6,6 +6,7 @@ import { withUser } from '@/lib/db'
 import { loadCaseContext } from '@/lib/db/cases'
 import { generateShareCard } from '@/lib/share/card'
 import { resolveUser } from '@/lib/route-auth'
+import { logError } from '@/lib/log'
 
 export async function POST(
   _req: Request,
@@ -25,7 +26,8 @@ export async function POST(
     if (e instanceof Error && e.message === 'Case not found') {
       return new Response('Not found', { status: 404 })
     }
-    // The model call (or anything else) failed — clean 500, no secrets.
+    // The model call (or anything else) failed — clean 500, no secrets. Log redacted.
+    logError('cases.share', e)
     return new Response('Could not draft the share card.', { status: 500 })
   }
 }

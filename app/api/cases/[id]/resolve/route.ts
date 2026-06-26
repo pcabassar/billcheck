@@ -8,6 +8,7 @@ import { listDeadlines } from '@/lib/db/deadlines'
 import { closeReminder } from '@/lib/workflows/reminder-control'
 import { recordCaseAggregate } from '@/lib/db/aggregate'
 import { resolveUser } from '@/lib/route-auth'
+import { logError } from '@/lib/log'
 
 export async function POST(
   _req: Request,
@@ -36,7 +37,8 @@ export async function POST(
     const agg = await recordCaseAggregate(caseId, userId)
 
     return Response.json({ ok: true, status: 'resolved', aggregateRecorded: agg.written })
-  } catch {
+  } catch (err) {
+    logError('cases.resolve', err)
     return new Response('Could not mark the case resolved.', { status: 500 })
   }
 }

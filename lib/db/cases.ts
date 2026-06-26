@@ -1,7 +1,7 @@
 // Case-spine data access. EVERY function takes a `DbTx` from `withUser(...)` and
 // therefore runs under RLS as that user — a forgotten WHERE is structurally harmless,
 // but we still scope by userId/caseId for clarity and correct row selection.
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, ne } from 'drizzle-orm'
 import type { UIMessage } from 'ai'
 import type { DbTx } from './index'
 import {
@@ -180,5 +180,32 @@ export async function listCases(tx: DbTx, userId: string): Promise<CaseRow[]> {
     .select()
     .from(cases)
     .where(eq(cases.userId, userId))
+    .orderBy(desc(cases.updatedAt))
+}
+
+/** A title-only summary of another open case — NEVER its contents (U11 cross-case awareness). */
+export type OtherCaseSummary = { id: string; title: string | null; status: string }
+
+/**
+ * U11 — light cross-case awareness. The user's OTHER cases (excluding the active one and any
+ * 'closed' case), most-recently-updated first, as TITLES + STATUS ONLY. Used to make the model
+ * aware that other cases exist (so it doesn't conflate them) WITHOUT ever loading their contents:
+ * this returns no summaries, documents, profile facts, or amounts — only id/title/status.
+ */
+export async function listOtherOpenCases(
+  tx: DbTx,
+  userId: string,
+  excludeCaseId: string,
+): Promise<OtherCaseSummary[]> {
+  return tx
+    .select({ id: cases.id, title: cases.title, status: cases.status })
+    .from(cases)
+    .where(
+      and(
+        eq(cases.userId, userId),
+        ne(cases.id, excludeCaseId),
+        ne(cases.status, 'closed'),
+      ),
+    )
     .orderBy(desc(cases.updatedAt))
 }

@@ -759,6 +759,23 @@ header .sub {
   color: var(--warn);
   margin: 8px 0 0;
 }
+.ws-btn.danger {
+  background: #fff;
+  color: #b00020;
+  border-color: #e8b3bb;
+}
+.ws-btn.danger:hover {
+  background: #fff0f2;
+}
+.ws-danger-confirm {
+  margin-top: 8px;
+}
+.ws-danger-q {
+  font-size: 13px;
+  font-weight: 600;
+  color: #b00020;
+  margin: 0 0 8px;
+}
 
 .ws-card {
   margin-top: 12px;
@@ -930,4 +947,48 @@ header .sub {
 .ws-case-time {
   font-size: 11.5px;
   color: var(--muted);
+}
+
+/* --- /privacy (and any static legal page) --------------------------------- */
+.legal {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+  background: var(--card);
+  color: var(--ink);
+  line-height: 1.62;
+}
+.legal h1 {
+  font-size: 26px;
+  margin: 8px 0 6px;
+}
+.legal h2 {
+  font-size: 17px;
+  margin: 28px 0 8px;
+}
+.legal p {
+  margin: 0 0 12px;
+}
+.legal ul {
+  margin: 0 0 12px;
+  padding-left: 20px;
+}
+.legal li {
+  margin: 0 0 6px;
+}
+.legal-meta {
+  color: var(--muted);
+  font-size: 13px;
+}
+.legal-back {
+  font-size: 14px;
+}
+.legal-back a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+.legal-back a:hover {
+  text-decoration: underline;
 }

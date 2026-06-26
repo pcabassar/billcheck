@@ -1,7 +1,7 @@
 // Render the per-turn structured-state block that seeds the system prompt.
 // Pure function over loadCaseContext's output — no DB access here.
 // The 3-part prompt is assembled as: SYSTEM_PROMPT + TOOL_NOTE + buildStateBlock(ctx).
-import type { CaseContext } from '@/lib/db/cases'
+import type { CaseContext, OtherCaseSummary } from '@/lib/db/cases'
 
 // U4 orchestration note — when to use the tools as a SET + the propose-vs-confirm posture.
 // Deliberately does NOT restate each tool: the SDK sends every tool's own description +
@@ -18,9 +18,14 @@ function fmtDate(d: Date | null | undefined): string {
 /**
  * Render the gathered case context into a compact, labeled plain-text block.
  * Sections: CASE STATUS, CASE SUMMARY, KNOWN PROFILE/SITUATION, OPEN ARTIFACTS,
- * OPEN DEADLINES, DOCUMENTS ON FILE. Kept terse to stay cache-friendly and cheap.
+ * OPEN DEADLINES, DOCUMENTS ON FILE, and (U11) optionally YOUR OTHER OPEN CASES.
+ * Kept terse to stay cache-friendly and cheap.
+ *
+ * `otherCases` (U11) is title/status ONLY — never another case's contents. It exists so the
+ * model knows other cases exist (and binds every action to the ACTIVE case above) without
+ * conflating them. The tools all close over the active caseId, so this is purely awareness.
  */
-export function buildStateBlock(ctx: CaseContext): string {
+export function buildStateBlock(ctx: CaseContext, otherCases?: OtherCaseSummary[]): string {
   const lines: string[] = []
 
   lines.push('--- CASE STATE (system-maintained; do not re-ask what is already known) ---')
@@ -70,6 +75,18 @@ export function buildStateBlock(ctx: CaseContext): string {
     for (const doc of ctx.documents) {
       const linked = doc.linkedToDocId ? ' [linked]' : ''
       lines.push(`- ${doc.filename ?? 'document'} [${doc.kind}] (status: ${doc.status})${linked}`)
+    }
+  }
+
+  // U11 — light cross-case awareness: titles + status of the user's OTHER open cases ONLY.
+  // Explicitly NOT their contents. Every tool binds the ACTIVE case above; this is so the model
+  // doesn't mistake another case's bill for this one (or re-open a separate matter here).
+  if (otherCases && otherCases.length > 0) {
+    lines.push(
+      'YOUR OTHER OPEN CASES (titles only — do not conflate; everything above is THIS case):',
+    )
+    for (const c of otherCases) {
+      lines.push(`- ${c.title?.trim() || 'Untitled case'} (status: ${c.status})`)
     }
   }
 

@@ -254,7 +254,69 @@ function WorkspaceTab({
       <ArtifactsSection artifacts={detail.artifacts} onChanged={reload} />
       <DeadlinesSection deadlines={detail.deadlines} />
       <TimelineSection timeline={detail.timeline} />
+      <DangerSection />
     </div>
+  );
+}
+
+// Account + data deletion (U12). A two-step confirm → POST /api/account/delete → redirect to login.
+// Plain copy about what's removed and that anonymized contributions can't be retracted.
+function DangerSection() {
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function doDelete() {
+    setDeleting(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/account/delete", { method: "POST" });
+      if (res.ok) {
+        // Account + all personal data gone; cookies cleared server-side. Send them to login.
+        window.location.href = "/login";
+        return;
+      }
+      if (res.status === 503) {
+        setErr("Account deletion isn't available right now. Please contact support.");
+      } else {
+        setErr("Couldn't delete your account just now. Please try again in a moment.");
+      }
+    } catch {
+      setErr("Couldn't reach the server. Please try again in a moment.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <Section title="Delete account & data">
+      <p className="ws-help">
+        This permanently deletes your account and everything in it — every case, the bills and
+        documents you shared, your saved situation, letters, deadlines, and chat history. It can&apos;t
+        be undone. Anonymized data you chose to contribute can&apos;t be retracted, but nothing in it
+        can be traced back to you.
+      </p>
+      {!confirming ? (
+        <div className="ws-actions">
+          <button className="ws-btn danger" onClick={() => { setErr(null); setConfirming(true); }}>
+            Delete account & data
+          </button>
+        </div>
+      ) : (
+        <div className="ws-danger-confirm">
+          <p className="ws-danger-q">Are you sure? This can&apos;t be undone.</p>
+          <div className="ws-actions">
+            <button className="ws-btn danger" onClick={doDelete} disabled={deleting}>
+              {deleting ? "Deleting…" : "Yes, delete everything"}
+            </button>
+            <button className="ws-btn" onClick={() => setConfirming(false)} disabled={deleting}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      {err && <p className="ws-err">{err}</p>}
+    </Section>
   );
 }
 

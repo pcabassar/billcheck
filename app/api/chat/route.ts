@@ -10,7 +10,9 @@ import { SYSTEM_PROMPT } from "@/lib/prompt";
 import { TOOL_NOTE, buildStateBlock } from "@/lib/case/state";
 import { requireUserId, UnauthorizedError } from "@/lib/auth";
 import { withUser } from "@/lib/db";
+import { logError } from "@/lib/log";
 import {
+  listOtherOpenCases,
   loadCaseContext,
   persistTranscript,
   resolveActiveCase,
@@ -132,7 +134,10 @@ export async function POST(req: Request) {
       await upsertDocumentsFromMessage(tx, userId, activeCase.id, lastUserMessage);
     }
     const ctx = await loadCaseContext(tx, userId, activeCase.id);
-    return { caseId: activeCase.id, stateBlock: buildStateBlock(ctx) };
+    // U11: light cross-case awareness — the user's OTHER open cases by TITLE/STATUS only
+    // (never their contents). The model gets aware-of, not access-to; tools bind the active case.
+    const otherCases = await listOtherOpenCases(tx, userId, activeCase.id);
+    return { caseId: activeCase.id, stateBlock: buildStateBlock(ctx, otherCases) };
   });
 
   const inlined = await inlineOwnedBlobs(messages, userId);
@@ -169,12 +174,18 @@ export async function POST(req: Request) {
             setCaseStatus(tx, caseId, out.status as CaseStatus),
           );
         }
-      } catch {
+      } catch (err) {
         // No structured status this turn — advisory only, so leave the status untouched.
+        // Log redacted (the error may carry model/content detail); never surface it.
+        logError("chat:onFinish:status", err);
       }
     },
-    // Surface a readable error instead of the masked generic message.
-    onError: (error) =>
-      error instanceof Error ? error.message : "Something went wrong.",
+    // U12: do NOT echo raw internal error text to the client — an error message can carry a bill
+    // amount, a document detail, or an echoed model error. Log a redacted line server-side and
+    // return a generic, friendly message.
+    onError: (error) => {
+      logError("chat:onError", error);
+      return "Something went wrong on our end — please try again.";
+    },
   });
 }

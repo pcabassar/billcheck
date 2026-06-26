@@ -29,15 +29,22 @@ export async function updateSession(request: NextRequest) {
   const authed = !!data?.claims
 
   const path = request.nextUrl.pathname
-  const isAuthPage = path === '/login' || path === '/signup' || path.startsWith('/auth')
+  // PUBLIC pages reachable signed-out: the auth screens AND the privacy policy (U12 — MHMDA
+  // requires the consumer-health privacy policy be reachable before/without an account).
+  // The auth SCREENS (an authed user gets bounced home from these).
+  const isAuthScreen = path === '/login' || path === '/signup' || path.startsWith('/auth')
+  // PUBLIC pages reachable signed-out = the auth screens PLUS the privacy policy (U12 — MHMDA
+  // requires the consumer-health privacy policy be reachable before/without an account). Note
+  // /privacy is public but NOT an auth screen, so an authed user can still read it.
+  const isPublicPage = isAuthScreen || path === '/privacy'
   const isApi = path.startsWith('/api') // API routes enforce auth in-handler (401, not redirect)
 
-  if (!authed && !isAuthPage && !isApi) {
+  if (!authed && !isPublicPage && !isApi) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
-  if (authed && isAuthPage) {
+  if (authed && isAuthScreen) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
