@@ -11,6 +11,7 @@ import { upload } from "@vercel/blob/client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import CaseWorkspace from "./case-workspace";
 
 const STARTERS = [
   'I got a hospital "statement" — do I owe this?',
@@ -135,6 +136,7 @@ export default function ChatClient() {
   });
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -163,6 +165,34 @@ export default function ChatClient() {
   }, [setMessages]);
 
   const busy = status === "submitted" || status === "streaming";
+
+  // Make a case active: stop any stream, point the chat at it (the caseId ref drives the body),
+  // and load that case's stored transcript so the thread reflects the switched-to case.
+  async function switchToCase(id: string) {
+    if (busy) stop();
+    setCaseId(id);
+    setMessages([]);
+    setDrawerOpen(false);
+    try {
+      const res = await fetch(`/api/cases/active?caseId=${encodeURIComponent(id)}`);
+      if (!res.ok) return;
+      const data: { userId: string; caseId: string; messages: UIMessage[] } = await res.json();
+      setUserId(data.userId);
+      setCaseId(data.caseId);
+      if (data.messages?.length) setMessages(data.messages);
+    } catch {
+      // Couldn't load — the empty thread + the resolved caseId still work for a fresh start.
+    }
+  }
+
+  // "New case": the server already created an empty case; just make it active (empty transcript).
+  function startNewCase(id: string) {
+    if (busy) stop();
+    setCaseId(id);
+    setMessages([]);
+    setDrawerOpen(false);
+  }
+
   const uploading = attachments.some((a) => a.uploading);
   const ready = attachments.filter((a) => a.url && !a.error);
   const canSend = !busy && !uploading && (input.trim().length > 0 || ready.length > 0);
@@ -248,11 +278,27 @@ export default function ChatClient() {
         <div className="logo" aria-hidden>
           b
         </div>
-        <div>
+        <div className="hd-titles">
           <h1>billcheck</h1>
           <div className="sub">your medical-bill advisor</div>
         </div>
+        <button
+          className="hd-workspace"
+          aria-label="Open your case workspace"
+          title="Your case"
+          onClick={() => setDrawerOpen(true)}
+        >
+          Your case
+        </button>
       </header>
+
+      <CaseWorkspace
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        caseId={caseId}
+        onSwitchCase={switchToCase}
+        onNewCase={startNewCase}
+      />
 
       <div
         className="thread"
@@ -267,9 +313,12 @@ export default function ChatClient() {
             <div className="big" aria-hidden>
               📄
             </div>
+            <p className="welcome-lead">Hi — let&apos;s take a look together.</p>
             <p>
-              Send a photo or PDF of a bill, statement, or EOB — or just describe
-              your situation. I&apos;ll tell you what it is and what to do.
+              Confusing medical bill? You don&apos;t have to figure it out alone. Send a photo or
+              PDF of the bill, statement, or EOB — or just tell me what&apos;s going on. I&apos;ll
+              explain what it is, whether you actually owe it, and what to do next. No homework, no
+              jargon. I&apos;ll remember your case so we can pick up anytime.
             </p>
             <div className="starters">
               {STARTERS.map((s) => (
@@ -369,6 +418,12 @@ export default function ChatClient() {
                 </button>
               </span>
             ))}
+            {attachments.some((a) => a.error) && (
+              <p className="upload-fallback">
+                Trouble with a file? No worries — you can just tell me about the bill in your own
+                words instead.
+              </p>
+            )}
           </div>
         )}
         <div className="inputbar">
