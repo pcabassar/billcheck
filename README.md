@@ -24,6 +24,19 @@ This is the "ship something real" framing: not a demo that summarizes a PDF, but
 
 Full walkthrough and talk track: [`docs/hackathon-demo-script.md`](docs/hackathon-demo-script.md).
 
+## Try it live
+
+The app is live and seeded with a real, resolved case, so you can explore it with zero setup:
+
+**→ [billcheck-ruddy.vercel.app](https://billcheck-ruddy.vercel.app)** — sign in with the shared demo account:
+
+- **Email:** `demo@billcheck.app`
+- **Password:** `PCDemo26`
+
+You'll land in the **"Lakewood Urgent Care — $587, uninsured"** case: the full conversation (billcheck catches an emergency-room E/M code billed at an urgent care), a drafted dispute letter, a tracked follow-up deadline, and the case timeline. Click **"Your case"** (top right) to open the workspace.
+
+> Shared throwaway demo account with synthetic data — please don't change the password. To start clean instead, just sign up with your own email.
+
 ## How it works
 
 billcheck wraps memory, hands, and data around a deliberately frozen, already-strong model. The thesis is that the reason to use this instead of a raw chatbot isn't *better answers* — it's the things a foundation model structurally can't do: remember the case, act in the real world, and be trustworthy enough to trust with your bill.
